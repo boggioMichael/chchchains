@@ -1,0 +1,37 @@
+# Render Blueprint: one click creates both parts of Ch-ch-chains on free plans.
+#   chchchains          the game page — a static site on Render's CDN: loads instantly and never sleeps
+#   chchchains-server   the multiplayer server — a free web service that sleeps after 15 quiet minutes; meanwhile
+#                       the page lets people play with bots and wakes it (about a minute)
+services:
+  - type: web
+    name: chchchains-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: node server.mjs
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ALLOWED_ORIGINS
+        value: "https://chchchains*.onrender.com"
+      - key: MAX_CLIENTS
+        value: "40"
+  - type: web
+    name: chchchains
+    runtime: static
+    buildCommand: node build.mjs
+    staticPublishPath: ./docs
+    autoDeployTrigger: commit
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=()

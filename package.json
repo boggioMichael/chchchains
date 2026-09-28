@@ -1,0 +1,22 @@
+{
+  "name": "chchchains",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ch-ch-chains – המשחק של עמך ישראל: משחק רשת לטלפון. אוספים ניצוצות, נותנים יד ומתארכים. בלי הרשמה.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node server.mjs",
+    "test": "node --test \"test/*.test.js\"",
+    "loadtest": "node scripts/loadtest.mjs"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/boggioMichael/chchchains"
+  },
+  "homepage": "https://chchchains.onrender.com/"
+}

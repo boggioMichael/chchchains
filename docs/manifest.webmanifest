@@ -1,0 +1,26 @@
+{
+  "name": "Ch-ch-chains – המשחק של עמך ישראל",
+  "short_name": "Ch-ch-chains",
+  "description": "משחק רשת בטלפון: אוספים ניצוצות, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#080c20",
+  "theme_color": "#080c20",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

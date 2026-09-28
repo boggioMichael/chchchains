@@ -1,0 +1,2522 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-gXo9IGk5DQuIUWkCK1TQOzU6sBa2VK0J6Tuko5iafT8=' 'sha256-FbUQ3Ii+dewVt7o0kAzXyu+F9NJqeS08zTUZCnv0YfQ='; style-src 'sha256-Gutz2Ms+U50JgPbY0BVXSCFdOVVZJrp4hCSJzgR979g='; img-src 'self' data: blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ch-ch-chains – המשחק של עמך ישראל">
+<meta property="og:description" content="משחק רשת בטלפון: אוספים ניצוצות, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.">
+<meta property="og:url" content="https://chchchains.onrender.com/">
+<meta property="og:image" content="https://chchchains.onrender.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<title>Ch-ch-chains – המשחק של עמך ישראל</title>
+<meta name="description" content="משחק רשת בטלפון: אוספים ניצוצות, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.">
+<meta name="theme-color" content="#080c20">
+<style>
+:root {
+  --bg: #080c20;
+  --panel: rgba(14, 20, 52, 0.78);
+  --panel-line: rgba(143, 233, 255, 0.18);
+  --ink: #f4f6ff;
+  --ink-2: rgba(244, 246, 255, 0.72);
+  --gold: #ffd66b;
+  --cyan: #8fe9ff;
+  --pink: #ff8fd0;
+  --danger: #ff5a7a;
+  --font: system-ui, -apple-system, 'Segoe UI', 'Noto Sans Hebrew', 'Arial Hebrew', Arial, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font);
+  overflow: hidden; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+body { touch-action: none; user-select: none; -webkit-user-select: none; }
+#game { position: fixed; inset: 0; display: block; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+/* ------------------------------------------------------------------ HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; direction: rtl; }
+.hud-score { position: absolute; top: calc(var(--safe-t) + 12px); right: 14px; text-align: right; }
+#score { font-size: 34px; font-weight: 900; line-height: 1; letter-spacing: -0.5px;
+  text-shadow: 0 0 18px rgba(143, 233, 255, 0.55); font-variant-numeric: tabular-nums; }
+#rank { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.hud-board { position: absolute; top: calc(var(--safe-t) + 10px); left: 10px; width: min(46vw, 210px);
+  background: var(--panel); border: 1px solid var(--panel-line); border-radius: 14px; padding: 8px 10px; }
+#leaderboard { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; }
+#leaderboard li { display: grid; grid-template-columns: 8px 1fr auto; gap: 6px; align-items: center; color: var(--ink-2); }
+#leaderboard li.me { color: var(--ink); font-weight: 700; }
+#leaderboard i { width: 8px; height: 8px; border-radius: 50%; display: block; }
+#leaderboard span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#leaderboard b { font-variant-numeric: tabular-nums; font-weight: 600; }
+#players { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+#boost { pointer-events: auto; position: absolute; left: 16px; bottom: calc(var(--safe-b) + 18px); width: 76px; height: 76px;
+  border-radius: 50%; border: 2px solid rgba(143, 233, 255, 0.5); background: rgba(20, 30, 80, 0.55);
+  font-size: 32px; display: grid; place-items: center; touch-action: none; }
+#boost.on { background: rgba(143, 233, 255, 0.35); box-shadow: 0 0 26px rgba(143, 233, 255, 0.7); }
+#minimap { position: absolute; right: 14px; bottom: calc(var(--safe-b) + 18px); width: 96px; height: 96px; border-radius: 50%; }
+#hand { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 108px);
+  border: 0; border-radius: 999px; padding: 14px 22px; min-height: 52px; max-width: 86vw;
+  background: linear-gradient(135deg, #ffd66b, #ff9f43); color: #2a1600; font-weight: 800; font-size: 16px;
+  box-shadow: 0 6px 26px rgba(255, 190, 90, 0.55); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+#hand span { overflow: hidden; text-overflow: ellipsis; }
+#hand.pulse { animation: pulse 0.9s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: translateX(-50%) scale(1.07); } }
+#toast { position: fixed; top: calc(var(--safe-t) + 70px); left: 50%; transform: translate(-50%, -12px); opacity: 0;
+  background: rgba(10, 14, 40, 0.88); border: 1px solid rgba(255, 214, 107, 0.45); border-radius: 14px; padding: 10px 16px;
+  font-size: 14px; font-weight: 600; max-width: min(90vw, 460px); text-align: center; direction: rtl;
+  transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 5; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+#hint { position: fixed; bottom: calc(var(--safe-b) + 176px); left: 50%; transform: translateX(-50%); opacity: 0;
+  font-size: 15px; font-weight: 700; color: var(--ink); text-shadow: 0 2px 10px #000; text-align: center; width: 88vw;
+  transition: opacity 0.4s; pointer-events: none; direction: rtl; }
+#hint.on { opacity: 1; }
+
+/* ------------------------------------------------------------------ screens */
+.screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; direction: rtl; z-index: 4;
+  background: radial-gradient(ellipse at 50% 30%, rgba(8, 12, 32, 0.35), rgba(8, 12, 32, 0.82)); overflow-y: auto; }
+.card { width: min(420px, 100%); text-align: center; display: grid; gap: 16px; padding-block: 20px; }
+.logo { font-size: clamp(44px, 13.5vw, 88px); font-weight: 900; line-height: 1.05; margin: 0; letter-spacing: -1.5px; direction: ltr;
+  background: linear-gradient(90deg, #7af0ff, #ff8fd0 55%, #ffd66b); -webkit-background-clip: text; background-clip: text;
+  color: transparent; filter: drop-shadow(0 0 22px rgba(255, 143, 208, 0.35)); text-wrap: balance; }
+.brand { margin: -6px 0 0; font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 0.3px; }
+.tag { font-size: 17px; line-height: 1.5; color: var(--ink-2); margin: 0; text-wrap: balance; }
+.tag strong { color: var(--gold); }
+.name-row { display: flex; gap: 8px; justify-content: center; align-items: center; }
+.name-chip { background: var(--panel); border: 1px solid var(--panel-line); border-radius: 999px; padding: 10px 16px; font-weight: 700; }
+.name-chip small { color: var(--ink-2); font-weight: 500; margin-inline-end: 6px; }
+#reroll { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--panel-line); background: var(--panel); font-size: 20px; }
+.primary { border: 0; border-radius: 18px; min-height: 64px; font-size: 22px; font-weight: 900; color: #0a0f24;
+  background: linear-gradient(135deg, #7af0ff, #b99bff); box-shadow: 0 10px 34px rgba(122, 240, 255, 0.35); }
+.primary:active { transform: scale(0.98); }
+.secondary { border: 1px solid var(--panel-line); border-radius: 16px; min-height: 54px; font-size: 18px; font-weight: 800;
+  background: var(--panel); }
+.foot { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; margin: 0; }
+#net-status, #over-net { font-size: 12.5px; color: var(--ink-2); }
+#net-status[data-state='online'], #over-net[data-state='online'] { color: #9dff4f; }
+button:disabled { opacity: 0.55; cursor: progress; }
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.how div { background: var(--panel); border: 1px solid var(--panel-line); border-radius: 14px; padding: 10px 6px; font-size: 12.5px;
+  color: var(--ink-2); line-height: 1.35; }
+.how b { display: block; font-size: 22px; margin-bottom: 4px; }
+#over-title { font-size: 24px; font-weight: 800; margin: 0; text-wrap: balance; }
+.big { font-size: 64px; font-weight: 900; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 26px rgba(255, 214, 107, 0.45); }
+.big-label { color: var(--ink-2); font-size: 14px; margin-top: -8px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stats div { background: var(--panel); border: 1px solid var(--panel-line); border-radius: 14px; padding: 10px 4px; }
+.stats b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; color: var(--ink-2); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#join-link { color: var(--gold); font-weight: 700; font-size: 15px; }
+#share-fallback .card { background: #0e1434; border: 1px solid var(--panel-line); border-radius: 18px; padding: 18px; }
+#share-text { width: 100%; min-height: 110px; background: #070b1d; color: var(--ink); border: 1px solid var(--panel-line);
+  border-radius: 12px; padding: 10px; font: 15px var(--font); direction: rtl; box-sizing: border-box; }
+@media (prefers-reduced-motion: reduce) { #hand.pulse { animation: none; } #toast { transition: none; } }
+@media (min-width: 900px) { #score { font-size: 42px; } .hud-board { width: 240px; } #leaderboard { font-size: 13px; } }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="לוח המשחק"></canvas>
+
+<div id="hud" hidden>
+  <div class="hud-score"><div id="score">0</div><div id="rank"></div></div>
+  <div class="hud-board"><ol id="leaderboard" aria-label="טבלת המובילים"></ol><div id="players"></div></div>
+  <button id="boost" type="button" aria-label="האצה (החזיקו)">⚡</button>
+  <button id="hand" type="button" hidden>🤝 <span>תנו יד</span></button>
+  <canvas id="minimap" aria-hidden="true"></canvas>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="hint" aria-live="polite"></div>
+
+<section id="start" class="screen" aria-labelledby="logo">
+  <div class="card">
+    <h1 id="logo" class="logo">Ch-ch-chains</h1>
+    <p id="brand" class="brand">המשחק של עמך ישראל</p>
+    <p class="tag">אוספים ניצוצות, נותנים יד ומתארכים.<br><strong>לבד אתה חזק – ביחד אנחנו שרשרת.</strong></p>
+    <div class="how" aria-label="איך משחקים">
+      <div><b>👆</b>גוררים אצבע לכיוון</div>
+      <div><b>⚡</b>מחזיקים כדי להאיץ</div>
+      <div><b>🤝</b>נותנים יד ועוברים זה דרך זה</div>
+    </div>
+    <div class="name-row">
+      <div class="name-chip"><small>השם שלך:</small><span id="name"></span></div>
+      <button id="reroll" type="button" aria-label="שם אחר">🔄</button>
+    </div>
+    <button id="play" class="primary" type="button">שחקו עכשיו</button>
+    <p id="net-status" aria-live="polite"></p>
+    <p class="foot">בלי הרשמה · בלי עוגיות · 🤖 מסמן בוט<br><span id="publisher" hidden></span></p>
+  </div>
+</section>
+
+<section id="over" class="screen" hidden aria-labelledby="over-title">
+  <div class="card">
+    <h2 id="over-title">השרשרת נקרעה</h2>
+    <div><div class="big" id="stat-score">0</div><div class="big-label">האורך הכי גדול שלך</div></div>
+    <div class="stats">
+      <div><b id="stat-rank">–</b><span>המקום הכי גבוה</span></div>
+      <div><b id="stat-hands">0</b><span>החזקת ידיים עם</span></div>
+      <div><b id="stat-time">0</b><span>זמן בשרשרת</span></div>
+    </div>
+    <div class="row2">
+      <button id="again" class="primary" type="button">עוד סיבוב</button>
+      <button id="share" class="secondary" type="button">שתפו</button>
+    </div>
+    <a id="join-link" href="#" target="_blank" rel="noopener" hidden>רוצים להיות חוליה אמיתית? הצטרפו להתנדבות</a>
+    <p id="over-net" class="foot" aria-live="polite"></p>
+  </div>
+</section>
+
+<section id="share-fallback" class="screen" hidden aria-label="שיתוף">
+  <div class="card">
+    <p class="tag">העתיקו ושלחו:</p>
+    <textarea id="share-text" readonly></textarea>
+    <button id="share-close" class="secondary" type="button">סגירה</button>
+  </div>
+</section>
+<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/"};</script>
+<script>
+(() => {
+'use strict';
+const __m = {};
+__m.sim = (() => {
+// Ch-ch-chains — the world simulation. Pure logic with no DOM, so the same code runs in the browser (solo play with
+// labelled bots) and on the server (authoritative multiplayer rooms).
+
+const C = {
+  arenaRadius: 3000,
+  baseSpeed: 190,
+  boostSpeed: 380,
+  turnRate: 4.2,
+  spacing: 7,
+  startMass: 12,
+  sparkTarget: 850,
+  handRange: 190,
+  teamMax: 4,
+  teamBonusRange: 480,
+  teamBonus: 1.5,
+  boostCost: 5,
+  minBoostMass: 14,
+  deathSparkTtl: 45,
+  bodyCell: 96,
+  sparkCell: 128,
+};
+
+// 12 neon colours that stay distinct on the night background.
+const COLORS = [
+  '#3de0ff', '#ff4fd8', '#9dff4f', '#ffc23d', '#ff6b5e', '#a07bff',
+  '#3dffb5', '#5ea8ff', '#ff8fb1', '#f2ff6b', '#ff9f43', '#7af0ff',
+];
+const SPARK_COLORS = ['#ffd66b', '#ffb36b', '#ff8fd0', '#8fe9ff', '#b8ff8f', '#fff2b0'];
+
+const NOUNS = ['ניצוץ', 'כוכב', 'זיק', 'שביט', 'פנס', 'נר', 'ברק', 'מגדלור', 'גל', 'לפיד', 'זוהר', 'אור'];
+const ADJS = ['זריז', 'עקשן', 'אמיץ', 'סקרן', 'נחוש', 'עליז', 'חולמני', 'ערני', 'נדיב', 'שקט', 'מחייך', 'חצוף', 'צנוע', 'שובב'];
+const PLACES = ['מהגליל', 'מהנגב', 'מהכרמל', 'מהשרון', 'מהעמק', 'מהחוף', 'מהערבה', 'מההר', 'מהשפלה', 'מהעיר'];
+const BOT_NAMES = ['דבורה', 'צבי', 'רימון', 'תמר', 'אלון', 'שקד', 'נחליאלי', 'חצב', 'דוכיפת', 'צבר', 'ארז', 'כלנית',
+  'רקפת', 'אגוז', 'יעל', 'תאנה', 'ברוש', 'שחף', 'עפרוני', 'זית', 'אורן', 'לוטם', 'נרקיס', 'דקל'];
+
+const TAU = Math.PI * 2;
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+function randomName() {
+  return Math.random() < 0.5 ? `${pick(NOUNS)} ${pick(ADJS)}` : `${pick(NOUNS)} ${pick(PLACES)}`;
+}
+
+function lengthFor(mass) {
+  return mass <= 200 ? 60 + 7 * mass : 1460 + 3.5 * (mass - 200);
+}
+
+function radiusFor(mass) {
+  return Math.min(34, 9 + 1.7 * Math.sqrt(mass));
+}
+
+/** The number shown to players: grows by 10 per ordinary spark. */
+function scoreOf(mass) {
+  return Math.round(mass * 10);
+}
+
+function angleDiff(from, to) {
+  let d = (to - from) % TAU;
+  if (d > Math.PI) d -= TAU;
+  if (d < -Math.PI) d += TAU;
+  return d;
+}
+
+/** Uniform grid over the arena for neighbour queries (body points and sparks). */
+class Grid {
+  /** rebuilt: the grid is cleared and refilled every step, so it remembers which cells to empty. */
+  constructor(cell, radius, rebuilt = false) {
+    this.cell = cell;
+    this.half = Math.ceil(radius / cell) + 2;
+    this.n = this.half * 2;
+    this.cells = Array.from({ length: this.n * this.n }, () => []);
+    this.used = rebuilt ? [] : null; // cells filled since the last clear()
+  }
+  index(x, y) {
+    const ix = Math.floor(x / this.cell) + this.half;
+    const iy = Math.floor(y / this.cell) + this.half;
+    if (ix < 0 || iy < 0 || ix >= this.n || iy >= this.n) return -1;
+    return iy * this.n + ix;
+  }
+  clear() {
+    if (!this.used) {
+      for (const c of this.cells) c.length = 0;
+      return;
+    }
+    for (const i of this.used) this.cells[i].length = 0;
+    this.used.length = 0;
+  }
+  insert(x, y, item) {
+    const i = this.index(x, y);
+    if (i < 0) return;
+    const c = this.cells[i];
+    if (this.used && c.length === 0) this.used.push(i);
+    c.push(item);
+  }
+  remove(x, y, item) {
+    const i = this.index(x, y);
+    if (i < 0) return;
+    const c = this.cells[i];
+    const k = c.indexOf(item);
+    if (k >= 0) {
+      c[k] = c[c.length - 1];
+      c.pop();
+    }
+  }
+  /** Calls fn(item) for items in cells overlapping the circle; stops early when fn returns true. */
+  query(x, y, r, fn) {
+    const c = this.cell;
+    const x0 = Math.floor((x - r) / c) + this.half;
+    const x1 = Math.floor((x + r) / c) + this.half;
+    const y0 = Math.floor((y - r) / c) + this.half;
+    const y1 = Math.floor((y + r) / c) + this.half;
+    for (let iy = Math.max(0, y0); iy <= Math.min(this.n - 1, y1); iy++) {
+      for (let ix = Math.max(0, x0); ix <= Math.min(this.n - 1, x1); ix++) {
+        const cellItems = this.cells[iy * this.n + ix];
+        for (let k = 0; k < cellItems.length; k++) if (fn(cellItems[k])) return true;
+      }
+    }
+    return false;
+  }
+}
+
+class World {
+  constructor(opts = {}) {
+    this.R = opts.arenaRadius ?? C.arenaRadius;
+    this.sparkTarget = opts.sparkTarget ?? C.sparkTarget;
+    this.snakes = new Map();
+    this.sparks = new Map();
+    this.teams = new Map();
+    this.nextId = 1;
+    this.nextSpark = 1;
+    this.nextTeam = 1;
+    this.time = 0;
+    this.events = [];
+    this.collected = 0;
+    // The server turns this on to learn which sparks came and went between snapshots.
+    this.sparkLog = null; // { added: [spark], removed: [id] }
+    this.sparkGrid = new Grid(C.sparkCell, this.R);
+    this.bodyGrid = new Grid(C.bodyCell, this.R, true);
+    // Flat buffers for the body-point grid, rebuilt every step.
+    this.bpX = [];
+    this.bpY = [];
+    this.bpOwner = [];
+    this.bpR = [];
+    this.bpTeam = [];
+    this.bpIdx = [];
+    for (let i = 0; i < this.sparkTarget; i++) this.spawnNaturalSpark();
+  }
+
+  // --------------------------------------------------------------------------------------------- sparks
+  addSpark(x, y, v, r, color, ttl = 0) {
+    const s = { id: this.nextSpark++, x, y, v, r, color, born: this.time, ttl };
+    this.sparks.set(s.id, s);
+    this.sparkGrid.insert(x, y, s);
+    this.sparkLog?.added.push(s);
+    return s;
+  }
+  removeSpark(s) {
+    this.sparks.delete(s.id);
+    this.sparkGrid.remove(s.x, s.y, s);
+    this.sparkLog?.removed.push(s.id);
+  }
+  spawnNaturalSpark() {
+    const rr = this.R * 0.97 * Math.sqrt(Math.random());
+    const a = Math.random() * TAU;
+    if (Math.random() < 0.08) {
+      // A small constellation: a cluster worth chasing.
+      const cx = Math.cos(a) * rr * 0.9;
+      const cy = Math.sin(a) * rr * 0.9;
+      const n = 6 + Math.floor(Math.random() * 8);
+      const color = pick(SPARK_COLORS);
+      for (let i = 0; i < n; i++) {
+        const ra = Math.random() * TAU;
+        const rd = 12 + Math.random() * 60;
+        this.addSpark(cx + Math.cos(ra) * rd, cy + Math.sin(ra) * rd, 1, 4.5 + Math.random() * 2, color);
+      }
+      return;
+    }
+    this.addSpark(Math.cos(a) * rr, Math.sin(a) * rr, 1, 4 + Math.random() * 2.5, pick(SPARK_COLORS));
+  }
+
+  // --------------------------------------------------------------------------------------------- snakes
+  safeSpawnPoint() {
+    let best = { x: 0, y: 0 };
+    let bestD = -1;
+    for (let tries = 0; tries < 14; tries++) {
+      const rr = this.R * 0.72 * Math.sqrt(Math.random());
+      const a = Math.random() * TAU;
+      const x = Math.cos(a) * rr;
+      const y = Math.sin(a) * rr;
+      let near = Infinity;
+      for (const o of this.snakes.values()) {
+        if (!o.alive) continue;
+        for (let i = 0; i < o.px.length; i += 6) near = Math.min(near, Math.hypot(o.px[i] - x, o.py[i] - y));
+      }
+      if (near > 420) return { x, y };
+      if (near > bestD) {
+        bestD = near;
+        best = { x, y };
+      }
+    }
+    return best;
+  }
+
+  addSnake({ name = randomName(), color, bot = false, mass = C.startMass } = {}) {
+    const id = this.nextId++;
+    const { x, y } = this.safeSpawnPoint();
+    const a = Math.atan2(-y, -x) + (Math.random() - 0.5) * 1.2; // face inwards
+    const s = {
+      id,
+      name,
+      color: color ?? (id - 1) % COLORS.length,
+      bot,
+      mass,
+      x,
+      y,
+      a,
+      ta: a,
+      boost: false,
+      alive: true,
+      px: [],
+      py: [],
+      team: 0,
+      offer: null,
+      born: this.time,
+      maxMass: mass,
+      kills: 0,
+      hands: new Set(),
+      boostAcc: 0,
+      dropAt: 0,
+      ai: bot ? newAi() : null,
+    };
+    const n = Math.ceil(lengthFor(mass) / C.spacing) + 1;
+    for (let i = 0; i < n; i++) {
+      s.px.push(x - Math.cos(a) * i * C.spacing);
+      s.py.push(y - Math.sin(a) * i * C.spacing);
+    }
+    // Path point px[i] is point number seq − i; the counter only grows, so a client can ask for "what's new".
+    s.seq = n - 1;
+    this.snakes.set(id, s);
+    return s;
+  }
+
+  removeSnake(id) {
+    const s = this.snakes.get(id);
+    if (!s) return;
+    this.leaveTeam(s);
+    this.snakes.delete(id);
+  }
+
+  setInput(id, angle, boost) {
+    const s = this.snakes.get(id);
+    if (!s || !s.alive) return;
+    if (Number.isFinite(angle)) s.ta = angle;
+    s.boost = !!boost;
+  }
+
+  // --------------------------------------------------------------------------------------------- teams
+  teamOf(s) {
+    return s.team ? this.teams.get(s.team) : null;
+  }
+  sameTeam(a, b) {
+    return a.team !== 0 && a.team === b.team;
+  }
+  leaveTeam(s) {
+    const t = this.teamOf(s);
+    s.team = 0;
+    if (!t) return;
+    t.members.delete(s.id);
+    if (t.members.size <= 1) {
+      for (const m of t.members) {
+        const o = this.snakes.get(m);
+        if (o) o.team = 0;
+      }
+      this.teams.delete(t.id);
+    }
+  }
+  /** Who s would give a hand to: someone already offering one to s, else the nearest head in range. */
+  handCandidate(s) {
+    let best = null;
+    const range = C.handRange * (1 + radiusFor(s.mass) / 60);
+    let bestD = range;
+    for (const o of this.snakes.values()) {
+      if (o === s || !o.alive || !o.offer || o.offer.to !== s.id || o.offer.until < this.time) continue;
+      if (Math.hypot(o.x - s.x, o.y - s.y) < range * 1.6) return o;
+    }
+    for (const o of this.snakes.values()) {
+      if (o === s || !o.alive || this.sameTeam(s, o)) continue;
+      const size = (this.teamOf(s)?.members.size ?? 1) + (this.teamOf(o)?.members.size ?? 1);
+      if (size > C.teamMax) continue;
+      const d = Math.hypot(o.x - s.x, o.y - s.y);
+      if (d < bestD) {
+        bestD = d;
+        best = o;
+      }
+    }
+    return best;
+  }
+  /** s offers a hand to its nearest candidate; links at once when the other already offered to s. */
+  offerHand(id) {
+    const s = this.snakes.get(id);
+    if (!s || !s.alive) return null;
+    const o = this.handCandidate(s);
+    if (!o) return null;
+    if (o.offer && o.offer.to === s.id && o.offer.until > this.time) {
+      this.link(s, o);
+      return o;
+    }
+    s.offer = { to: o.id, until: this.time + 5 };
+    this.events.push({ t: 'offer', from: s.id, to: o.id });
+    return o;
+  }
+  link(a, b) {
+    const ta = this.teamOf(a);
+    const tb = this.teamOf(b);
+    if ((ta?.members.size ?? 1) + (tb?.members.size ?? 1) > C.teamMax) return false;
+    let team = ta ?? tb;
+    if (!team) {
+      team = { id: this.nextTeam++, members: new Set(), color: a.color };
+      this.teams.set(team.id, team);
+    }
+    for (const s of [a, b]) {
+      const old = this.teamOf(s);
+      if (old && old !== team) {
+        for (const m of old.members) {
+          const o = this.snakes.get(m);
+          if (o) {
+            o.team = team.id;
+            team.members.add(m);
+          }
+        }
+        this.teams.delete(old.id);
+      }
+      s.team = team.id;
+      team.members.add(s.id);
+    }
+    a.offer = null;
+    b.offer = null;
+    for (const m of team.members) {
+      const s = this.snakes.get(m);
+      if (!s) continue;
+      for (const n of team.members) if (n !== m) s.hands.add(n);
+    }
+    this.events.push({ t: 'link', a: a.id, b: b.id, team: team.id });
+    return true;
+  }
+
+  // --------------------------------------------------------------------------------------------- step
+  step(dt) {
+    dt = Math.min(dt, 0.05);
+    this.time += dt;
+    for (const s of this.snakes.values()) if (s.alive && s.bot && this.time >= s.ai.next) this.think(s);
+    for (const s of this.snakes.values()) if (s.alive) this.move(s, dt);
+    this.rebuildBodyGrid();
+    const dead = [];
+    for (const s of this.snakes.values()) {
+      if (!s.alive) continue;
+      const killer = this.collision(s);
+      if (killer !== null) dead.push([s, killer]);
+    }
+    for (const [s, killer] of dead) this.kill(s, killer);
+    for (const s of this.snakes.values()) if (s.alive) this.eat(s);
+    this.maintain(dt);
+  }
+
+  move(s, dt) {
+    const r = radiusFor(s.mass);
+    const turn = C.turnRate * Math.pow(14 / Math.max(14, r), 0.55);
+    const d = angleDiff(s.a, s.ta);
+    s.a += Math.max(-turn * dt, Math.min(turn * dt, d));
+    const boosting = s.boost && s.mass > C.minBoostMass;
+    const speed = boosting ? C.boostSpeed : C.baseSpeed;
+    s.x += Math.cos(s.a) * speed * dt;
+    s.y += Math.sin(s.a) * speed * dt;
+    if (boosting) {
+      const cost = C.boostCost * dt;
+      s.mass -= cost;
+      s.boostAcc += cost;
+      if (this.time >= s.dropAt && s.px.length > 2) {
+        s.dropAt = this.time + 0.22;
+        const tx = s.px[s.px.length - 1];
+        const ty = s.py[s.py.length - 1];
+        this.addSpark(tx, ty, s.boostAcc * 0.75, 5 + Math.min(4, s.boostAcc), COLORS[s.color], C.deathSparkTtl);
+        s.boostAcc = 0;
+      }
+    }
+    // Path points trail the head at fixed spacing.
+    let hx = s.px[0];
+    let hy = s.py[0];
+    let dist = Math.hypot(s.x - hx, s.y - hy);
+    while (dist >= C.spacing) {
+      const k = C.spacing / dist;
+      hx += (s.x - hx) * k;
+      hy += (s.y - hy) * k;
+      s.px.unshift(hx);
+      s.py.unshift(hy);
+      s.seq++;
+      dist = Math.hypot(s.x - hx, s.y - hy);
+    }
+    const want = Math.ceil(lengthFor(s.mass) / C.spacing) + 1;
+    if (s.px.length > want) {
+      s.px.length = want;
+      s.py.length = want;
+    }
+    if (s.offer && s.offer.until < this.time) s.offer = null;
+    if (s.mass > s.maxMass) s.maxMass = s.mass;
+  }
+
+  rebuildBodyGrid() {
+    this.bodyGrid.clear();
+    let n = 0;
+    const X = this.bpX;
+    const Y = this.bpY;
+    const O = this.bpOwner;
+    const RR = this.bpR;
+    const T = this.bpTeam;
+    const I = this.bpIdx;
+    for (const s of this.snakes.values()) {
+      if (!s.alive) continue;
+      const r = radiusFor(s.mass);
+      for (let i = 0; i < s.px.length; i += 2) {
+        X[n] = s.px[i];
+        Y[n] = s.py[i];
+        O[n] = s.id;
+        RR[n] = r;
+        T[n] = s.team;
+        I[n] = i;
+        this.bodyGrid.insert(s.px[i], s.py[i], n);
+        n++;
+      }
+    }
+    X.length = Y.length = O.length = RR.length = T.length = I.length = n;
+  }
+
+  /**
+   * Returns the killer's id (0 for the edge), or null when the head is safe. Running into a body kills; in a
+   * head-to-head bump the clearly bigger chain survives (both break when they are about the same size).
+   */
+  collision(s) {
+    const r = radiusFor(s.mass);
+    if (Math.hypot(s.x, s.y) > this.R - r * 0.6) return 0;
+    let killer = null;
+    this.bodyGrid.query(s.x, s.y, r + 40, (i) => {
+      const owner = this.bpOwner[i];
+      if (owner === s.id) return false;
+      if (s.team !== 0 && this.bpTeam[i] === s.team) return false;
+      const lim = r * 0.9 + this.bpR[i] * 0.8;
+      const dx = this.bpX[i] - s.x;
+      const dy = this.bpY[i] - s.y;
+      if (dx * dx + dy * dy >= lim * lim) return false;
+      if (this.bpIdx[i] < 6) {
+        const o = this.snakes.get(owner);
+        if (o && s.mass > o.mass * 1.15) return false; // head-on, and s is clearly bigger
+      }
+      killer = owner;
+      return true;
+    });
+    return killer;
+  }
+
+  kill(s, killerId) {
+    if (!s.alive) return;
+    s.alive = false;
+    const total = s.mass * 0.75;
+    const n = Math.max(5, Math.min(110, Math.floor(s.px.length / 3)));
+    const step = s.px.length / n;
+    const color = COLORS[s.color];
+    for (let k = 0; k < n; k++) {
+      const i = Math.floor(k * step);
+      const jx = (Math.random() - 0.5) * 16;
+      const jy = (Math.random() - 0.5) * 16;
+      this.addSpark(s.px[i] + jx, s.py[i] + jy, total / n, 6 + Math.min(5, total / n), color, C.deathSparkTtl);
+    }
+    const killer = killerId ? this.snakes.get(killerId) : null;
+    if (killer) killer.kills += 1;
+    this.leaveTeam(s);
+    this.events.push({ t: 'death', id: s.id, killer: killerId ?? 0 });
+  }
+
+  eat(s) {
+    const r = radiusFor(s.mass);
+    const reach = r + 14;
+    const eaten = [];
+    this.sparkGrid.query(s.x, s.y, reach + 12, (sp) => {
+      const lim = reach + sp.r;
+      const dx = sp.x - s.x;
+      const dy = sp.y - s.y;
+      if (dx * dx + dy * dy < lim * lim) eaten.push(sp);
+      return false;
+    });
+    if (!eaten.length) return;
+    const bonus = this.teamBonusActive(s) ? C.teamBonus : 1;
+    let gained = 0;
+    for (const sp of eaten) {
+      this.removeSpark(sp);
+      gained += sp.v * bonus;
+    }
+    s.mass += gained;
+    this.collected += eaten.length;
+    this.events.push({ t: 'eat', id: s.id, n: eaten.length, bonus: bonus > 1 });
+  }
+
+  teamBonusActive(s) {
+    const t = this.teamOf(s);
+    if (!t) return false;
+    for (const m of t.members) {
+      if (m === s.id) continue;
+      const o = this.snakes.get(m);
+      if (o && o.alive && Math.hypot(o.x - s.x, o.y - s.y) < C.teamBonusRange) return true;
+    }
+    return false;
+  }
+
+  maintain() {
+    for (const sp of this.sparks.values()) {
+      if (sp.ttl && this.time - sp.born > sp.ttl) this.removeSpark(sp);
+    }
+    let natural = 0;
+    for (const sp of this.sparks.values()) if (!sp.ttl) natural++;
+    for (let k = 0; natural < this.sparkTarget && k < 6; k++, natural++) this.spawnNaturalSpark();
+  }
+
+  // --------------------------------------------------------------------------------------------- bots
+  /** Is a point dangerous for snake s (another body or a head about to be there, or the edge)? Returns 0 or 1. */
+  hazard(s, x, y, pad, heads) {
+    if (Math.hypot(x, y) > this.R - pad - 30) return 1;
+    for (const h of heads) {
+      const lim = pad + h.r + 26;
+      if ((h.x - x) ** 2 + (h.y - y) ** 2 < lim * lim) return 1;
+    }
+    return this.bodyGrid.query(x, y, pad + 34, (i) => {
+      if (this.bpOwner[i] === s.id) return false;
+      if (s.team !== 0 && this.bpTeam[i] === s.team) return false;
+      const dx = this.bpX[i] - x;
+      const dy = this.bpY[i] - y;
+      const lim = pad + this.bpR[i];
+      return dx * dx + dy * dy < lim * lim;
+    })
+      ? 1
+      : 0;
+  }
+
+  think(s) {
+    const ai = s.ai;
+    ai.next = this.time + 0.11 + Math.random() * 0.12;
+    const r = radiusFor(s.mass);
+    let tx;
+    let ty;
+    const fromCenter = Math.hypot(s.x, s.y);
+    let chasing = 0;
+    if (fromCenter > this.R * 0.84) {
+      tx = 0;
+      ty = 0;
+    } else {
+      let best = null;
+      let bestScore = 0;
+      this.sparkGrid.query(s.x, s.y, 360, (sp) => {
+        const d = Math.hypot(sp.x - s.x, sp.y - s.y);
+        const ahead = Math.cos(angleDiff(s.a, Math.atan2(sp.y - s.y, sp.x - s.x)));
+        const sc = (sp.v * (1.2 + ahead)) / (d + 40);
+        if (sc <= bestScore) return false;
+        if (sc > bestScore) {
+          bestScore = sc;
+          best = sp;
+        }
+        return false;
+      });
+      if (best) {
+        tx = best.x;
+        ty = best.y;
+        chasing = bestScore;
+      } else {
+        if (ai.wx === undefined || this.time > ai.wUntil) {
+          const rr = this.R * 0.6 * Math.sqrt(Math.random());
+          const a = Math.random() * TAU;
+          ai.wx = Math.cos(a) * rr;
+          ai.wy = Math.sin(a) * rr;
+          ai.wUntil = this.time + 3 + Math.random() * 3;
+        }
+        tx = ai.wx;
+        ty = ai.wy;
+      }
+    }
+    // Aggressive bots try to cut off a smaller head that is just ahead.
+    let hunt = null;
+    if (ai.aggr > 0.5 && s.mass > 30) {
+      for (const o of this.snakes.values()) {
+        if (o === s || !o.alive || this.sameTeam(s, o) || o.mass > s.mass * 0.8) continue;
+        const d = Math.hypot(o.x - s.x, o.y - s.y);
+        if (d > 260) continue;
+        const ang = Math.atan2(o.y - s.y, o.x - s.x);
+        if (Math.abs(angleDiff(s.a, ang)) < 0.7) {
+          hunt = o;
+          break;
+        }
+      }
+      if (hunt) {
+        tx = hunt.x + Math.cos(hunt.a) * 120;
+        ty = hunt.y + Math.sin(hunt.a) * 120;
+      }
+    }
+    const desired = Math.atan2(ty - s.y, tx - s.x);
+    const look = [r * 1.4 + 22, r * 1.6 + 70, r * 1.8 + 130];
+    // Where nearby heads will be shortly: bots steer clear of head-on bumps.
+    const heads = [];
+    for (const o of this.snakes.values()) {
+      if (o === s || !o.alive || this.sameTeam(s, o)) continue;
+      const d = Math.hypot(o.x - s.x, o.y - s.y);
+      if (d > 360) continue;
+      const or = radiusFor(o.mass);
+      const sp = o.boost ? C.boostSpeed : C.baseSpeed;
+      for (const t of [0.15, 0.35, 0.6]) heads.push({ x: o.x + Math.cos(o.a) * sp * t, y: o.y + Math.sin(o.a) * sp * t, r: or });
+    }
+    let bestA = desired;
+    let bestV = -Infinity;
+    let danger = 0;
+    for (const off of OFFSETS) {
+      const cand = desired + off;
+      let h = 0;
+      for (let k = 0; k < look.length; k++) {
+        h += this.hazard(s, s.x + Math.cos(cand) * look[k], s.y + Math.sin(cand) * look[k], r, heads) * (3 - k);
+      }
+      const v = Math.cos(off) - h * 2.2 - Math.abs(angleDiff(s.a, cand)) * 0.12;
+      if (off === 0) danger = h;
+      if (v > bestV) {
+        bestV = v;
+        bestA = cand;
+      }
+    }
+    s.ta = bestA;
+    s.boost = !danger && s.mass > 26 && ((hunt && Math.random() < 0.8) || (chasing > 0.03 && Math.random() < 0.15 * ai.aggr));
+    // Hands: friendly bots accept offers and sometimes offer one.
+    for (const o of this.snakes.values()) {
+      if (o === s || !o.alive || !o.offer || o.offer.to !== s.id || o.offer.until < this.time) continue;
+      if (!o.offer.considered) {
+        o.offer.considered = true;
+        if (Math.random() < (ai.friendly ? 0.8 : 0.3)) this.link(o, s);
+      }
+    }
+    if (ai.friendly && !s.offer && Math.random() < 0.02) {
+      const c = this.handCandidate(s);
+      if (c && c.bot) {
+        if (c.ai.friendly && Math.random() < 0.5) this.link(s, c);
+      } else if (c) {
+        s.offer = { to: c.id, until: this.time + 5 };
+        this.events.push({ t: 'offer', from: s.id, to: c.id });
+      }
+    }
+  }
+}
+
+const OFFSETS = [0, 0.45, -0.45, 0.95, -0.95, 1.5, -1.5, 2.3, -2.3, Math.PI];
+
+function newAi() {
+  return { next: 0, aggr: Math.random(), friendly: Math.random() < 0.55, wx: undefined, wy: undefined, wUntil: 0 };
+}
+
+function botName() {
+  return pick(BOT_NAMES);
+}
+
+return { C, COLORS, SPARK_COLORS, NOUNS, ADJS, PLACES, randomName, lengthFor, radiusFor, scoreOf, angleDiff, World, botName };
+})();
+__m.protocol = (() => {
+// Binary snapshot format shared by server.mjs and net.js (little endian).
+//
+//  u8  type (1 = snapshot) · u32 room time in ms · u32 your chain id (0 = none) · u32 camera focus id (0 = none)
+//  u16 chains, each:
+//      u32 id · u8 colour · u8 flags · u32 team · i16 x×4 · i16 y×4 · u16 angle · f32 mass · u32 seq · u16 len ·
+//      u16 points, then points × (i16 x, i16 y), head first: point k is path point number seq − k (path points are
+//      C.spacing apart, and the body is `len` points long). With FLAG_FULL the whole body follows; otherwise only
+//      the points added since the last snapshot this client received.
+//  u16 new sparks, each: u32 id · i16 x · i16 y · u8 radius×10 · u8 colour · u16 seconds left (0 = permanent)
+//  u16 gone sparks, each: u32 id
+//
+// Chains a client stops receiving have left its view; sparks leave only through the "gone" list.
+
+const FLAG_BOOST = 1;
+const FLAG_BOT = 2;
+const FLAG_OFFERS_ME = 4; // this chain is offering you a hand
+const FLAG_I_OFFERED = 8; // you are offering this chain a hand
+const FLAG_FULL = 16; // the whole body follows
+const FLAG_CANDIDATE = 32; // "give a hand" would go to this chain
+
+const TAU = Math.PI * 2;
+const SNAKE_HEAD = 4 + 1 + 1 + 4 + 2 + 2 + 2 + 4 + 4 + 2 + 2;
+const SPARK_SIZE = 4 + 2 + 2 + 1 + 1 + 2;
+
+/**
+ * o = { time, me, focus, snakes: [{ id, color, flags, team, x, y, a, mass, seq, len, px, py, count }], newSparks: [{ id, x,
+ * y, r, color, left }], goneSparks: [id] } where px/py are head-first arrays of which the first `count` are sent.
+ */
+function encodeSnapshot(o) {
+  let size = 1 + 4 + 4 + 4 + 2;
+  for (const s of o.snakes) size += SNAKE_HEAD + s.count * 4;
+  size += 2 + o.newSparks.length * SPARK_SIZE + 2 + o.goneSparks.length * 4;
+  const buf = new ArrayBuffer(size);
+  const v = new DataView(buf);
+  let p = 0;
+  v.setUint8(p, 1);
+  v.setUint32(p + 1, o.time >>> 0, true);
+  v.setUint32(p + 5, o.me >>> 0, true);
+  v.setUint32(p + 9, o.focus >>> 0, true);
+  v.setUint16(p + 13, o.snakes.length, true);
+  p += 15;
+  for (const s of o.snakes) {
+    v.setUint32(p, s.id >>> 0, true);
+    v.setUint8(p + 4, s.color);
+    v.setUint8(p + 5, s.flags);
+    v.setUint32(p + 6, s.team >>> 0, true);
+    v.setInt16(p + 10, clamp16(s.x * 4), true);
+    v.setInt16(p + 12, clamp16(s.y * 4), true);
+    v.setUint16(p + 14, Math.round(((((s.a % TAU) + TAU) % TAU) / TAU) * 65535), true);
+    v.setFloat32(p + 16, s.mass, true);
+    v.setUint32(p + 20, s.seq >>> 0, true);
+    v.setUint16(p + 24, Math.min(65535, s.len), true);
+    v.setUint16(p + 26, s.count, true);
+    p += SNAKE_HEAD;
+    for (let k = 0; k < s.count; k++) {
+      v.setInt16(p, clamp16(s.px[k]), true);
+      v.setInt16(p + 2, clamp16(s.py[k]), true);
+      p += 4;
+    }
+  }
+  v.setUint16(p, o.newSparks.length, true);
+  p += 2;
+  for (const sp of o.newSparks) {
+    v.setUint32(p, sp.id >>> 0, true);
+    v.setInt16(p + 4, clamp16(sp.x), true);
+    v.setInt16(p + 6, clamp16(sp.y), true);
+    v.setUint8(p + 8, Math.max(0, Math.min(255, Math.round(sp.r * 10))));
+    v.setUint8(p + 9, sp.color);
+    v.setUint16(p + 10, Math.max(0, Math.min(65535, Math.round(sp.left))), true);
+    p += SPARK_SIZE;
+  }
+  v.setUint16(p, o.goneSparks.length, true);
+  p += 2;
+  for (const id of o.goneSparks) {
+    v.setUint32(p, id >>> 0, true);
+    p += 4;
+  }
+  return new Uint8Array(buf);
+}
+
+/** Decodes a snapshot; returns null for anything malformed. */
+function decodeSnapshot(buf) {
+  try {
+    const v = new DataView(buf);
+    if (v.getUint8(0) !== 1) return null;
+    const time = v.getUint32(1, true);
+    const me = v.getUint32(5, true);
+    const focus = v.getUint32(9, true);
+    const n = v.getUint16(13, true);
+    let p = 15;
+    const snakes = [];
+    for (let k = 0; k < n; k++) {
+      const s = {
+        id: v.getUint32(p, true),
+        color: v.getUint8(p + 4),
+        flags: v.getUint8(p + 5),
+        team: v.getUint32(p + 6, true),
+        x: v.getInt16(p + 10, true) / 4,
+        y: v.getInt16(p + 12, true) / 4,
+        a: (v.getUint16(p + 14, true) / 65535) * TAU,
+        mass: v.getFloat32(p + 16, true),
+        seq: v.getUint32(p + 20, true),
+        len: v.getUint16(p + 24, true),
+        count: v.getUint16(p + 26, true),
+      };
+      p += SNAKE_HEAD;
+      const px = new Float32Array(s.count);
+      const py = new Float32Array(s.count);
+      for (let i = 0; i < s.count; i++) {
+        px[i] = v.getInt16(p, true);
+        py[i] = v.getInt16(p + 2, true);
+        p += 4;
+      }
+      s.px = px;
+      s.py = py;
+      snakes.push(s);
+    }
+    const ns = v.getUint16(p, true);
+    p += 2;
+    const newSparks = [];
+    for (let k = 0; k < ns; k++) {
+      newSparks.push({
+        id: v.getUint32(p, true),
+        x: v.getInt16(p + 4, true),
+        y: v.getInt16(p + 6, true),
+        r: v.getUint8(p + 8) / 10,
+        color: v.getUint8(p + 9),
+        left: v.getUint16(p + 10, true),
+      });
+      p += SPARK_SIZE;
+    }
+    const ng = v.getUint16(p, true);
+    p += 2;
+    const goneSparks = [];
+    for (let k = 0; k < ng; k++) {
+      goneSparks.push(v.getUint32(p, true));
+      p += 4;
+    }
+    if (p !== buf.byteLength) return null;
+    return { time, me, focus, snakes, newSparks, goneSparks };
+  } catch {
+    return null; // truncated
+  }
+}
+
+function clamp16(x) {
+  return Math.max(-32768, Math.min(32767, Math.round(x)));
+}
+
+return { FLAG_BOOST, FLAG_BOT, FLAG_OFFERS_ME, FLAG_I_OFFERED, FLAG_FULL, FLAG_CANDIDATE, encodeSnapshot, decodeSnapshot };
+})();
+__m.net = (() => {
+// Ch-ch-chains — online play. Connects to the game server, keeps a copy of the room around the player and draws it a
+// little in the past, so chains glide smoothly between the server's 15 snapshots a second. Everything a
+// snapshot or message changes is applied at the drawn moment, so sparks vanish when the head reaches them. The delay
+// adapts to the connection: about 90 ms on a steady line, more when snapshots arrive unevenly.
+const { COLORS, SPARK_COLORS, angleDiff } = __m.sim;
+const { decodeSnapshot, FLAG_BOOST, FLAG_BOT, FLAG_OFFERS_ME, FLAG_I_OFFERED, FLAG_FULL, FLAG_CANDIDATE } = __m.protocol;
+const PALETTE = [...COLORS, ...SPARK_COLORS];
+const EXTRAPOLATE = 150; // ms a chain keeps gliding on its own when snapshots are late
+
+/** The part of a server room this client can see, shaped like World so the same renderer draws it. */
+class RemoteWorld {
+  constructor(R) {
+    this.R = R;
+    this.time = 0; // seconds on the room clock, at the drawn moment
+    this.snakes = new Map();
+    this.sparks = new Map();
+    this.teams = new Map();
+    this.events = [];
+    this.names = new Map(); // id → { name, bot }
+    this.board = null;
+    this.me = 0;
+    this.focus = 0;
+    this.candidate = 0;
+    this.rt = -1; // drawn moment, ms on the room clock
+    this.latest = -1; // newest snapshot received
+    this.pending = []; // [{ at, sparks?, event? }] waiting for the drawn moment
+    this.delay = 110; // ms behind the newest snapshot
+    this.interval = 67;
+    this.jitter = 12;
+    this.arrivedAt = 0;
+  }
+  teamOf(s) {
+    return s.team ? this.teams.get(s.team) : null;
+  }
+  sameTeam(a, b) {
+    return a.team !== 0 && a.team === b.team;
+  }
+  queue(item) {
+    const p = this.pending;
+    p.push(item);
+    for (let i = p.length - 1; i > 0 && p[i - 1].at > p[i].at; i--) [p[i - 1], p[i]] = [p[i], p[i - 1]];
+  }
+  setNames(list) {
+    for (const [id, name, bot] of list) {
+      this.names.set(id, { name: String(name), bot: !!bot });
+      const s = this.snakes.get(id);
+      if (s) {
+        s.name = String(name);
+        s.bot = !!bot;
+      }
+    }
+  }
+
+  /** A snapshot arrived: bodies and history update now; sparks and removals wait for the drawn moment. */
+  receive(snap) {
+    const t = snap.time;
+    if (t <= this.latest) return;
+    const now = performance.now();
+    if (this.arrivedAt) {
+      const gap = t - this.latest; // room time between snapshots (normally 67 ms)
+      const late = Math.abs(now - this.arrivedAt - gap);
+      this.interval = this.interval * 0.9 + Math.min(gap, 500) * 0.1;
+      this.jitter = this.jitter * 0.92 + Math.min(late, 400) * 0.08;
+      this.delay = Math.max(85, Math.min(260, this.interval + 20 + this.jitter * 2.5));
+    }
+    this.arrivedAt = now;
+    if (this.rt < 0) this.rt = t - this.delay;
+    else {
+      const err = t - this.delay - this.rt;
+      if (Math.abs(err) > 600) this.rt = t - this.delay; // woke from a stall: jump rather than fast-forward
+      else this.rt += err * 0.08;
+    }
+    this.latest = t;
+    this.me = snap.me;
+    this.focus = snap.focus;
+    let cand = 0;
+    for (const d of snap.snakes) {
+      let s = this.snakes.get(d.id);
+      if (!s) {
+        const n = this.names.get(d.id);
+        s = {
+          id: d.id,
+          name: n?.name ?? '…',
+          bot: n?.bot ?? !!(d.flags & FLAG_BOT),
+          color: 0,
+          mass: d.mass,
+          x: d.x,
+          y: d.y,
+          a: d.a,
+          ta: d.a,
+          boost: false,
+          alive: true,
+          team: 0,
+          offer: null,
+          hands: new Set(),
+          handsCount: 0,
+          px: [],
+          py: [],
+          bx: [],
+          by: [],
+          seq: -1,
+          hist: [],
+          goneAt: 0,
+          seenAt: t,
+        };
+        this.snakes.set(d.id, s);
+      }
+      s.goneAt = 0;
+      s.seenAt = t;
+      s.color = d.color % COLORS.length;
+      if (d.flags & FLAG_BOT) s.bot = true;
+      if (d.flags & FLAG_FULL) {
+        s.bx = Array.from(d.px);
+        s.by = Array.from(d.py);
+        s.seq = d.seq;
+      } else if (d.count && d.seq > s.seq) {
+        // Points arrive head first: d.px[k] is point number d.seq − k. Keep only the ones we lack.
+        const take = Math.min(d.count, d.seq - s.seq);
+        s.bx.unshift(...d.px.subarray(0, take));
+        s.by.unshift(...d.py.subarray(0, take));
+        s.seq = d.seq;
+      }
+      const keep = d.len + 90;
+      if (s.bx.length > keep) {
+        s.bx.length = keep;
+        s.by.length = keep;
+      }
+      s.hist.push({ t, x: d.x, y: d.y, a: d.a, mass: d.mass, seq: d.seq, len: d.len, flags: d.flags, team: d.team });
+      if (s.hist.length > 40) s.hist.splice(0, s.hist.length - 40);
+      if (d.flags & FLAG_CANDIDATE) cand = d.id;
+    }
+    this.candidate = cand;
+    for (const s of this.snakes.values()) if (s.seenAt !== t && !s.goneAt) s.goneAt = t;
+    if (snap.newSparks.length || snap.goneSparks.length) this.queue({ at: t, sparks: snap });
+  }
+
+  /** Advances the drawn moment by dtMs and brings every chain, spark and event up to it. */
+  update(dtMs) {
+    if (this.rt < 0) return;
+    this.rt = Math.min(this.rt + dtMs, this.latest + EXTRAPOLATE);
+    const rt = this.rt;
+    this.time = rt / 1000;
+    while (this.pending.length && this.pending[0].at <= rt) {
+      const item = this.pending.shift();
+      if (item.sparks) this.applySparks(item.sparks);
+      if (item.event) this.events.push(item.event);
+    }
+    let iOffered = 0;
+    for (const s of this.snakes.values()) {
+      if (s.goneAt && rt >= s.goneAt) {
+        this.snakes.delete(s.id);
+        continue;
+      }
+      const h = s.hist;
+      while (h.length > 2 && h[1].t <= rt) h.shift();
+      const A = h[0];
+      const B = h[1];
+      let x = A.x;
+      let y = A.y;
+      let a = A.a;
+      let mass = A.mass;
+      let seqF = A.seq;
+      let ref = A;
+      if (B && rt > A.t) {
+        const span = B.t - A.t || 1;
+        if (rt <= B.t) {
+          const f = (rt - A.t) / span;
+          x = A.x + (B.x - A.x) * f;
+          y = A.y + (B.y - A.y) * f;
+          a = A.a + angleDiff(A.a, B.a) * f;
+          mass = A.mass + (B.mass - A.mass) * f;
+          seqF = A.seq + (B.seq - A.seq) * f;
+          if (f > 0.5) ref = B;
+        } else {
+          // Late snapshot: keep gliding along the last known motion for a moment.
+          const f = Math.min(rt - B.t, EXTRAPOLATE) / span;
+          x = B.x + (B.x - A.x) * f;
+          y = B.y + (B.y - A.y) * f;
+          a = B.a;
+          mass = B.mass;
+          seqF = B.seq;
+          ref = B;
+        }
+      }
+      s.x = x;
+      s.y = y;
+      s.a = a;
+      s.ta = a;
+      s.mass = mass;
+      s.team = ref.team;
+      s.boost = !!(ref.flags & FLAG_BOOST);
+      if (ref.flags & FLAG_OFFERS_ME) {
+        if (!s.offer) s.offer = { to: this.me, until: Infinity };
+      } else s.offer = null;
+      if (ref.flags & FLAG_I_OFFERED) iOffered = s.id;
+      // Visible body: the path points the head had already laid down at the drawn moment.
+      const skip = Math.max(0, Math.min(s.bx.length - 1, s.seq - Math.floor(seqF)));
+      const n = Math.max(0, Math.min(ref.len, s.bx.length - skip));
+      s.px.length = n;
+      s.py.length = n;
+      for (let k = 0; k < n; k++) {
+        s.px[k] = s.bx[skip + k];
+        s.py[k] = s.by[skip + k];
+      }
+    }
+    const my = this.snakes.get(this.me);
+    if (my) {
+      if (!iOffered) my.offer = null;
+      else if (my.offer?.to !== iOffered) my.offer = { to: iOffered, until: Infinity };
+    }
+    this.teams.clear();
+    for (const s of this.snakes.values()) {
+      if (!s.team) continue;
+      let team = this.teams.get(s.team);
+      if (!team) {
+        team = { id: s.team, members: new Set() };
+        this.teams.set(s.team, team);
+      }
+      team.members.add(s.id);
+    }
+  }
+
+  applySparks(snap) {
+    for (const id of snap.goneSparks) this.sparks.delete(id);
+    for (const sp of snap.newSparks) {
+      this.sparks.set(sp.id, {
+        id: sp.id,
+        x: sp.x,
+        y: sp.y,
+        r: sp.r,
+        v: 1,
+        color: PALETTE[sp.color] ?? PALETTE[0],
+        born: this.time,
+        ttl: sp.left,
+      });
+    }
+  }
+}
+
+/**
+ * Connects to the game server at `url` (ws:// or wss://…/ws). hooks: onStatus(status, info) with status
+ * 'connecting' | 'online' | 'offline' | 'full'; onWorld(world); onJoined(world, id); onLost().
+ */
+function connectOnline(url, hooks = {}) {
+  const net = {
+    ws: null,
+    ready: false,
+    world: null,
+    meId: 0,
+    playing: false,
+    joining: null,
+    wantWatch: false,
+    attempts: 0,
+    sleeping: false,
+    full: false,
+    online: 0,
+    lastSend: 0,
+    lastA: 0,
+    lastB: false,
+    lastHb: 0,
+    activeAt: Date.now(),
+    bytes: 0,
+    snaps: 0,
+    since: 0, // when the current run of connection attempts began
+    retryTimer: 0,
+    hiddenTimer: 0,
+  };
+  const healthUrl = url.replace(/^ws/, 'http').replace(/\/ws$/, '/healthz');
+
+  function status(s) {
+    hooks.onStatus?.(s, { online: net.online });
+  }
+  function send(obj) {
+    if (net.ws?.readyState === 1) net.ws.send(JSON.stringify(obj));
+  }
+  function wake() {
+    // Free servers sleep when nobody plays; any plain request wakes them (about a minute).
+    try {
+      fetch(healthUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+    } catch {
+      /* no fetch */
+    }
+  }
+  function connect() {
+    clearTimeout(net.retryTimer);
+    if (net.ws || net.sleeping || document.hidden) return;
+    if (net.attempts === 0) net.since = Date.now();
+    if (net.attempts === 0 || net.attempts % 4 === 0) wake();
+    // A sleeping free server takes about a minute to wake: say "connecting" that long before "unavailable".
+    status(Date.now() - net.since < 100_000 ? 'connecting' : 'offline');
+    let ws;
+    try {
+      ws = new WebSocket(url);
+    } catch {
+      retry();
+      return;
+    }
+    ws.binaryType = 'arraybuffer';
+    net.ws = ws;
+    const openTimer = setTimeout(() => {
+      if (ws.readyState !== 1) ws.close();
+    }, 30_000);
+    ws.onmessage = (e) => {
+      if (typeof e.data === 'string') {
+        net.bytes += e.data.length;
+        onText(e.data);
+      } else {
+        net.bytes += e.data.byteLength;
+        net.snaps++;
+        onSnapshot(e.data);
+      }
+    };
+    ws.onclose = (e) => {
+      clearTimeout(openTimer);
+      if (net.ws !== ws) return;
+      net.ws = null;
+      net.ready = false;
+      net.world = null;
+      net.joining = null;
+      if (net.playing) {
+        net.playing = false;
+        hooks.onLost?.();
+      }
+      if (net.full || e.code === 1013) {
+        net.full = false;
+        status('full');
+        retry(60_000);
+      } else if (e.reason === 'idle') {
+        net.sleeping = true; // woken by the next tap (poke)
+        status('offline');
+      } else retry();
+    };
+  }
+  function retry(ms) {
+    net.attempts++;
+    if (Date.now() - net.since >= 100_000) status('offline');
+    const waking = Date.now() - net.since < 100_000;
+    const delay = ms ?? (waking ? 3000 : Math.min(30_000, 5000 * 2 ** Math.min(3, net.attempts - 1))) * (0.75 + Math.random() * 0.5);
+    clearTimeout(net.retryTimer);
+    net.retryTimer = setTimeout(connect, delay);
+  }
+  function onText(text) {
+    let m;
+    try {
+      m = JSON.parse(text);
+    } catch {
+      return;
+    }
+    const w = net.world;
+    switch (m.t) {
+      case 'hello':
+        net.ready = true;
+        net.attempts = 0;
+        net.online = m.online | 0;
+        status('online');
+        if (net.wantWatch) send({ t: 'watch', ...net.view });
+        break;
+      case 'full':
+        net.full = true;
+        break;
+      case 'room':
+        net.world = new RemoteWorld(m.R);
+        hooks.onWorld?.(net.world);
+        break;
+      case 'joined':
+        net.meId = m.id;
+        if (net.world) net.world.me = m.id;
+        net.joining = { id: m.id };
+        break;
+      case 'names':
+        if (w && Array.isArray(m.list)) w.setNames(m.list);
+        break;
+      case 'lb':
+        if (w) {
+          w.board = m;
+          const my = w.snakes.get(net.meId);
+          if (my) my.handsCount = m.hands | 0;
+        }
+        if (net.online !== (m.online | 0)) {
+          net.online = m.online | 0;
+          status('online');
+        }
+        break;
+      case 'dead':
+        if (w) w.queue({ at: m.at, event: { t: 'death', id: net.meId, killer: m.killer, name: m.name, edge: !!m.edge } });
+        net.playing = false;
+        break;
+      case 'ev':
+        if (!w) break;
+        if (m.k === 'broke') w.queue({ at: m.at, event: { t: 'death', id: m.id, killer: net.meId, name: m.name } });
+        else if (m.k === 'link') w.queue({ at: m.at, event: { t: 'link', a: net.meId, b: m.id, name: m.name } });
+        else if (m.k === 'offer') w.queue({ at: m.at, event: { t: 'offer', from: m.id, to: net.meId, name: m.name } });
+        else if (m.k === 'offered') w.queue({ at: m.at, event: { t: 'offered', to: m.id, name: m.name } });
+        break;
+      default:
+    }
+  }
+  function onSnapshot(buf) {
+    const w = net.world;
+    if (!w) return;
+    const snap = decodeSnapshot(buf);
+    if (!snap) return;
+    w.receive(snap);
+    if (net.joining && w.snakes.has(net.joining.id)) {
+      net.joining = null;
+      net.playing = true;
+      hooks.onJoined?.(w, net.meId);
+    }
+  }
+
+  // A tab in the background stops watching after a while; coming back reconnects.
+  document.addEventListener('visibilitychange', () => {
+    clearTimeout(net.hiddenTimer);
+    if (document.hidden) {
+      net.hiddenTimer = setTimeout(() => {
+        if (document.hidden && net.ws) {
+          net.sleeping = false;
+          const ws = net.ws;
+          ws.close(1000, 'hidden');
+        }
+      }, 30_000);
+    } else if (!net.ws) {
+      net.attempts = 0;
+      connect();
+    }
+  });
+
+  net.view = { vw: 700, vh: 1300 };
+  const api = {
+    ready: () => net.ready,
+    get world() {
+      return net.world;
+    },
+    get online() {
+      return net.online;
+    },
+    /** Spectate the room behind the start screen. */
+    watch(view) {
+      net.wantWatch = true;
+      if (view) net.view = { vw: Math.round(view.hw), vh: Math.round(view.hh) };
+      if (net.ready) send({ t: 'watch', ...net.view });
+    },
+    /** Leave the room (playing offline): the server stops sending anything. */
+    idle() {
+      net.wantWatch = false;
+      net.playing = false;
+      net.joining = null;
+      net.world = null;
+      if (net.ready) send({ t: 'idle' });
+    },
+    join(name, view) {
+      if (!net.ready) return false;
+      if (view) net.view = { vw: Math.round(view.hw), vh: Math.round(view.hh) };
+      net.joining = { id: -1 };
+      send({ t: 'join', name, ...net.view });
+      return true;
+    },
+    /** Per frame: advance the drawn room and send the steering (≤ 20 a second, and at least once a second). */
+    tick(dt, input, view) {
+      const w = net.world;
+      if (w) w.update(dt * 1000);
+      const now = performance.now();
+      if (net.playing) {
+        const a = Math.atan2(Math.sin(input.angle), Math.cos(input.angle));
+        const changed = Math.abs(angleDiff(net.lastA, a)) > 0.015 || input.boost !== net.lastB;
+        if ((changed && now - net.lastSend >= 50) || now - net.lastSend >= 1000) {
+          net.lastSend = now;
+          net.lastA = a;
+          net.lastB = input.boost;
+          send({ t: 'in', a: Math.round(a * 1000) / 1000, b: input.boost ? 1 : 0, vw: Math.round(view.hw), vh: Math.round(view.hh) });
+        }
+      } else if (net.wantWatch && now - net.lastHb > 25_000 && Date.now() - net.activeAt < 240_000) {
+        net.lastHb = now;
+        send({ t: 'hb' });
+      }
+    },
+    hand() {
+      send({ t: 'hand' });
+    },
+    candidate() {
+      const w = net.world;
+      if (!w || !w.candidate) return null;
+      const s = w.snakes.get(w.candidate);
+      return s && s.alive ? s : null;
+    },
+    /** Counters for the ?stats overlay. */
+    stats() {
+      const w = net.world;
+      return { bytes: net.bytes, snaps: net.snaps, delay: w?.delay ?? 0, jitter: w?.jitter ?? 0, chains: w?.snakes.size ?? 0 };
+    },
+    /** The person did something: counts as activity, and wakes a connection that went to sleep. */
+    poke() {
+      net.activeAt = Date.now();
+      if (net.sleeping) {
+        net.sleeping = false;
+        net.attempts = 0;
+        connect();
+      }
+    },
+  };
+  connect();
+  return api;
+}
+
+return { RemoteWorld, connectOnline };
+})();
+__m.client = (() => {
+// Ch-ch-chains — the browser client: rendering, touch/mouse/keyboard input, screens and sharing.
+// Solo mode simulates the world locally with labelled bots; online mode (net.js) swaps in the server's world.
+const { World, C, COLORS, radiusFor, scoreOf, randomName, botName, angleDiff } = __m.sim;
+const { connectOnline } = __m.net;
+const CFG = Object.assign(
+  { server: '', brand: 'המשחק של עמך ישראל', publisher: '', joinUrl: '', shareUrl: '' },
+  globalThis.CHAIN_CONFIG || {},
+);
+const BOTS = 20;
+const TAU = Math.PI * 2;
+
+const $ = (id) => document.getElementById(id);
+const canvas = $('game');
+const ctx = canvas.getContext('2d', { alpha: false });
+const mini = $('minimap');
+const mctx = mini.getContext('2d');
+
+let W = 0;
+let H = 0;
+let DPR = 1;
+let dprCap = 2;
+function resize() {
+  DPR = Math.min(dprCap, window.devicePixelRatio || 1);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.round(W * DPR);
+  canvas.height = Math.round(H * DPR);
+  canvas.style.width = `${W}px`;
+  canvas.style.height = `${H}px`;
+  // The minimap is 96 CSS px (see page.html); its HUD may still be hidden, so do not measure it.
+  const m = Math.round(96 * DPR);
+  mini.width = m;
+  mini.height = m;
+}
+window.addEventListener('resize', resize);
+
+// ------------------------------------------------------------------------------------------------ sprites
+const sprites = new Map();
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+/** A glowing bead (kind 'bead' | 'bead2' | 'spark' | 'halo') pre-rendered once per colour. */
+function sprite(color, kind) {
+  const key = color + kind;
+  let s = sprites.get(key);
+  if (s) return s;
+  const size = 96;
+  s = document.createElement('canvas');
+  s.width = s.height = size;
+  const g = s.getContext('2d');
+  const [r, gg, b] = hexToRgb(color);
+  const c = size / 2;
+  if (kind === 'halo') {
+    const grad = g.createRadialGradient(c, c, 0, c, c, c);
+    grad.addColorStop(0, `rgba(${r},${gg},${b},0.55)`);
+    grad.addColorStop(0.45, `rgba(${r},${gg},${b},0.18)`);
+    grad.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, size, size);
+  } else if (kind === 'spark') {
+    const grad = g.createRadialGradient(c, c, 0, c, c, c);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.18, `rgba(${r},${gg},${b},1)`);
+    grad.addColorStop(0.4, `rgba(${r},${gg},${b},0.35)`);
+    grad.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, size, size);
+  } else {
+    // Bead: soft glow, solid body, bright highlight. bead2 is a touch lighter so the chain reads as links.
+    const glow = g.createRadialGradient(c, c, c * 0.3, c, c, c);
+    glow.addColorStop(0, `rgba(${r},${gg},${b},0.5)`);
+    glow.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    g.fillStyle = glow;
+    g.fillRect(0, 0, size, size);
+    const lift = kind === 'bead2' ? 40 : 0;
+    const body = g.createRadialGradient(c - c * 0.18, c - c * 0.2, c * 0.05, c, c, c * 0.52);
+    body.addColorStop(0, `rgb(${Math.min(255, r + 90)},${Math.min(255, gg + 90)},${Math.min(255, b + 90)})`);
+    body.addColorStop(0.55, `rgb(${Math.min(255, r + lift)},${Math.min(255, gg + lift)},${Math.min(255, b + lift)})`);
+    body.addColorStop(1, `rgb(${Math.round(r * 0.55)},${Math.round(gg * 0.55)},${Math.round(b * 0.55)})`);
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(c, c, c * 0.5, 0, TAU);
+    g.fill();
+  }
+  sprites.set(key, s);
+  return s;
+}
+
+// ------------------------------------------------------------------------------------------------ state
+const game = {
+  mode: 'solo', // 'solo' | 'online'
+  world: null,
+  meId: 0,
+  running: false,
+  alive: false,
+  name: loadName(),
+  best: { rank: 99, maxScore: 0, hands: 0, born: 0 },
+  net: null,
+  online: { players: 0, bots: 0, collectedToday: 0 },
+  deathInfo: null,
+  hintStage: 0,
+  refusedAt: new Map(),
+  handIds: new Set(),
+  joining: false,
+  joinTimer: 0,
+  idleWorld: null,
+  toldOnline: false,
+};
+const cam = { x: 0, y: 0, zoom: 1 };
+const input = { angle: 0, boost: false, pointerId: null, touches: 0 };
+let last = performance.now();
+let acc = 0;
+let frameTimes = [];
+
+function loadName() {
+  try {
+    return localStorage.getItem('chain:name') || randomName();
+  } catch {
+    return randomName();
+  }
+}
+function saveName(n) {
+  try {
+    localStorage.setItem('chain:name', n);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function me() {
+  return game.world?.snakes.get(game.meId) || null;
+}
+
+// ------------------------------------------------------------------------------------------------ flow
+function startSolo() {
+  const w = new World();
+  for (let i = 0; i < BOTS; i++) w.addSnake({ bot: true, name: botName(), mass: 12 + Math.random() * 60 });
+  // Let the bots settle so the world is alive when the player arrives.
+  for (let i = 0; i < 90; i++) {
+    w.step(1 / 30);
+    w.events.length = 0;
+  }
+  const s = w.addSnake({ name: game.name });
+  game.world = w;
+  game.meId = s.id;
+  game.mode = 'solo';
+  beginRound(s);
+}
+
+function beginRound(s) {
+  input.angle = s.a;
+  game.alive = true;
+  game.running = true;
+  game.best = { rank: 99, maxScore: scoreOf(s.mass), hands: 0, born: performance.now() };
+  game.deathInfo = null;
+  game.handIds = new Set();
+  game.refusedAt.clear();
+  cam.x = s.x;
+  cam.y = s.y;
+  show('hud');
+  hide('start');
+  hide('over');
+  if (game.hintStage === 0) hint('גררו את האצבע לכיוון שרוצים ללכת', 5000);
+}
+
+function setButtonsBusy(busy) {
+  $('play').disabled = busy;
+  $('again').disabled = busy;
+}
+
+/** Online when the server is there (people + bots), otherwise at once with bots on this phone. */
+function play() {
+  if (game.joining) return;
+  const net = game.net;
+  if (net?.ready() && net.join(game.name, viewExtents())) {
+    game.joining = true;
+    setButtonsBusy(true);
+    clearTimeout(game.joinTimer);
+    game.joinTimer = setTimeout(() => {
+      if (!game.joining) return;
+      game.joining = false;
+      setButtonsBusy(false);
+      net.idle();
+      startSolo();
+    }, 6000);
+    return;
+  }
+  net?.idle();
+  startSolo();
+}
+
+function onJoined(world, meId) {
+  clearTimeout(game.joinTimer);
+  if (!game.joining) return; // gave up waiting and already playing offline
+  game.joining = false;
+  setButtonsBusy(false);
+  game.world = world;
+  game.meId = meId;
+  game.mode = 'online';
+  beginRound(world.snakes.get(meId));
+}
+
+function onDeath(e) {
+  game.alive = false;
+  const w = game.world;
+  const killer = e.killer ? w.snakes.get(e.killer) : null;
+  game.deathInfo = { killer: e.name || (killer ? displayName(killer) : null), edge: !!e.edge || e.killer === 0 };
+  navigator.vibrate?.(120);
+  setTimeout(showOver, 1100);
+}
+
+function onLost() {
+  if (game.mode !== 'online') return;
+  if (game.alive) {
+    game.alive = false;
+    game.deathInfo = { lost: true };
+    showOver();
+  }
+  game.world = null; // the background goes back to the start-screen view
+  game.meId = 0;
+}
+
+function showOver() {
+  const b = game.best;
+  const secs = Math.round((performance.now() - b.born) / 1000);
+  $('over-title').textContent = game.deathInfo?.lost
+    ? 'החיבור לשרת נותק'
+    : game.deathInfo?.edge
+      ? 'יצאת מהמפה'
+      : game.deathInfo?.killer
+        ? `נתקלת בשרשרת של ${game.deathInfo.killer}`
+        : 'השרשרת נקרעה';
+  $('stat-score').textContent = b.maxScore.toLocaleString('he-IL');
+  $('stat-rank').textContent = b.rank < 99 ? `#${b.rank}` : '–';
+  $('stat-hands').textContent = String(b.hands);
+  $('stat-time').textContent = secs >= 60 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : `${secs} שנ׳`;
+  const join = $('join-link');
+  if (CFG.joinUrl && /^https?:\/\//.test(CFG.joinUrl)) {
+    join.href = CFG.joinUrl;
+    join.hidden = false;
+  }
+  hide('hud');
+  show('over');
+  $('again').focus();
+}
+
+// ------------------------------------------------------------------------------------------------ input
+function setAngleFromPoint(px, py) {
+  const s = me();
+  if (!s) return;
+  const hx = (s.x - cam.x) * cam.zoom + W / 2;
+  const hy = (s.y - cam.y) * cam.zoom + H / 2;
+  if (Math.hypot(px - hx, py - hy) < 6) return;
+  input.angle = Math.atan2(py - hy, px - hx);
+}
+window.addEventListener('pointerdown', () => game.net?.poke(), { capture: true, passive: true });
+window.addEventListener('keydown', () => game.net?.poke(), { capture: true, passive: true });
+canvas.addEventListener('pointerdown', (e) => {
+  input.touches++;
+  if (input.touches >= 2) input.boost = true;
+  input.pointerId = e.pointerId;
+  setAngleFromPoint(e.clientX, e.clientY);
+  canvas.setPointerCapture?.(e.pointerId);
+  if (e.pointerType === 'mouse' && e.button === 0 && e.detail > 0) input.mouseBoost = false;
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'mouse' || e.pointerId === input.pointerId) setAngleFromPoint(e.clientX, e.clientY);
+});
+const endPointer = (e) => {
+  input.touches = Math.max(0, input.touches - 1);
+  if (input.touches < 2 && !input.holdBoost) input.boost = false;
+  if (e.pointerId === input.pointerId) input.pointerId = null;
+};
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+const boostBtn = $('boost');
+const setHoldBoost = (on) => {
+  input.holdBoost = on;
+  input.boost = on;
+  boostBtn.classList.toggle('on', on);
+};
+boostBtn.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  setHoldBoost(true);
+});
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) boostBtn.addEventListener(ev, () => setHoldBoost(false));
+
+$('hand').addEventListener('click', () => giveHand());
+
+window.addEventListener('keydown', (e) => {
+  if (!game.running) {
+    if ((e.key === 'Enter' || e.key === ' ') && !$('start').hidden && document.activeElement?.id !== 'reroll') {
+      e.preventDefault();
+      play();
+    }
+    return;
+  }
+  if (e.key === ' ' || e.key === 'Shift') setHoldBoost(true);
+  if (e.key === 'ArrowLeft' || e.key === 'a') input.turn = -1;
+  if (e.key === 'ArrowRight' || e.key === 'd') input.turn = 1;
+  if (e.key === 'h' || e.key === 'ה' || e.key === 'Enter') giveHand();
+});
+window.addEventListener('keyup', (e) => {
+  if (e.key === ' ' || e.key === 'Shift') setHoldBoost(false);
+  if (['ArrowLeft', 'ArrowRight', 'a', 'd'].includes(e.key)) input.turn = 0;
+});
+
+function giveHand() {
+  const s = me();
+  if (!s || !game.alive) return;
+  if (game.mode === 'online') {
+    game.net.hand();
+    return;
+  }
+  const other = game.world.offerHand(s.id);
+  if (other && !game.world.sameTeam(s, other)) {
+    toast(`הושטת יד ל${displayName(other)}…`);
+    game.refusedAt.set(other.id, game.world.time + 5.2);
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ UI helpers
+function show(id) {
+  $(id).hidden = false;
+}
+function hide(id) {
+  $(id).hidden = true;
+}
+let toastTimer = 0;
+function toast(text, ms = 2600) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), ms);
+}
+let hintTimer = 0;
+function hint(text, ms) {
+  const el = $('hint');
+  el.textContent = text;
+  el.classList.add('on');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => el.classList.remove('on'), ms);
+}
+function displayName(s) {
+  return s.bot ? `🤖 ${s.name}` : s.name;
+}
+/** Display name for an id, even after that chain left the view. */
+function nameOf(w, id) {
+  const s = w.snakes.get(id);
+  if (s) return displayName(s);
+  const n = w.names?.get(id);
+  return n ? (n.bot ? `🤖 ${n.name}` : n.name) : '';
+}
+/** Half the visible width and height in world units (the server sends what falls inside, plus a margin). */
+function viewExtents() {
+  const s = me();
+  const r = s ? radiusFor(s.mass) : 14;
+  const target = Math.min(W, H) / Math.min(1400, 520 + r * 18);
+  const zoom = Math.max(0.05, Math.min(cam.zoom || target, target));
+  return { hw: W / 2 / zoom, hh: H / 2 / zoom };
+}
+
+// ------------------------------------------------------------------------------------------------ loop
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = (now - last) / 1000;
+  last = now;
+  if (dt > 0.25) dt = 0.25;
+  trackPerformance(dt);
+  updateStats(now);
+  const w = game.world;
+  if (w) {
+    if (input.turn) input.angle += input.turn * 3.2 * dt;
+    if (game.mode === 'solo') {
+      const s = me();
+      if (s?.alive) w.setInput(s.id, input.angle, input.boost);
+      acc += dt;
+      while (acc >= 1 / 60) {
+        w.step(1 / 60);
+        acc -= 1 / 60;
+      }
+      respawnBots(w);
+    } else if (game.net) {
+      game.net.tick(dt, input, viewExtents());
+    }
+    handleEvents(w);
+    updateCamera(dt);
+    render(now / 1000);
+    updateHud();
+  } else {
+    renderIdle(now / 1000, dt);
+  }
+}
+
+function respawnBots(w) {
+  let bots = 0;
+  for (const s of w.snakes.values()) {
+    if (s.bot) {
+      if (!s.alive) {
+        if (!s.goneAt) s.goneAt = w.time;
+        if (w.time - s.goneAt > 2.5) w.removeSnake(s.id);
+        else bots++;
+      } else bots++;
+    }
+  }
+  if (bots < BOTS && Math.random() < 0.05) w.addSnake({ bot: true, name: botName() });
+}
+
+function handleEvents(w) {
+  const my = game.meId;
+  for (const e of w.events) {
+    if (e.t === 'death' && e.id === my && game.alive) onDeath(e);
+    else if (e.t === 'death' && e.killer === my && game.alive) {
+      const name = e.name || nameOf(w, e.id);
+      if (name) toast(`${name} נתקל בשרשרת שלך`);
+    } else if (e.t === 'link' && (e.a === my || e.b === my) && game.alive) {
+      const other = e.a === my ? e.b : e.a;
+      game.handIds.add(other);
+      game.refusedAt.delete(other);
+      toast(`🤝 ${e.name || nameOf(w, other)} ואתה שרשרת אחת! עוברים זה דרך זה ואוספים פי 1.5 כשקרובים`, 4200);
+      navigator.vibrate?.([40, 60, 40]);
+      game.best.hands = Math.max(game.best.hands, game.handIds.size, handsOf(me()));
+      game.hintStage = Math.max(game.hintStage, 3);
+    } else if (e.t === 'offer' && e.to === my && game.alive) {
+      const name = e.name || nameOf(w, e.from);
+      if (name) toast(`${name} מושיט לך יד – לחצו 🤝`, 4000);
+    } else if (e.t === 'offered' && game.alive) {
+      toast(`הושטת יד ל${e.name || nameOf(w, e.to)}…`);
+      game.refusedAt.set(e.to, w.time + 5.2);
+    }
+  }
+  w.events.length = 0;
+  // An offer the other side let expire.
+  for (const [id, until] of game.refusedAt) {
+    if (w.time > until) {
+      game.refusedAt.delete(id);
+      const o = w.snakes.get(id);
+      const m = me();
+      if (o && m && !w.sameTeam(o, m) && !game.handIds.has(id) && game.alive) {
+        toast(`${displayName(o)} לא הושיט יד בחזרה. נסו מישהו אחר`);
+      }
+    }
+  }
+}
+
+function updateCamera(dt) {
+  const s = me();
+  const target = s && (s.alive || !game.alive) ? s : null;
+  if (target) {
+    const k = 1 - Math.exp(-dt * 8);
+    cam.x += (target.x - cam.x) * k;
+    cam.y += (target.y - cam.y) * k;
+  }
+  const r = s ? radiusFor(s.mass) : 14;
+  const view = Math.min(1400, 520 + r * 18);
+  const zoom = Math.min(W, H) / view;
+  cam.zoom += (zoom - cam.zoom) * (1 - Math.exp(-dt * 2));
+}
+
+// ------------------------------------------------------------------------------------------------ render
+function render(t) {
+  const w = game.world;
+  const z = cam.zoom;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawBackground(t, w.R);
+  const vx0 = cam.x - W / 2 / z - 60;
+  const vx1 = cam.x + W / 2 / z + 60;
+  const vy0 = cam.y - H / 2 / z - 60;
+  const vy1 = cam.y + H / 2 / z + 60;
+  const sx = (x) => (x - cam.x) * z + W / 2;
+  const sy = (y) => (y - cam.y) * z + H / 2;
+
+  // Sparks
+  for (const sp of w.sparks.values()) {
+    if (sp.x < vx0 || sp.x > vx1 || sp.y < vy0 || sp.y > vy1) continue;
+    const pulse = 1 + 0.18 * Math.sin(t * 3 + sp.id);
+    const size = sp.r * 2 * 2.6 * pulse * z;
+    let alpha = 1;
+    if (sp.ttl) {
+      const left = sp.ttl - (w.time - sp.born);
+      if (left < 5) alpha = Math.max(0, left / 5);
+    }
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(sprite(sp.color, 'spark'), sx(sp.x) - size / 2, sy(sp.y) - size / 2, size, size);
+  }
+  ctx.globalAlpha = 1;
+
+  // Team threads under the chains
+  const my = me();
+  for (const team of w.teams.values()) {
+    const heads = [...team.members].map((id) => w.snakes.get(id)).filter((s) => s?.alive);
+    for (let i = 0; i < heads.length; i++) {
+      for (let j = i + 1; j < heads.length; j++) {
+        const a = heads[i];
+        const b = heads[j];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d > C.teamBonusRange * 1.6) continue;
+        const close = d < C.teamBonusRange;
+        ctx.save();
+        ctx.lineWidth = Math.max(1.5, 3 * z);
+        ctx.strokeStyle = close ? 'rgba(255,214,107,0.85)' : 'rgba(255,214,107,0.3)';
+        ctx.setLineDash([10 * z, 8 * z]);
+        ctx.lineDashOffset = -t * 40;
+        ctx.beginPath();
+        const mx = (a.x + b.x) / 2 + (b.y - a.y) * 0.15;
+        const myy = (a.y + b.y) / 2 - (b.x - a.x) * 0.15;
+        ctx.moveTo(sx(a.x), sy(a.y));
+        ctx.quadraticCurveTo(sx(mx), sy(myy), sx(b.x), sy(b.y));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  // Chains: smaller first, the player on top.
+  const list = [...w.snakes.values()].filter((s) => s.alive);
+  list.sort((a, b) => (a.id === game.meId ? 1 : b.id === game.meId ? -1 : a.mass - b.mass));
+  for (const s of list) drawSnake(s, t, sx, sy, z, vx0, vx1, vy0, vy1);
+
+  // Name tags and hand offers
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (const s of list) {
+    if (s.x < vx0 || s.x > vx1 || s.y < vy0 || s.y > vy1) continue;
+    const r = radiusFor(s.mass) * z;
+    const x = sx(s.x);
+    const y = sy(s.y);
+    if (s.id !== game.meId) {
+      ctx.font = `600 ${Math.max(11, Math.min(15, 12 * z + 3))}px system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.78)';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(displayName(s), x, y + r + 6);
+      ctx.shadowBlur = 0;
+    }
+    if (s.offer && s.offer.until > w.time && (s.offer.to === game.meId || s.id === game.meId)) {
+      const bob = Math.sin(t * 6) * 3;
+      ctx.font = `${Math.round(22 + r * 0.3)}px system-ui, sans-serif`;
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('🤝', x, y - r - 6 + bob);
+      ctx.textBaseline = 'top';
+    }
+  }
+  drawEdgeWarning(my, w.R);
+  drawMinimap(w);
+}
+
+function drawBackground(t, R) {
+  const z = cam.zoom;
+  ctx.fillStyle = '#080c20';
+  ctx.fillRect(0, 0, W, H);
+  // Soft vignette glow following the camera
+  const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.75);
+  g.addColorStop(0, 'rgba(40,52,120,0.35)');
+  g.addColorStop(1, 'rgba(8,12,32,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // Dot grid (parallax-free, world anchored)
+  const step = 56;
+  const x0 = Math.floor((cam.x - W / 2 / z) / step) * step;
+  const y0 = Math.floor((cam.y - H / 2 / z) / step) * step;
+  ctx.fillStyle = 'rgba(150,170,255,0.13)';
+  const dot = Math.max(1, 1.6 * z);
+  for (let x = x0; x < cam.x + W / 2 / z + step; x += step) {
+    for (let y = y0; y < cam.y + H / 2 / z + step; y += step) {
+      if (x * x + y * y > R * R) continue;
+      ctx.fillRect((x - cam.x) * z + W / 2 - dot / 2, (y - cam.y) * z + H / 2 - dot / 2, dot, dot);
+    }
+  }
+  // Outside the arena: dim red haze; the border glows.
+  const cx = (0 - cam.x) * z + W / 2;
+  const cy = (0 - cam.y) * z + H / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.arc(cx, cy, R * z, 0, TAU, true);
+  ctx.fillStyle = 'rgba(70,10,30,0.55)';
+  ctx.fill('evenodd');
+  ctx.restore();
+  ctx.lineWidth = Math.max(2, 5 * z);
+  ctx.strokeStyle = `rgba(255,80,120,${0.45 + 0.15 * Math.sin(t * 2)})`;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * z, 0, TAU);
+  ctx.stroke();
+}
+
+function drawSnake(s, t, sx, sy, z, vx0, vx1, vy0, vy1) {
+  const r = radiusFor(s.mass);
+  const color = COLORS[s.color];
+  const a = sprite(color, 'bead');
+  const b = sprite(color, 'bead2');
+  const size = r * 2 * 1.9 * z;
+  const step = Math.max(1, Math.round((r * 0.42) / C.spacing));
+  const boosting = s.boost && s.mass > C.minBoostMass;
+  if (boosting) {
+    const halo = sprite(color, 'halo');
+    const hs = size * 1.8;
+    for (let i = s.px.length - 1; i >= 0; i -= step * 3) {
+      const x = s.px[i];
+      const y = s.py[i];
+      if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
+      ctx.drawImage(halo, sx(x) - hs / 2, sy(y) - hs / 2, hs, hs);
+    }
+  }
+  const n = s.px.length;
+  for (let i = n - 1; i >= 0; i -= step) {
+    const x = s.px[i];
+    const y = s.py[i];
+    if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
+    const taper = i > n - 8 ? 0.75 + 0.25 * ((n - i) / 8) : 1;
+    const sz = size * taper;
+    ctx.drawImage(Math.floor(i / (step * 3)) % 2 ? b : a, sx(x) - sz / 2, sy(y) - sz / 2, sz, sz);
+  }
+  // Head with eyes
+  const hx = sx(s.x);
+  const hy = sy(s.y);
+  const hsz = size * 1.12;
+  ctx.drawImage(a, hx - hsz / 2, hy - hsz / 2, hsz, hsz);
+  if (s.team) {
+    ctx.lineWidth = Math.max(1.5, 2.5 * z);
+    ctx.strokeStyle = 'rgba(255,214,107,0.9)';
+    ctx.beginPath();
+    ctx.arc(hx, hy, r * z * 1.25, 0, TAU);
+    ctx.stroke();
+  }
+  const eyeOff = r * 0.45 * z;
+  const eyeR = Math.max(2, r * 0.3 * z);
+  const look = s.id === game.meId ? input.angle : s.ta ?? s.a;
+  for (const side of [-1, 1]) {
+    const ex = hx + Math.cos(s.a) * eyeOff * 0.55 + Math.cos(s.a + (side * Math.PI) / 2) * eyeOff;
+    const ey = hy + Math.sin(s.a) * eyeOff * 0.55 + Math.sin(s.a + (side * Math.PI) / 2) * eyeOff;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ex, ey, eyeR, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#10142c';
+    ctx.beginPath();
+    ctx.arc(ex + Math.cos(look) * eyeR * 0.4, ey + Math.sin(look) * eyeR * 0.4, eyeR * 0.55, 0, TAU);
+    ctx.fill();
+  }
+}
+
+function drawEdgeWarning(s, R) {
+  if (!s || !s.alive) return;
+  const d = Math.hypot(s.x, s.y);
+  const near = (d - (R - 500)) / 500;
+  if (near <= 0) return;
+  ctx.fillStyle = `rgba(255,40,90,${Math.min(0.28, near * 0.28)})`;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawMinimap(w) {
+  const m = mini.width;
+  if (m < 16) return;
+  mctx.setTransform(1, 0, 0, 1, 0, 0);
+  mctx.clearRect(0, 0, m, m);
+  const c = m / 2;
+  const k = (m / 2 - 3) / w.R;
+  mctx.fillStyle = 'rgba(12,18,48,0.72)';
+  mctx.beginPath();
+  mctx.arc(c, c, m / 2 - 1, 0, TAU);
+  mctx.fill();
+  mctx.strokeStyle = 'rgba(255,80,120,0.6)';
+  mctx.lineWidth = 1.5 * DPR;
+  mctx.stroke();
+  const my = me();
+  for (const s of w.snakes.values()) {
+    if (!s.alive) continue;
+    const isMe = s.id === game.meId;
+    const mate = my && my.team && s.team === my.team && !isMe;
+    mctx.fillStyle = isMe ? '#fff' : mate ? '#ffd66b' : s.bot ? 'rgba(180,190,230,0.45)' : COLORS[s.color];
+    const rr = (isMe ? 3.2 : mate ? 2.6 : 1.8) * DPR + Math.min(3, s.mass / 150) * DPR;
+    mctx.beginPath();
+    mctx.arc(c + s.x * k, c + s.y * k, rr, 0, TAU);
+    mctx.fill();
+  }
+}
+
+function handsOf(s) {
+  return s ? (s.handsCount ?? s.hands.size) : 0;
+}
+
+function renderIdle(t, dt) {
+  // Behind the start screen: the live room when connected (following its leader), else a local preview.
+  const remote = game.net?.world;
+  if (remote) {
+    game.net.tick(dt, input, viewExtents());
+    remote.events.length = 0;
+    let lead = remote.snakes.get(remote.focus);
+    if (!lead) for (const s of remote.snakes.values()) if (!lead || s.mass > lead.mass) lead = s;
+    if (game.idleWorld !== remote && lead) {
+      game.idleWorld = remote;
+      cam.x = lead.x;
+      cam.y = lead.y;
+    }
+    if (lead) {
+      const k = 1 - Math.exp(-dt * 3);
+      cam.x += (lead.x - cam.x) * k;
+      cam.y += (lead.y - cam.y) * k;
+    }
+    cam.zoom = Math.min(W, H) / 900;
+    const saved = game.world;
+    const savedMe = game.meId;
+    game.world = remote;
+    game.meId = -1;
+    render(t);
+    game.world = saved;
+    game.meId = savedMe;
+    return;
+  }
+  if (game.idleWorld !== game.preview) game.idleWorld = null;
+  if (!game.preview) {
+    game.preview = new World({ sparkTarget: 500 });
+    for (let i = 0; i < 12; i++) game.preview.addSnake({ bot: true, name: botName(), mass: 20 + Math.random() * 120 });
+  }
+  const w = game.preview;
+  w.step(1 / 60);
+  w.events.length = 0;
+  const lead = [...w.snakes.values()].find((s) => s.alive);
+  if (lead) {
+    cam.x += (lead.x - cam.x) * 0.02;
+    cam.y += (lead.y - cam.y) * 0.02;
+  }
+  cam.zoom = Math.min(W, H) / 900;
+  const saved = game.world;
+  game.world = w;
+  const savedMe = game.meId;
+  game.meId = -1;
+  render(t);
+  game.world = saved;
+  game.meId = savedMe;
+  for (const s of [...w.snakes.values()]) if (!s.alive) {
+    w.removeSnake(s.id);
+    w.addSnake({ bot: true, name: botName() });
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ HUD
+let hudAt = 0;
+function updateHud() {
+  const now = performance.now();
+  if (now - hudAt < 150) return;
+  hudAt = now;
+  const w = game.world;
+  const alive = [...w.snakes.values()].filter((s) => s.alive).sort((a, b) => b.mass - a.mass);
+  const board = game.mode === 'online' ? w.board : null;
+  const s = me();
+  if (s && s.alive) {
+    const score = scoreOf(s.mass);
+    // Online, only the server knows the whole room: wait for its board (the view holds just the nearby chains).
+    const rank = game.mode === 'online' ? board?.rank || 0 : alive.indexOf(s) + 1;
+    const total = game.mode === 'online' ? board?.total || 0 : alive.length;
+    $('score').textContent = score.toLocaleString('he-IL');
+    $('rank').textContent = rank ? `מקום ${rank} מתוך ${total}` : '';
+    game.best.maxScore = Math.max(game.best.maxScore, score);
+    if (rank) game.best.rank = Math.min(game.best.rank, rank);
+    game.best.hands = Math.max(game.best.hands, handsOf(s), game.handIds.size);
+    // Hand button: someone close enough to hold hands with
+    const cand = game.mode === 'solo' ? w.handCandidate(s) : game.net?.candidate?.() ?? null;
+    const btn = $('hand');
+    if (cand) {
+      btn.hidden = false;
+      btn.querySelector('span').textContent = cand.offer?.to === s.id ? `קבלו את היד של ${displayName(cand)}` : `תנו יד ל${displayName(cand)}`;
+      btn.classList.toggle('pulse', cand.offer?.to === s.id);
+      if (game.hintStage < 2) {
+        game.hintStage = 2;
+        hint('לחצו 🤝 – ביחד עוברים זה דרך זה ואוספים פי 1.5', 4500);
+      }
+    } else btn.hidden = true;
+    if (game.hintStage === 0 && now - game.best.born > 6000) {
+      game.hintStage = 1;
+      hint('החזיקו ⚡ כדי להאיץ – זה עולה קצת אורך', 4500);
+    }
+  }
+  const lb = $('leaderboard');
+  const rows = board
+    ? board.top.map(([id, name, score, color, bot]) => ({ id, label: bot ? `🤖 ${name}` : name, score, color }))
+    : alive.slice(0, 5).map((o) => ({ id: o.id, label: displayName(o), score: scoreOf(o.mass), color: o.color }));
+  lb.replaceChildren(
+    ...rows.map((o, i) => {
+      const li = document.createElement('li');
+      if (o.id === game.meId) li.className = 'me';
+      const dot = document.createElement('i');
+      dot.style.background = COLORS[o.color % COLORS.length];
+      const name = document.createElement('span');
+      name.textContent = `${i + 1}. ${o.label}`;
+      const sc = document.createElement('b');
+      sc.textContent = Number(o.score).toLocaleString('he-IL');
+      li.append(dot, name, sc);
+      return li;
+    }),
+  );
+  if (board) {
+    $('players').textContent = `${people(board.people)} · ${bots(board.bots)}`;
+  } else {
+    const n = alive.filter((o) => o.bot).length;
+    $('players').textContent = game.mode === 'online' ? bots(n) : `משחק מקומי · ${bots(n)}`;
+  }
+}
+function people(n) {
+  return n === 1 ? 'אדם אחד' : `${n} אנשים`;
+}
+function bots(n) {
+  return n === 1 ? '🤖 בוט אחד' : `🤖 ${n} בוטים`;
+}
+
+// ?stats in the address shows frame rate and network numbers (for tuning on real phones).
+const statsEl = /[?&]stats\b/.test(location.search) ? document.createElement('div') : null;
+let statsAt = 0;
+let statsPrev = { bytes: 0, snaps: 0, frames: 0 };
+let frameCount = 0;
+if (statsEl) {
+  statsEl.id = 'stats';
+  statsEl.style.cssText =
+    'position:fixed;left:8px;bottom:8px;z-index:9;font:11px/1.35 ui-monospace,monospace;color:#9dff4f;' +
+    'background:rgba(0,0,0,.55);padding:4px 6px;border-radius:6px;pointer-events:none;direction:ltr;white-space:pre';
+  document.body.append(statsEl);
+}
+function updateStats(now) {
+  frameCount++;
+  if (!statsEl || now - statsAt < 1000) return;
+  const secs = (now - statsAt) / 1000;
+  const n = game.net?.stats() ?? { bytes: 0, snaps: 0, delay: 0, jitter: 0, chains: 0 };
+  statsEl.textContent =
+    `${game.mode} fps ${Math.round((frameCount - statsPrev.frames) / secs)} dpr ${DPR}\n` +
+    `snap/s ${Math.round((n.snaps - statsPrev.snaps) / secs)} KB/s ${((n.bytes - statsPrev.bytes) / 1024 / secs).toFixed(1)}\n` +
+    `delay ${Math.round(n.delay)}ms jitter ${Math.round(n.jitter)}ms chains ${n.chains}`;
+  statsPrev = { bytes: n.bytes, snaps: n.snaps, frames: frameCount };
+  statsAt = now;
+}
+
+function trackPerformance(dt) {
+  frameTimes.push(dt);
+  if (frameTimes.length < 120) return;
+  const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+  frameTimes = [];
+  if (avg > 1 / 40 && dprCap > 1) {
+    dprCap = Math.max(1, dprCap - 0.5);
+    resize();
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ share
+function shareUrl() {
+  if (CFG.shareUrl) return CFG.shareUrl;
+  try {
+    const u = new URL(location.href);
+    return u.origin + u.pathname;
+  } catch {
+    return '';
+  }
+}
+function cardCanvas() {
+  const c = document.createElement('canvas');
+  c.width = 1080;
+  c.height = 1350;
+  const g = c.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, 0, 1350);
+  bg.addColorStop(0, '#0b1030');
+  bg.addColorStop(1, '#1b1150');
+  g.fillStyle = bg;
+  g.fillRect(0, 0, 1080, 1350);
+  for (let i = 0; i < 140; i++) {
+    g.fillStyle = `rgba(255,255,255,${Math.random() * 0.5})`;
+    g.fillRect(Math.random() * 1080, Math.random() * 1350, 2, 2);
+  }
+  const color = COLORS[me()?.color ?? 0];
+  // A chain of beads across the card
+  const bead = sprite(color, 'bead');
+  const bead2 = sprite(color, 'bead2');
+  for (let i = 0; i < 46; i++) {
+    const x = 1000 - i * 21;
+    const y = 700 + Math.sin(i * 0.32) * 110;
+    g.drawImage(i % 6 < 3 ? bead : bead2, x - 44, y - 44, 88, 88);
+  }
+  g.textAlign = 'center';
+  g.direction = 'ltr';
+  const title = g.createLinearGradient(140, 0, 940, 0);
+  title.addColorStop(0, '#7af0ff');
+  title.addColorStop(0.55, '#ff8fd0');
+  title.addColorStop(1, '#ffd66b');
+  g.fillStyle = title;
+  g.font = '900 118px system-ui, sans-serif';
+  g.fillText('Ch-ch-chains', 540, 200);
+  g.direction = 'rtl';
+  if (CFG.brand) {
+    g.font = '800 44px system-ui, sans-serif';
+    g.fillStyle = '#ffd66b';
+    g.fillText(CFG.brand, 540, 272);
+  }
+  g.font = '600 46px system-ui, sans-serif';
+  g.fillStyle = 'rgba(255,255,255,0.8)';
+  g.fillText('הגעתי לאורך', 540, 400);
+  g.font = '900 170px system-ui, sans-serif';
+  g.fillStyle = '#ffd66b';
+  g.fillText(game.best.maxScore.toLocaleString('he-IL'), 540, 560);
+  g.font = '600 48px system-ui, sans-serif';
+  g.fillStyle = '#ffffff';
+  const line = game.best.hands > 0 ? `והחזקתי ידיים עם ${game.best.hands} 🤝` : 'נראה אתכם עוברים אותי';
+  g.fillText(line, 540, 960);
+  g.font = '500 38px system-ui, sans-serif';
+  g.fillStyle = 'rgba(255,255,255,0.7)';
+  g.fillText('לבד אתה חזק – ביחד אנחנו שרשרת', 540, 1150);
+  const url = shareUrl().replace(/^https?:\/\//, '');
+  if (url) {
+    g.font = '700 40px system-ui, sans-serif';
+    g.fillStyle = '#8fe9ff';
+    g.fillText(url, 540, 1230);
+  }
+  return c;
+}
+async function share() {
+  const text = `הגעתי לאורך ${game.best.maxScore.toLocaleString('he-IL')} ב-Ch-ch-chains${
+    game.best.hands ? ` והחזקתי ידיים עם ${game.best.hands}` : ''
+  } 🔗 ביחד אנחנו שרשרת – נראה אתכם:`;
+  const url = shareUrl();
+  try {
+    const blob = await new Promise((res) => cardCanvas().toBlob(res, 'image/png'));
+    const file = blob ? new File([blob], 'chchchains.png', { type: 'image/png' }) : null;
+    if (file && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], text: `${text} ${url}` });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ text, url });
+      return;
+    }
+  } catch (e) {
+    if (e?.name === 'AbortError') return;
+  }
+  try {
+    await navigator.clipboard.writeText(`${text} ${url}`);
+    toast('הטקסט והקישור הועתקו – הדביקו בוואטסאפ או בטיקטוק');
+  } catch {
+    $('share-text').value = `${text} ${url}`;
+    show('share-fallback');
+    $('share-text').select();
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ boot
+function renderName() {
+  $('name').textContent = game.name;
+}
+$('reroll').addEventListener('click', () => {
+  game.name = randomName();
+  saveName(game.name);
+  renderName();
+});
+$('play').addEventListener('click', play);
+$('again').addEventListener('click', play);
+$('share').addEventListener('click', share);
+$('share-close').addEventListener('click', () => hide('share-fallback'));
+if (CFG.brand) $('brand').textContent = CFG.brand;
+else $('brand').hidden = true;
+if (CFG.publisher) {
+  $('publisher').textContent = CFG.publisher;
+  $('publisher').hidden = false;
+}
+document.addEventListener('visibilitychange', () => {
+  last = performance.now();
+});
+renderName();
+resize();
+requestAnimationFrame((t) => {
+  last = t;
+  requestAnimationFrame(frame);
+});
+
+// Online play when a server is configured (or when this page is served by the game server itself).
+const serverUrl =
+  CFG.server || (location.protocol.startsWith('http') && CFG.sameOrigin ? `${location.origin.replace(/^http/, 'ws')}/ws` : '');
+function netStatusText(status, online) {
+  if (status === 'online') {
+    return online > 1 ? `🟢 ${online.toLocaleString('he-IL')} מחוברים עכשיו – משחקים עם אנשים אמיתיים` : '🟢 מחובר – משחקים עם אנשים אמיתיים (והבוטים 🤖)';
+  }
+  if (status === 'connecting') return 'מעיר את השרת… אפשר כבר לשחק עם בוטים';
+  if (status === 'full') return 'השרת מלא כרגע – משחקים עם בוטים';
+  return 'השרת לא זמין כרגע – משחקים עם בוטים';
+}
+if (serverUrl) {
+  game.net = connectOnline(serverUrl, {
+    onStatus(status, info) {
+      for (const id of ['net-status', 'over-net']) {
+        $(id).textContent = netStatusText(status, info.online);
+        $(id).dataset.state = status;
+      }
+      if (status === 'online' && game.mode === 'solo' && game.alive && !game.toldOnline) {
+        game.toldOnline = true;
+        toast('השרת מחובר – מהסיבוב הבא משחקים עם אנשים אמיתיים', 3500);
+      }
+    },
+    onJoined,
+    onLost,
+  });
+  game.net.watch(viewExtents());
+} else {
+  $('net-status').textContent = 'משחק מקומי עם בוטים';
+  $('net-status').dataset.state = 'solo';
+}
+
+return {  };
+})();
+})();
+</script>
+</body>
+</html>
