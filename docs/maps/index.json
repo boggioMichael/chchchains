@@ -6,7 +6,7 @@
    "id": "israel",
    "he": "כל הארץ",
    "R": 4476,
-   "area": 22452,
+   "area": 28478,
    "capacity": 50,
    "kind": "region",
    "center": [
@@ -14,9 +14,9 @@
     35.05
    ],
    "sat": true,
-   "pois": 7,
+   "pois": 103,
    "subtitle": "מהחרמון עד אילת, מהים עד הירדן",
-   "build": 1
+   "build": 2
   },
   {
    "id": "promise",
@@ -30,9 +30,9 @@
     37.0
    ],
    "sat": true,
-   "pois": 11,
+   "pois": 38,
    "subtitle": "״מִנְּהַר מִצְרַיִם עַד הַנָּהָר הַגָּדֹל נְהַר פְּרָת״ (בראשית ט״ו, י״ח)",
-   "build": 1
+   "build": 2
   }
  ],
  "cities": [
