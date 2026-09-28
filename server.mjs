@@ -803,6 +803,11 @@ const server = createServer((req, res) => {
     res.end(req.method === 'HEAD' ? undefined : page.html);
     return;
   }
+  if (path === '/robots.txt') {
+    res.writeHead(200, { ...COMMON, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=86400' });
+    res.end(req.method === 'HEAD' ? undefined : 'User-agent: *\nDisallow: /ws\n');
+    return;
+  }
   if (path === '/healthz') {
     res.writeHead(200, {
       ...COMMON,

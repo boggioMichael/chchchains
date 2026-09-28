@@ -137,6 +137,11 @@ test('serves the page with a CSP that matches its inline code, and a health chec
   assert.equal(health.headers.get('access-control-allow-origin'), '*');
   assert.equal((await health.json()).status, 'ok');
   assert.equal((await fetch(`${base}/nope`)).status, 404);
+  assert.match(await (await fetch(`${base}/robots.txt`)).text(), /Disallow: \/ws/);
+  const map = await fetch(`${base}/maps/index.json`);
+  assert.equal(map.status, 200);
+  assert.ok((await map.json()).cities.length >= 3, 'the city maps are served too');
+  assert.equal((await fetch(`${base}/maps/../server.mjs`)).status, 404);
   assert.equal((await fetch(`${base}/../server.mjs`)).status, 404);
   assert.equal((await fetch(`${base}/`, { method: 'POST' })).status, 405);
   const headRes = await fetch(`${base}/`, { method: 'HEAD' });
