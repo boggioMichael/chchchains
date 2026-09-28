@@ -48,7 +48,8 @@
    ],
    "pois": 84,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "tel-aviv",
@@ -62,7 +63,8 @@
    ],
    "pois": 101,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "haifa",
@@ -76,7 +78,8 @@
    ],
    "pois": 67,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "rishon-lezion",
@@ -90,7 +93,8 @@
    ],
    "pois": 39,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "petah-tikva",
@@ -104,7 +108,8 @@
    ],
    "pois": 54,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "ashdod",
@@ -118,7 +123,8 @@
    ],
    "pois": 52,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "netanya",
@@ -132,7 +138,8 @@
    ],
    "pois": 40,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "beer-sheva",
@@ -146,7 +153,8 @@
    ],
    "pois": 50,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "bnei-brak",
@@ -160,7 +168,8 @@
    ],
    "pois": 21,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "holon",
@@ -174,7 +183,8 @@
    ],
    "pois": 39,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "ramat-gan",
@@ -188,7 +198,8 @@
    ],
    "pois": 46,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "rehovot",
@@ -202,7 +213,8 @@
    ],
    "pois": 52,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "ashkelon",
@@ -216,7 +228,8 @@
    ],
    "pois": 38,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "bat-yam",
@@ -230,7 +243,8 @@
    ],
    "pois": 41,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "beit-shemesh",
@@ -244,7 +258,8 @@
    ],
    "pois": 22,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "kfar-saba",
@@ -258,7 +273,8 @@
    ],
    "pois": 31,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "herzliya",
@@ -272,7 +288,8 @@
    ],
    "pois": 36,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "hadera",
@@ -286,7 +303,8 @@
    ],
    "pois": 26,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "modiin",
@@ -300,7 +318,8 @@
    ],
    "pois": 42,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "nazareth",
@@ -314,7 +333,8 @@
    ],
    "pois": 4,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "lod",
@@ -328,7 +348,8 @@
    ],
    "pois": 22,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "ramla",
@@ -342,7 +363,8 @@
    ],
    "pois": 12,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "raanana",
@@ -356,7 +378,8 @@
    ],
    "pois": 32,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "rosh-haayin",
@@ -370,7 +393,8 @@
    ],
    "pois": 25,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "modiin-illit",
@@ -384,7 +408,8 @@
    ],
    "pois": 14,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "rahat",
@@ -398,7 +423,8 @@
    ],
    "pois": 4,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "hod-hasharon",
@@ -412,7 +438,8 @@
    ],
    "pois": 18,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "beitar-illit",
@@ -426,7 +453,8 @@
    ],
    "pois": 8,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "givatayim",
@@ -440,7 +468,8 @@
    ],
    "pois": 25,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "kiryat-ata",
@@ -454,7 +483,8 @@
    ],
    "pois": 7,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "nahariya",
@@ -468,7 +498,8 @@
    ],
    "pois": 4,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "kiryat-gat",
@@ -482,7 +513,8 @@
    ],
    "pois": 18,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "umm-al-fahm",
@@ -496,7 +528,8 @@
    ],
    "pois": 1,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "eilat",
@@ -510,7 +543,8 @@
    ],
    "pois": 32,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "afula",
@@ -524,7 +558,8 @@
    ],
    "pois": 17,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "yavne",
@@ -538,7 +573,8 @@
    ],
    "pois": 23,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "akko",
@@ -552,7 +588,8 @@
    ],
    "pois": 45,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "karmiel",
@@ -566,7 +603,8 @@
    ],
    "pois": 31,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "nes-ziona",
@@ -580,7 +618,8 @@
    ],
    "pois": 31,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "tiberias",
@@ -594,7 +633,8 @@
    ],
    "pois": 13,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "maale-adumim",
@@ -608,7 +648,8 @@
    ],
    "pois": 8,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "or-yehuda",
@@ -622,7 +663,8 @@
    ],
    "pois": 9,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "kiryat-motzkin",
@@ -636,7 +678,8 @@
    ],
    "pois": 13,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "kiryat-bialik",
@@ -650,7 +693,8 @@
    ],
    "pois": 13,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "kiryat-yam",
@@ -664,7 +708,8 @@
    ],
    "pois": 13,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "safed",
@@ -678,7 +723,8 @@
    ],
    "pois": 20,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "dimona",
@@ -692,7 +738,8 @@
    ],
    "pois": 14,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "netivot",
@@ -706,7 +753,8 @@
    ],
    "pois": 7,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "tayibe",
@@ -720,7 +768,8 @@
    ],
    "pois": 2,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "shfaram",
@@ -734,7 +783,8 @@
    ],
    "pois": 0,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "ofakim",
@@ -748,7 +798,8 @@
    ],
    "pois": 7,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "sderot",
@@ -762,7 +813,8 @@
    ],
    "pois": 22,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "kiryat-shmona",
@@ -776,7 +828,8 @@
    ],
    "pois": 13,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "ariel",
@@ -790,7 +843,8 @@
    ],
    "pois": 21,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   },
   {
    "id": "zichron-yaakov",
@@ -804,7 +858,8 @@
    ],
    "pois": 36,
    "sat": true,
-   "build": 3
+   "build": 3,
+   "detail": 1
   }
  ]
 }
