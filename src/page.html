@@ -177,16 +177,52 @@ a { color: inherit; }
   min-height: 50px; font-weight: 800; font-size: 15px; background: #fff; cursor: pointer; }
 .file input { display: none; }
 
-/* story */
-.mandates { display: grid; gap: 4px; }
-.mandates .bar { height: 12px; position: relative; overflow: visible; }
-.mandates .bar i { background: linear-gradient(90deg, var(--blue), #3d6fd8); }
-.mandates .bar s { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--danger); right: calc(61 / 80 * 100%); }
-.mandates small { font-size: 12px; color: var(--ink-2); }
-.mission-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; text-align: right; }
-.mission-card small { font-size: 12px; color: var(--blue); font-weight: 800; }
-.mission-card b { display: block; font-size: 18px; margin: 2px 0 4px; }
-.mission-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+/* the story: a scrolling middle between a fixed title and fixed buttons */
+.sheet .card.camp { grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; width: min(460px, 100%); background: #fbf9f4; }
+.camp-top { text-align: center; display: grid; gap: 2px; }
+.camp-top small { font-size: 12px; font-weight: 800; color: var(--blue); }
+.camp-body { overflow-y: auto; display: grid; gap: 10px; align-content: start; touch-action: pan-y; text-align: right; padding: 2px; }
+.camp-actions { display: grid; gap: 8px; }
+.story-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink); text-wrap: pretty; }
+.story-text.strong { font-weight: 900; color: var(--blue); }
+.mission-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: grid; gap: 8px; }
+.mission-card > small { font-size: 12px; color: var(--ink-2); font-weight: 800; }
+.goal { margin: 0; font-size: 14px; color: var(--ink-2); }
+.goal b { color: var(--ink); }
+.stars { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 12.5px; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+  font-size: 12px; font-weight: 700; background: var(--paper); }
+.chip i, .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.knesset { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px 10px 8px; display: grid; gap: 8px; }
+.knesset canvas { width: 100%; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--ink-2); justify-content: center; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.legend span.ours { color: var(--blue); font-weight: 900; }
+.legend b { color: var(--ink); }
+.route { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; align-items: start; background: #fff; border: 1px solid var(--line);
+  border-radius: 16px; padding: 10px; }
+.route canvas { width: 92px; border-radius: 10px; display: block; }
+.route-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; font-size: 12.5px; color: var(--ink-2); }
+.route-list li { display: flex; justify-content: space-between; gap: 6px; }
+.route-list li.book { font-weight: 900; color: var(--ink); margin-top: 6px; font-size: 12px; }
+.route-list li.book:first-child { margin-top: 0; }
+.route-list li.done { color: var(--ink); }
+.route-list li.now { color: var(--blue); font-weight: 900; }
+.route-list b { font-weight: 400; white-space: nowrap; }
+.perks-line { margin: 0; font-size: 13px; color: var(--ink-2); }
+.perks { display: grid; gap: 8px; }
+.perk { display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 10px; text-align: right; align-items: center;
+  border: 1px solid var(--line); background: #fff; border-radius: 16px; padding: 12px; }
+.perk .icon { grid-row: span 2; font-size: 30px; text-align: center; }
+.perk b { font-size: 16px; }
+.perk small { font-size: 13px; color: var(--ink-2); line-height: 1.4; }
+.perk:active { background: var(--paper); }
+.stars-big { margin: 0; font-size: 34px; text-align: center; letter-spacing: 4px; }
+.gain { margin: 0; font-size: 15px; font-weight: 800; color: #1f7a38; text-align: center; }
+.gain.big { font-size: 18px; color: var(--blue); }
+.loss { margin: 0; font-size: 15px; font-weight: 800; color: var(--danger); text-align: center; }
+#mission small { color: var(--ink); font-weight: 700; direction: rtl; }
 @media (prefers-reduced-motion: reduce) { #hand.pulse { animation: none; } #toast { transition: none; } }
 @media (min-width: 900px) { #score { font-size: 36px; } .hud-board { width: 240px; } #leaderboard { font-size: 13px; } }
 </style>
@@ -196,7 +232,7 @@ a { color: inherit; }
 <div id="hud" hidden>
   <div class="hud-score"><div id="score">0</div><div class="unit">אנשים בשרשרת</div><div id="rank"></div></div>
   <div class="hud-board"><ol id="leaderboard" aria-label="טבלת המובילים"></ol><div id="players"></div></div>
-  <div id="mission" hidden><b id="mission-title"></b><span id="mission-text"></span><div class="bar"><i id="mission-bar"></i></div><small id="mission-mandates"></small></div>
+  <div id="mission" hidden><b id="mission-title"></b><span id="mission-text"></span><div class="bar"><i id="mission-bar"></i></div><small id="mission-meta"></small></div>
   <div id="waiting" hidden><span>👀 לבד במפה – מחכים לעוד אנשים</span><button id="waiting-share" type="button">הזמינו</button></div>
   <button id="boost" type="button" aria-label="ריצה (החזיקו, או אצבע שנייה על המסך)">⚡</button>
   <button id="hand" type="button" hidden>🤝 <span>תנו יד</span></button>
@@ -237,7 +273,7 @@ a { color: inherit; }
     </div>
     <button id="play" class="primary" type="button">שחקו עכשיו</button>
     <div class="row2">
-      <button id="story-btn" class="secondary" type="button">📖 הדרך לממשלה</button>
+      <button id="story-btn" class="secondary" type="button">📖 נגד כל הסיכויים</button>
       <button id="music-btn" class="secondary" type="button">🎵 מוסיקה</button>
     </div>
     <p id="net-status" aria-live="polite"></p>
@@ -250,7 +286,7 @@ a { color: inherit; }
     <h2 id="over-title">השרשרת נקרעה</h2>
     <div><div class="big" id="stat-score">0</div><div class="big-label">הכי הרבה אנשים בשרשרת שלך</div></div>
     <div class="stats">
-      <div><b id="stat-rank">–</b><span>המקום הכי גבוה</span></div>
+      <div><b id="stat-rank">–</b><span id="stat-rank-label">המקום הכי גבוה</span></div>
       <div><b id="stat-hands">0</b><span>החזקת ידיים עם</span></div>
       <div><b id="stat-time">0</b><span>זמן בשרשרת</span></div>
     </div>
@@ -296,15 +332,15 @@ a { color: inherit; }
 </section>
 
 <section id="story" class="screen sheet" hidden aria-labelledby="story-title">
-  <div class="card">
-    <h2 id="story-title">הדרך לממשלה</h2>
-    <p id="story-intro" class="note">יש לכם תנועה וחלום, ואף מנדט. יוצאים לרחובות, אוספים אנשים, תולים דגלים ומגיעים למקומות שחשובים. כל משימה מביאה מנדטים, ו־61 מהם מביאים ניצחון בבחירות והקמת ממשלה. סיפור בדיוני; ההתקדמות נשמרת רק בטלפון שלכם.</p>
-    <div class="mandates"><div class="bar"><i id="mandates-bar"></i><s></s></div><small id="mandates-text">0 מנדטים מתוך 61</small></div>
-    <div class="mission-card"><small id="story-chapter"></small><b id="story-mission"></b><p id="story-brief"></p></div>
-    <button id="story-go" class="primary" type="button">יוצאים לדרך</button>
-    <div class="row2">
-      <button id="story-reset" class="secondary" type="button">מההתחלה</button>
-      <button class="secondary close" type="button">סגירה</button>
+  <div class="card camp">
+    <div class="camp-top"><small id="camp-kicker">נגד כל הסיכויים</small><h2 id="story-title">נגד כל הסיכויים</h2></div>
+    <div id="camp-body" class="camp-body"></div>
+    <div class="camp-actions">
+      <button id="story-go" class="primary" type="button">יוצאים לדרך</button>
+      <div class="row2">
+        <button id="story-reset" class="secondary" type="button">מההתחלה</button>
+        <button class="secondary close" type="button">סגירה</button>
+      </div>
     </div>
   </div>
 </section>

@@ -220,10 +220,11 @@ function fade(g, y0, y1, W, from, to) {
     ['55 ערים, כל הארץ', 385],
     ['וגבולות ההבטחה', 435],
     ['🤝 חדר לכל עיר – בלי בוטים', 525],
-    ['🗳️ הדרך לממשלה:', 615],
-    ['12 משימות, 61 מנדטים', 670],
+    ['🗳️ נגד כל הסיכויים:', 615],
+    ['מ־1.2% למפלגה הגדולה', 670],
   ];
-  for (const [t, y] of lines) text(g, t, W - 60, y, t.startsWith('55') || t.startsWith('וג') || t.startsWith('12') ? 38 : 42, INK, t.startsWith('55') || t.startsWith('וג') || t.startsWith('12') ? 600 : 900, 'right');
+  const small = (t) => t.startsWith('55') || t.startsWith('וג') || t.startsWith('מ־');
+  for (const [t, y] of lines) text(g, t, W - 60, y, small(t) ? 38 : 42, INK, small(t) ? 600 : 900, 'right');
   button(g, 'שחקו עכשיו ›', W - 520, 740, 460, 96);
   g.direction = 'ltr';
   g.textAlign = 'right';
@@ -281,9 +282,9 @@ function fade(g, y0, y1, W, from, to) {
   drawWordmark(g, W / 2, 190, 128, { maxWidth: 960, ink: INK });
   text(g, 'המשחק של עמך ישראל', W / 2, 270, 52, BLUE, 900);
   paper(g, 90, 330, W - 180, 250, 34);
-  text(g, 'חדש: הדרך לממשלה 🗳️', W / 2, 425, 64, INK, 900);
-  text(g, 'אוספים אנשים, תולים דגלים, מגיעים לכנסת', W / 2, 495, 38, 'rgba(35,32,27,0.75)', 700);
-  text(g, '12 משימות · 61 מנדטים לניצחון', W / 2, 548, 38, BLUE, 900);
+  text(g, 'חדש: נגד כל הסיכויים 🗳️', W / 2, 425, 64, INK, 900);
+  text(g, 'המפלגות היריבות צדות אתכם ברחובות', W / 2, 495, 38, 'rgba(35,32,27,0.75)', 700);
+  text(g, '13 פרקים · מ־1.2% למפלגה הגדולה', W / 2, 548, 38, BLUE, 900);
   text(g, 'לבד אתה חזק – ביחד אנחנו שרשרת', W / 2, H - 440, 54, BLUE, 900);
   button(g, 'שחקו עכשיו ›', W / 2 - 290, H - 395, 580, 120);
   footer(g, W, H - 210);

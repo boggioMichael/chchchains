@@ -141,6 +141,11 @@ export class World {
     this.sparkLog = null; // { added: [spark], removed: [id] }
     this.sparkGrid = new Grid(C.sparkCell, this.R);
     this.bodyGrid = new Grid(C.bodyCell, this.R, true);
+    // Things in the way, for the single-player story only (see setObstacles): roadworks across streets, buses and
+    // trains running along them, and drifting storms that slow everyone down. Rooms online have none.
+    this.bars = [];
+    this.movers = [];
+    this.zones = [];
     // Flat buffers for the body-point grid, rebuilt every step.
     this.bpX = [];
     this.bpY = [];
@@ -191,6 +196,74 @@ export class World {
     return { x: 0, y: 0 };
   }
 
+  // --------------------------------------------------------------------------------------------- obstacles
+  /**
+   * bars: [{ x1, y1, x2, y2, w, label }] (a barrier w wide from one end to the other);
+   * movers: [{ pts: [x, y, …], speed, half, r, phase, label }] (a capsule running to and fro along a path);
+   * zones: [{ ax, ay, bx, by, period, r, slow, label }] (a circle drifting between two points, slowing whoever is in it).
+   */
+  setObstacles({ bars = [], movers = [], zones = [] } = {}) {
+    this.bars = bars.map((b) => ({ w: 14, label: 'block', ...b }));
+    this.movers = movers
+      .filter((m) => m.pts && m.pts.length >= 4)
+      .map((m) => {
+        const cum = [0];
+        for (let i = 2; i < m.pts.length; i += 2) cum.push(cum[cum.length - 1] + Math.hypot(m.pts[i] - m.pts[i - 2], m.pts[i + 1] - m.pts[i - 1]));
+        return { speed: 120, half: 22, r: 10, phase: 0, label: 'bus', ...m, cum, len: cum[cum.length - 1] || 1 };
+      });
+    this.zones = zones.map((z) => ({ period: 60, r: 400, slow: 0.55, label: 'storm', ...z }));
+  }
+  /** Where a mover is at time t: its middle and heading. */
+  moverAt(m, t = this.time) {
+    const L = m.len;
+    let d = (((m.phase + m.speed * t) % (2 * L)) + 2 * L) % (2 * L);
+    let back = false;
+    if (d > L) {
+      d = 2 * L - d;
+      back = true;
+    }
+    const cum = m.cum;
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < d) i++;
+    const seg = cum[i] - cum[i - 1] || 1;
+    const k = Math.max(0, Math.min(1, (d - cum[i - 1]) / seg));
+    const x0 = m.pts[2 * i - 2];
+    const y0 = m.pts[2 * i - 1];
+    const dx = m.pts[2 * i] - x0;
+    const dy = m.pts[2 * i + 1] - y0;
+    return { x: x0 + dx * k, y: y0 + dy * k, a: Math.atan2(dy, dx) + (back ? Math.PI : 0) };
+  }
+  zoneAt(z, t = this.time) {
+    const k = (1 - Math.cos((TAU * t) / z.period)) / 2;
+    return { x: z.ax + (z.bx - z.ax) * k, y: z.ay + (z.by - z.ay) * k };
+  }
+  /** How much a storm slows whoever stands at (x, y): 1 is not at all. */
+  slowAt(x, y) {
+    let f = 1;
+    for (const z of this.zones) {
+      const p = this.zoneAt(z);
+      if ((p.x - x) ** 2 + (p.y - y) ** 2 < z.r * z.r) f = Math.min(f, z.slow);
+    }
+    return f;
+  }
+  /** The label of a barrier or vehicle within pad of (x, y) (now, or `ahead` seconds from now), or ''. */
+  blocked(x, y, pad, ahead = 0) {
+    for (const b of this.bars) {
+      const lim = b.w / 2 + pad;
+      if (segDist2(x, y, b.x1, b.y1, b.x2, b.y2) < lim * lim) return b.label;
+    }
+    for (const m of this.movers) {
+      for (const t of ahead ? [this.time, this.time + ahead] : [this.time]) {
+        const p = this.moverAt(m, t);
+        const cx = Math.cos(p.a) * m.half;
+        const cy = Math.sin(p.a) * m.half;
+        const lim = m.r + pad;
+        if (segDist2(x, y, p.x - cx, p.y - cy, p.x + cx, p.y + cy) < lim * lim) return m.label;
+      }
+    }
+    return '';
+  }
+
   spawnNaturalSpark() {
     if (Math.random() < 0.08) {
       // A small crowd: worth chasing.
@@ -230,10 +303,15 @@ export class World {
     return best;
   }
 
-  addSnake({ name = randomName(), color, bot = false, mass = C.startMass, skin = '' } = {}) {
+  /**
+   * A new chain. Story extras: `at` ({ x, y, a? }) places it, `ai` sets a bot's role (see thinkRole), `mods` changes
+   * how it plays ({ speed, turn, boost, reach, value } multipliers and extra reach) and `shield` is how many crashes it
+   * survives.
+   */
+  addSnake({ name = randomName(), color, bot = false, mass = C.startMass, skin = '', at = null, ai = null, mods = null, shield = 0 } = {}) {
     const id = this.nextId++;
-    const { x, y } = this.safeSpawnPoint();
-    const a = Math.atan2(-y, -x) + (Math.random() - 0.5) * 1.2; // face inwards
+    const { x, y } = at ?? this.safeSpawnPoint();
+    const a = at?.a ?? Math.atan2(-y, -x) + (Math.random() - 0.5) * 1.2; // face inwards
     const s = {
       id,
       name,
@@ -257,7 +335,11 @@ export class World {
       hands: new Set(),
       boostAcc: 0,
       dropAt: 0,
-      ai: bot ? newAi() : null,
+      ai: bot ? { ...newAi(), ...ai } : null,
+      mods,
+      shield,
+      safeUntil: 0,
+      hit: '',
     };
     const n = Math.ceil(lengthFor(mass) / C.spacing) + 1;
     for (let i = 0; i < n; i++) {
@@ -314,7 +396,7 @@ export class World {
       if (Math.hypot(o.x - s.x, o.y - s.y) < range * 1.6) return o;
     }
     for (const o of this.snakes.values()) {
-      if (o === s || !o.alive || this.sameTeam(s, o)) continue;
+      if (o === s || !o.alive || this.sameTeam(s, o) || o.ai?.accept === 0) continue; // (rivals never take a hand)
       const size = (this.teamOf(s)?.members.size ?? 1) + (this.teamOf(o)?.members.size ?? 1);
       if (size > C.teamMax) continue;
       const d = Math.hypot(o.x - s.x, o.y - s.y);
@@ -387,22 +469,27 @@ export class World {
       const killer = this.collision(s);
       if (killer !== null) dead.push([s, killer]);
     }
-    for (const [s, killer] of dead) this.kill(s, killer);
+    for (const [s, killer] of dead) {
+      if (s.shield > 0) this.shieldHit(s, killer);
+      else this.kill(s, killer);
+    }
     for (const s of this.snakes.values()) if (s.alive) this.eat(s);
     this.maintain(dt);
   }
 
   move(s, dt) {
     const r = radiusFor(s.mass);
-    const turn = C.turnRate * Math.pow(14 / Math.max(14, r), 0.55);
+    const mods = s.mods;
+    const turn = C.turnRate * Math.pow(14 / Math.max(14, r), 0.55) * (mods?.turn ?? 1);
     const d = angleDiff(s.a, s.ta);
     s.a += Math.max(-turn * dt, Math.min(turn * dt, d));
     const boosting = s.boost && s.mass > C.minBoostMass;
-    const speed = boosting ? C.boostSpeed : C.baseSpeed;
+    let speed = (boosting ? C.boostSpeed : C.baseSpeed) * (mods?.speed ?? 1);
+    if (this.zones.length) speed *= this.slowAt(s.x, s.y);
     s.x += Math.cos(s.a) * speed * dt;
     s.y += Math.sin(s.a) * speed * dt;
     if (boosting) {
-      const cost = C.boostCost * dt;
+      const cost = C.boostCost * dt * (mods?.boost ?? 1);
       s.mass -= cost;
       s.boostAcc += cost;
       if (this.time >= s.dropAt && s.px.length > 2) {
@@ -467,7 +554,18 @@ export class World {
    */
   collision(s) {
     const r = radiusFor(s.mass);
-    if (!this.inside(s.x + Math.cos(s.a) * r * 0.4, s.y + Math.sin(s.a) * r * 0.4)) return 0; // off the map
+    if (this.time < s.safeUntil) return null; // just survived a crash: a moment to get away
+    if (!this.inside(s.x + Math.cos(s.a) * r * 0.4, s.y + Math.sin(s.a) * r * 0.4)) {
+      s.hit = 'edge';
+      return 0; // off the map
+    }
+    if (this.bars.length || this.movers.length) {
+      const b = this.blocked(s.x, s.y, r * 0.8);
+      if (b) {
+        s.hit = b;
+        return 0;
+      }
+    }
     let killer = null;
     this.bodyGrid.query(s.x, s.y, r + 40, (i) => {
       const owner = this.bpOwner[i];
@@ -503,12 +601,35 @@ export class World {
     const killer = killerId ? this.snakes.get(killerId) : null;
     if (killer) killer.kills += 1;
     this.leaveTeam(s);
-    this.events.push({ t: 'death', id: s.id, killer: killerId ?? 0 });
+    const e = { t: 'death', id: s.id, killer: killerId ?? 0 };
+    if (!killerId && s.hit && s.hit !== 'edge') e.cause = s.hit; // roadworks, a bus, a train
+    this.events.push(e);
+  }
+
+  /** A crash the chain survives (a shield): the back of it lets go, and it turns away from what it hit. */
+  shieldHit(s, killerId) {
+    s.shield -= 1;
+    s.safeUntil = this.time + 1.8;
+    const keep = Math.max(C.startMass, s.mass * 0.7);
+    const lost = s.mass - keep;
+    s.mass = keep;
+    const from = Math.floor(s.px.length * 0.6);
+    const n = Math.max(3, Math.min(40, Math.floor((s.px.length - from) / 3)));
+    for (let k = 0; k < n && lost > 0; k++) {
+      const i = Math.min(s.px.length - 1, from + Math.floor(((s.px.length - from) * k) / n));
+      this.addSpark(s.px[i] + (Math.random() - 0.5) * 14, s.py[i] + (Math.random() - 0.5) * 14, lost / n, 6, COLORS[s.color], C.deathSparkTtl);
+    }
+    if (!killerId) {
+      // Off the edge or into something: back the way it came.
+      s.a += Math.PI;
+      s.ta = s.a;
+    }
+    this.events.push({ t: 'shield', id: s.id, killer: killerId ?? 0, cause: killerId ? '' : s.hit });
   }
 
   eat(s) {
     const r = radiusFor(s.mass);
-    const reach = r + 14;
+    const reach = r + 14 + (s.mods?.reach ?? 0);
     const eaten = [];
     this.sparkGrid.query(s.x, s.y, reach + 12, (sp) => {
       const lim = reach + sp.r;
@@ -518,7 +639,8 @@ export class World {
       return false;
     });
     if (!eaten.length) return;
-    const bonus = this.teamBonusActive(s) ? C.teamBonus : 1;
+    const team = this.teamBonusActive(s) ? C.teamBonus : 1;
+    const bonus = team * (s.mods?.value ?? 1);
     let gained = 0;
     for (const sp of eaten) {
       this.removeSpark(sp);
@@ -526,7 +648,7 @@ export class World {
     }
     s.mass += gained;
     this.collected += eaten.length;
-    this.events.push({ t: 'eat', id: s.id, n: eaten.length, bonus: bonus > 1 });
+    this.events.push({ t: 'eat', id: s.id, n: eaten.length, bonus: team > 1 });
   }
 
   teamBonusActive(s) {
@@ -550,9 +672,10 @@ export class World {
   }
 
   // --------------------------------------------------------------------------------------------- bots
-  /** Is a point dangerous for snake s (another body or a head about to be there, or the edge)? Returns 0 or 1. */
+  /** Is a point dangerous for snake s (a body, a head about to be there, the edge, something in the way)? 0 or 1. */
   hazard(s, x, y, pad, heads) {
     if (!this.roomy(x, y, pad + 30)) return 1;
+    if ((this.bars.length || this.movers.length) && this.blocked(x, y, pad + 16, 0.45)) return 1;
     for (const h of heads) {
       const lim = pad + h.r + 26;
       if ((h.x - x) ** 2 + (h.y - y) ** 2 < lim * lim) return 1;
@@ -569,10 +692,69 @@ export class World {
       : 0;
   }
 
+  /** Where the heads near s will be in a moment, so a bot keeps clear of head-on bumps (`skip` is left out). */
+  headsNear(s, range, skip = null) {
+    const heads = [];
+    for (const o of this.snakes.values()) {
+      if (o === s || o === skip || !o.alive || this.sameTeam(s, o)) continue;
+      if (Math.hypot(o.x - s.x, o.y - s.y) > range) continue;
+      const or = radiusFor(o.mass);
+      const sp = o.boost ? C.boostSpeed : C.baseSpeed;
+      for (const t of [0.15, 0.35, 0.6]) heads.push({ x: o.x + Math.cos(o.a) * sp * t, y: o.y + Math.sin(o.a) * sp * t, r: or });
+    }
+    return heads;
+  }
+
+  /**
+   * Turns s towards (tx, ty), or the safe direction nearest to it: each way it could go is walked forward for 0.6 s
+   * the way the chain really turns, and the sooner that path meets a body, a head or the edge, the worse. Returns how
+   * soon straight on would have (0: it is clear).
+   */
+  steer(s, tx, ty, skip = null, margin = 0) {
+    const r = radiusFor(s.mass);
+    const desired = Math.atan2(ty - s.y, tx - s.x);
+    const heads = this.headsNear(s, 380, skip);
+    const turn = C.turnRate * Math.pow(14 / Math.max(14, r), 0.55) * (s.mods?.turn ?? 1) * 0.1;
+    const speed = (s.boost && s.mass > C.minBoostMass ? C.boostSpeed : C.baseSpeed) * 0.1;
+    const pad = r + margin * 0.5;
+    let bestA = desired;
+    let bestV = -Infinity;
+    let danger = 0;
+    for (const off of OFFSETS) {
+      const cand = desired + off;
+      let a = s.a;
+      let x = s.x;
+      let y = s.y;
+      let h = 0;
+      for (let k = 1; k <= 6; k++) {
+        a += Math.max(-turn, Math.min(turn, angleDiff(a, cand)));
+        x += Math.cos(a) * speed;
+        y += Math.sin(a) * speed;
+        const reach = r * 0.6 + margin;
+        if (this.hazard(s, x + Math.cos(a) * reach, y + Math.sin(a) * reach, pad, heads)) {
+          h = 7 - k;
+          break;
+        }
+      }
+      const v = Math.cos(off) - h * 1.6 - Math.abs(angleDiff(s.a, cand)) * 0.12;
+      if (off === 0) danger = h;
+      if (v > bestV) {
+        bestV = v;
+        bestA = cand;
+      }
+    }
+    s.ta = bestA;
+    return danger;
+  }
+
   think(s) {
     const ai = s.ai;
+    if (ai.role) {
+      this.thinkRole(s);
+      this.answerHands(s);
+      return;
+    }
     ai.next = this.time + 0.11 + Math.random() * 0.12;
-    const r = radiusFor(s.mass);
     let tx;
     let ty;
     let chasing = 0;
@@ -586,7 +768,6 @@ export class World {
         const d = Math.hypot(sp.x - s.x, sp.y - s.y);
         const ahead = Math.cos(angleDiff(s.a, Math.atan2(sp.y - s.y, sp.x - s.x)));
         const sc = (sp.v * (1.2 + ahead)) / (d + 40);
-        if (sc <= bestScore) return false;
         if (sc > bestScore) {
           bestScore = sc;
           best = sp;
@@ -626,53 +807,198 @@ export class World {
         ty = hunt.y + Math.sin(hunt.a) * 120;
       }
     }
-    const desired = Math.atan2(ty - s.y, tx - s.x);
-    const look = [r * 1.4 + 22, r * 1.6 + 70, r * 1.8 + 130];
-    // Where nearby heads will be shortly: bots steer clear of head-on bumps.
-    const heads = [];
-    for (const o of this.snakes.values()) {
-      if (o === s || !o.alive || this.sameTeam(s, o)) continue;
-      const d = Math.hypot(o.x - s.x, o.y - s.y);
-      if (d > 360) continue;
-      const or = radiusFor(o.mass);
-      const sp = o.boost ? C.boostSpeed : C.baseSpeed;
-      for (const t of [0.15, 0.35, 0.6]) heads.push({ x: o.x + Math.cos(o.a) * sp * t, y: o.y + Math.sin(o.a) * sp * t, r: or });
-    }
-    let bestA = desired;
-    let bestV = -Infinity;
-    let danger = 0;
-    for (const off of OFFSETS) {
-      const cand = desired + off;
-      let h = 0;
-      for (let k = 0; k < look.length; k++) {
-        h += this.hazard(s, s.x + Math.cos(cand) * look[k], s.y + Math.sin(cand) * look[k], r, heads) * (3 - k);
-      }
-      const v = Math.cos(off) - h * 2.2 - Math.abs(angleDiff(s.a, cand)) * 0.12;
-      if (off === 0) danger = h;
-      if (v > bestV) {
-        bestV = v;
-        bestA = cand;
-      }
-    }
-    s.ta = bestA;
+    const danger = this.steer(s, tx, ty);
     s.boost = !danger && s.mass > 26 && ((hunt && Math.random() < 0.8) || (chasing > 0.03 && Math.random() < 0.15 * ai.aggr));
-    // Hands: friendly bots accept offers and sometimes offer one.
+    this.answerHands(s);
+  }
+
+  /** Hands: friendly bots accept offers and sometimes offer one; ai.accept overrides how likely they say yes. */
+  answerHands(s) {
+    const ai = s.ai;
     for (const o of this.snakes.values()) {
       if (o === s || !o.alive || !o.offer || o.offer.to !== s.id || o.offer.until < this.time) continue;
       if (!o.offer.considered) {
         o.offer.considered = true;
-        if (Math.random() < (ai.friendly ? 0.8 : 0.3)) this.link(o, s);
+        if (Math.random() < (ai.accept ?? (ai.friendly ? 0.8 : 0.3))) this.link(o, s);
       }
     }
-    if (ai.friendly && !s.offer && Math.random() < 0.02) {
+    if (ai.friendly && !ai.role && !s.offer && Math.random() < 0.02) {
       const c = this.handCandidate(s);
       if (c && c.bot) {
-        if (c.ai.friendly && Math.random() < 0.5) this.link(s, c);
+        if (c.ai.friendly && !c.ai.role && Math.random() < 0.5) this.link(s, c);
       } else if (c) {
         s.offer = { to: c.id, until: this.time + 5 };
         this.events.push({ t: 'offer', from: s.id, to: c.id });
       }
     }
+  }
+
+  /**
+   * The story's bots. ai.role: 'giant' (big and slow: closes a ring around its prey), 'hunter' (cuts across the
+   * prey's path), 'raider' (takes the people around its prey, and cuts it off when it is the smaller one), 'guard'
+   * (keeps its prey away from ai.guard), 'ally' (stays near ai.home, or walks beside ai.follow once they hold hands).
+   * ai.skill (0–1) sets how quick and how accurate; the story sets ai.hunting, ai.target and ai.flank.
+   */
+  thinkRole(s) {
+    const ai = s.ai;
+    const skill = ai.skill ?? 0.5;
+    ai.next = this.time + (0.2 - 0.12 * skill) * (0.85 + Math.random() * 0.3);
+    let plan = null;
+    if (!this.roomy(s.x, s.y, 170)) plan = { x: ai.home?.x ?? 0, y: ai.home?.y ?? 0 };
+    else if (ai.role === 'ally') plan = this.allyPlan(s);
+    else {
+      const prey = ai.hunting ? this.snakes.get(ai.target) : null;
+      if (prey?.alive && !this.sameTeam(s, prey)) plan = this.huntPlan(s, prey, skill);
+    }
+    if (!plan) plan = this.forage(s, null);
+    const margin = 6 + 16 * skill + (s.boost ? 12 : 0);
+    const danger = this.steer(s, plan.x, plan.y, plan.bold ?? null, margin);
+    s.boost = !!plan.boost && !danger && s.mass > C.minBoostMass + 8;
+  }
+
+  /** People to pick up: the best nearby (around `near`'s path, for a raider), else somewhere to wander. */
+  forage(s, near) {
+    const ai = s.ai;
+    const cx = near ? near.x + Math.cos(near.a) * 170 : s.x;
+    const cy = near ? near.y + Math.sin(near.a) * 170 : s.y;
+    let best = null;
+    let bestScore = 0;
+    this.sparkGrid.query(cx, cy, 380, (sp) => {
+      const d = Math.hypot(sp.x - s.x, sp.y - s.y);
+      const ahead = Math.cos(angleDiff(s.a, Math.atan2(sp.y - s.y, sp.x - s.x)));
+      const sc = (sp.v * (1.2 + ahead)) / (d + 40);
+      if (sc > bestScore) {
+        bestScore = sc;
+        best = sp;
+      }
+      return false;
+    });
+    if (best) return { x: best.x, y: best.y, boost: !!near && Math.random() < 0.35 };
+    if (near) return { x: cx, y: cy };
+    if (ai.wx === undefined || this.time > ai.wUntil) {
+      const p = this.somewhere(0.6);
+      ai.wx = p.x;
+      ai.wy = p.y;
+      ai.wUntil = this.time + 3 + Math.random() * 3;
+    }
+    return { x: ai.wx, y: ai.wy };
+  }
+
+  allyPlan(s) {
+    const ai = s.ai;
+    const lead = ai.follow ? this.snakes.get(ai.follow) : null;
+    if (lead?.alive && this.sameTeam(s, lead)) {
+      // Holding hands: walk beside the one who came for us.
+      ai.side ??= Math.random() < 0.5 ? 1 : -1;
+      const a = lead.a + ai.side * 2.3;
+      return { x: lead.x + Math.cos(a) * 120, y: lead.y + Math.sin(a) * 120, boost: lead.boost };
+    }
+    // Away from any other chain that comes close.
+    let fx = 0;
+    let fy = 0;
+    for (const o of this.snakes.values()) {
+      if (o === s || !o.alive || this.sameTeam(s, o) || o.id === ai.follow) continue;
+      const d = Math.hypot(o.x - s.x, o.y - s.y);
+      if (d < 320) {
+        fx += (s.x - o.x) / (d + 1);
+        fy += (s.y - o.y) / (d + 1);
+      }
+    }
+    if (fx || fy) return { x: s.x + fx * 300, y: s.y + fy * 300, boost: true };
+    const home = ai.home ?? { x: s.x, y: s.y };
+    if (ai.wx === undefined || this.time > ai.wUntil) {
+      const a = Math.random() * TAU;
+      const d = 80 + Math.random() * 170;
+      ai.wx = home.x + Math.cos(a) * d;
+      ai.wy = home.y + Math.sin(a) * d;
+      if (!this.roomy(ai.wx, ai.wy, 60)) {
+        ai.wx = home.x;
+        ai.wy = home.y;
+      }
+      ai.wUntil = this.time + 2 + Math.random() * 3;
+    }
+    return { x: ai.wx, y: ai.wy };
+  }
+
+  /** How a story bot goes after its prey; returns { x, y, boost, bold } (bold: the prey's head is not a worry). */
+  huntPlan(s, prey, skill) {
+    const ai = s.ai;
+    const pr = radiusFor(prey.mass);
+    const dx = prey.x - s.x;
+    const dy = prey.y - s.y;
+    const d = Math.hypot(dx, dy);
+    // How fast the prey is turning, measured between thoughts.
+    if (ai.pid !== prey.id) {
+      ai.pid = prey.id;
+      ai.pa = prey.a;
+      ai.pt = this.time;
+      ai.w = 0;
+      ai.orbit = null;
+    } else if (this.time - ai.pt > 0.05) {
+      const w = angleDiff(ai.pa, prey.a) / (this.time - ai.pt);
+      ai.w = Math.max(-3, Math.min(3, w)) * 0.6 + (ai.w ?? 0) * 0.4;
+      ai.pa = prey.a;
+      ai.pt = this.time;
+    }
+    const bigger = s.mass > prey.mass * 1.2;
+    const fx = Math.cos(prey.a);
+    const fy = Math.sin(prey.a);
+    const along = -dx * fx - dy * fy; // how far in front of the prey's head s is
+    const side = -fx * dy + fy * dx; // which side of its path s is on
+    // A giant long enough to go round its prey closes a ring on it, tighter and tighter.
+    if (ai.role === 'giant' && lengthFor(s.mass) > 1000 && d < 650) {
+      if (!ai.orbit) ai.orbit = { dir: side > 0 ? 1 : -1, R: Math.min(420, Math.max(220, d)) };
+      ai.orbit.R = Math.max(70 + pr * 3, ai.orbit.R - (3 + 5 * skill));
+      const ang = Math.atan2(s.y - prey.y, s.x - prey.x) + ai.orbit.dir * (0.5 + 0.3 * skill);
+      return {
+        x: prey.x + Math.cos(ang) * ai.orbit.R,
+        y: prey.y + Math.sin(ang) * ai.orbit.R,
+        boost: Math.random() < skill * 0.5,
+        bold: bigger ? prey : null,
+      };
+    }
+    ai.orbit = null;
+    // A guard only chases near what it guards; a raider only a smaller prey close by.
+    if (ai.role === 'guard' && ai.guard && Math.hypot(prey.x - ai.guard.x, prey.y - ai.guard.y) > 520) {
+      const a = this.time * 0.6 + (ai.phase ?? 0);
+      return { x: ai.guard.x + Math.cos(a) * 170, y: ai.guard.y + Math.sin(a) * 170 };
+    }
+    if (ai.role === 'raider' && !(prey.mass < s.mass * 0.9 && d < 420)) return this.forage(s, prey);
+    // In front of it and close: run straight across its path, so the chain lies in its way.
+    const across = prey.a - Math.sign(side || 1) * (Math.PI / 2 - 0.45);
+    if (along > pr + 40 && along < 240 + 140 * skill && Math.abs(side) < 230 && Math.abs(angleDiff(s.a, across)) < 1.2) {
+      const h = across;
+      ai.mode = 'cut';
+      return { x: s.x + Math.cos(h) * 220, y: s.y + Math.sin(h) * 220, boost: Math.random() < 0.3 + 0.7 * skill, bold: bigger ? prey : null };
+    }
+    // Otherwise: walk the prey's head forward in time (reading its turn, the better the bot) and head for the first
+    // point just in front of it that can be reached in time. A second hunter aims wide (ai.flank) to close the gap.
+    const pSpeed = prey.boost && prey.mass > C.minBoostMass ? C.boostSpeed : C.baseSpeed;
+    const mySpeed = s.mass > C.minBoostMass + 10 ? C.boostSpeed : C.baseSpeed;
+    const lead = pr * 2 + 45 + (1 - skill) * 50 + (ai.flank ? 90 : 0);
+    // Behind it, never along its trail (that is where its body is): overtake in a lane beside it, on our side.
+    const lane = along < pr + 40 ? Math.sign(side || 1) * (pr * 2 + radiusFor(s.mass) + 60) : 0;
+    const off = lane + (ai.flank ?? 0) * 110;
+    let px = prey.x;
+    let py = prey.y;
+    let pa = prey.a;
+    let ax = px;
+    let ay = py;
+    for (let t = 0.15; t <= 2.4; t += 0.15) {
+      pa += (ai.w ?? 0) * 0.15 * skill;
+      px += Math.cos(pa) * pSpeed * 0.15;
+      py += Math.sin(pa) * pSpeed * 0.15;
+      ax = px + Math.cos(pa) * lead + Math.sin(pa) * off;
+      ay = py + Math.sin(pa) * lead - Math.cos(pa) * off;
+      if (Math.hypot(ax - s.x, ay - s.y) <= mySpeed * t * (0.7 + 0.3 * skill)) break;
+    }
+    const noise = (1 - skill) * 70;
+    ai.mode = 'chase';
+    return {
+      x: ax + (Math.random() - 0.5) * noise,
+      y: ay + (Math.random() - 0.5) * noise,
+      boost: d > 260 && d < 700 && Math.random() < 0.25 + 0.55 * skill,
+    };
   }
 }
 
@@ -680,6 +1006,18 @@ const OFFSETS = [0, 0.45, -0.45, 0.95, -0.95, 1.5, -1.5, 2.3, -2.3, Math.PI];
 
 function newAi() {
   return { next: 0, aggr: Math.random(), friendly: Math.random() < 0.55, wx: undefined, wy: undefined, wUntil: 0 };
+}
+
+/** Squared distance from (px, py) to the segment (ax, ay)–(bx, by). */
+function segDist2(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const len2 = vx * vx + vy * vy;
+  let k = len2 ? ((px - ax) * vx + (py - ay) * vy) / len2 : 0;
+  k = Math.max(0, Math.min(1, k));
+  const x = ax + vx * k - px;
+  const y = ay + vy * k - py;
+  return x * x + y * y;
 }
 
 export function botName() {

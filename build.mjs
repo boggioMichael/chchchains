@@ -1,14 +1,14 @@
 // Builds the game into single self-contained HTML files (no dependencies, no bundler):
 //   docs/index.html          full page for any static host (and served by server.mjs), plus its manifest
 //   dist/page-content.html   the same page without <html>/<head>/<body>, for hosts that add their own skeleton
-// Settings come from config.json or environment variables (CHAIN_SERVER, CHAIN_BRAND, CHAIN_PUBLISHER,
+// Settings come from config.json or environment variables (CHAIN_SERVER, CHAIN_BRAND, CHAIN_PARTY, CHAIN_PUBLISHER,
 // CHAIN_JOIN_URL, CHAIN_SHARE_URL); see README.md.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { NAME } from './src/brand.js';
 
 const ROOT = new URL('.', import.meta.url).pathname;
-const MODULES = ['brand', 'sim', 'names', 'arena', 'streets', 'protocol', 'net', 'map', 'people', 'avatars', 'audio', 'story', 'client']; // dependency order
+const MODULES = ['brand', 'sim', 'names', 'arena', 'streets', 'protocol', 'net', 'map', 'people', 'avatars', 'audio', 'story', 'campaign', 'client']; // dependency order
 
 function bundle() {
   const parts = ['(() => {', "'use strict';", 'const __m = {};'];
@@ -41,6 +41,8 @@ function config() {
   return {
     server: env.CHAIN_SERVER ?? fromFile.server ?? '',
     brand: env.CHAIN_BRAND ?? fromFile.brand ?? 'המשחק של עמך ישראל',
+    // The party the story is about (its name in the Knesset and on the share card).
+    party: env.CHAIN_PARTY ?? fromFile.party ?? 'עמך ישראל',
     publisher: env.CHAIN_PUBLISHER ?? fromFile.publisher ?? '',
     joinUrl: env.CHAIN_JOIN_URL ?? fromFile.joinUrl ?? '',
     shareUrl: env.CHAIN_SHARE_URL ?? fromFile.shareUrl ?? '',

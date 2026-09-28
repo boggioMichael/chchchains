@@ -1,6 +1,6 @@
 // Ch-ch-chain-ges — the browser client: the maps, the human chains, touch/mouse/keyboard input, the lobby, skins,
-// music, the story, screens and sharing. Online play (net.js) draws the server's room; offline play and the story
-// simulate the world here. There are no bots: alone on a map, you walk its streets until others come.
+// music, the story, screens and sharing. Online play (net.js) draws the server's room: real people only, no bots.
+// Offline play and the story ("נגד כל הסיכויים", campaign.js) simulate the world here, against rival bots.
 import { World, C, COLORS, radiusFor, scoreOf, randomName } from './sim.js';
 import { connectOnline } from './net.js';
 import { loadCity, loadMapIndex, MAP_STYLE } from './map.js';
@@ -11,13 +11,18 @@ import { createAudio, TRACKS } from './audio.js';
 import { NAME, SLUG, drawWordmark } from './brand.js';
 import { cleanName } from './names.js';
 import { AVATARS, avatar, allSkins, loadSuppliedSkins } from './avatars.js';
-import { MISSIONS, TO_WIN, loadProgress, saveProgress, startMission } from './story.js';
+import {
+  CHAPTERS, BOOKS, BOOK_NAMES, PERKS, PERK_ROUNDS, RIVALS, OTHERS, EPILOGUE, POLL_NOTE, THRESHOLD, OURS, loadCampaign, saveCampaign,
+  newCampaign, knesset, biggestRival, openBook, winChapter, choosePerk, perkMods, starTexts, goalText, mmss, fill, partyOf,
+  startChapter, startSkirmish, startPoint,
+} from './campaign.js';
 
 const CFG = Object.assign(
   {
     server: '',
     servers: [],
     brand: 'המשחק של עמך ישראל',
+    party: 'עמך ישראל',
     publisher: '',
     joinUrl: '',
     shareUrl: '',
@@ -92,7 +97,8 @@ const game = {
   preview: null,
   here: 0,
   hereSeen: 0,
-  story: null, // { index, run, map, flags }
+  story: null, // a chapter being played: { index, chapter, run, map }
+  skirmish: null, // alone, offline: the rival parties' director
   sat: pref('sat') === '1',
   green: pref('green') === '1',
 };
@@ -192,6 +198,8 @@ async function startSolo(reason) {
   game.meId = s.id;
   game.mode = 'solo';
   game.story = null;
+  // Alone on the phone, the rival parties walk the streets too, and now and then one comes after you.
+  game.skirmish = startSkirmish(map, w, { playerId: s.id });
   beginRound(s);
   if (reason) toast(reason, 4200);
 }
@@ -214,7 +222,7 @@ function beginRound(s) {
   for (const id of ['start', 'over', 'story', 'maps', 'skins', 'music']) hide(id);
   $('mission').hidden = game.mode !== 'story';
   $('hud').classList.toggle('story', game.mode === 'story');
-  if (game.mode === 'story') $('mission-mandates').textContent = `🗳️ ${loadProgress().mandates} מנדטים מתוך ${TO_WIN}`;
+  if (game.mode !== 'solo') game.skirmish = null;
   $('waiting').hidden = true;
   const map = mapFor(game.world);
   $('green-btn').hidden = !map?.hasGreenLine;
@@ -270,7 +278,7 @@ function onDeath(e) {
   game.alive = false;
   const w = game.world;
   const killer = e.killer ? w.snakes.get(e.killer) : null;
-  game.deathInfo = { killer: e.name || (killer ? killer.name : null), edge: !!e.edge || e.killer === 0 };
+  game.deathInfo = { killer: e.name || (killer ? killer.name : null), edge: !e.cause && (!!e.edge || e.killer === 0), cause: e.cause || '' };
   navigator.vibrate?.(120);
   audio.sfx('break');
   audio.setScene('over');
@@ -293,11 +301,14 @@ function showOver() {
   const b = game.best;
   const secs = Math.round((performance.now() - b.born) / 1000);
   const story = game.mode === 'story';
+  const blocked = { roadworks: 'נתקעתם בעבודות בכביש', bus: 'האוטובוס חסם את השרשרת', train: 'הרכבת חצתה את השרשרת' };
   $('over-title').textContent = game.deathInfo?.lost
     ? 'החיבור לשרת נותק'
-    : game.deathInfo?.timeout
-      ? 'נגמר הזמן – המשימה לא הושלמה'
-      : game.deathInfo?.edge
+    : game.deathInfo?.why
+      ? `${game.deathInfo.why} – הפרק לא הושלם`
+      : blocked[game.deathInfo?.cause]
+        ? blocked[game.deathInfo.cause]
+        : game.deathInfo?.edge
         ? story
           ? 'יצאתם מהמפה – המשימה לא הושלמה'
           : 'יצאת מהמפה'
@@ -307,7 +318,10 @@ function showOver() {
             ? 'השרשרת נקרעה – המשימה לא הושלמה'
             : 'השרשרת נקרעה';
   $('stat-score').textContent = b.maxScore.toLocaleString('he-IL');
-  $('stat-rank').textContent = b.rank < 99 ? `#${b.rank}` : '–';
+  // In the story, the place in a room means nothing: how many rivals ran into you does.
+  $('stat-rank').textContent = story ? String(game.story?.run?.cuts ?? 0) : b.rank < 99 ? `#${b.rank}` : '–';
+  $('stat-rank-label').textContent = story ? 'יריבות נתקלו בכם' : 'המקום הכי גבוה';
+  $('over-net').hidden = story;
   $('stat-hands').textContent = String(b.hands);
   $('stat-time').textContent = secs >= 60 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : `${secs} שנ׳`;
   $('again').textContent = story ? 'עוד ניסיון' : 'עוד סיבוב';
@@ -327,6 +341,7 @@ function toMenu() {
   game.world = null; // the start screen shows the chosen map (and its room, when people play there)
   game.meId = 0;
   game.story = null;
+  game.skirmish = null;
   hide('over');
   hide('hud');
   show('start');
@@ -507,6 +522,7 @@ function frame(now) {
     }
     handleEvents(w);
     if (game.mode === 'story') updateStory(dt);
+    else if (game.mode === 'solo' && game.skirmish && game.alive) for (const text of game.skirmish.update(dt).warn) toast(text, 2600);
     updateCamera(dt);
     render(now / 1000);
     updateHud();
@@ -525,8 +541,14 @@ function frame(now) {
 
 function handleEvents(w) {
   const my = game.meId;
+  const run = game.mode === 'story' ? game.story?.run : game.mode === 'solo' ? game.skirmish : null;
   for (const e of w.events) {
-    if (e.t === 'death' && e.id === my && game.alive) onDeath(e);
+    run?.event(e);
+    if (e.t === 'shield' && e.id === my && game.alive) {
+      toast('🛡️ החוסן הציל אתכם: חלק מהשרשרת נשאר מאחור', 2800);
+      navigator.vibrate?.([80, 40, 80]);
+      audio.sfx('broke');
+    } else if (e.t === 'death' && e.id === my && game.alive) onDeath(e);
     else if (e.t === 'death' && e.killer === my && game.alive) {
       const name = e.name || nameOf(w, e.id);
       if (name) toast(`${name} נתקל בשרשרת שלך`);
@@ -593,6 +615,7 @@ function render(t) {
   const sx = (x) => (x - cam.x) * z + W / 2;
   const sy = (y) => (y - cam.y) * z + H / 2;
 
+  drawHazards(w, t, sx, sy);
   if (game.story?.run) drawTargets(game.story.run.targets, t, sx, sy, false);
 
   // People on the street, waiting to join a chain.
@@ -710,9 +733,23 @@ function render(t) {
         ctx.fill();
         ctx.drawImage(face, x - size / 2, hy - size / 2, size, size);
       }
+      // A shield (the story's resilience): a soft bubble while it lasts, bright just after it saved the chain.
+      if (isMe && (f.s.shield > 0 || w.time < f.s.safeUntil)) {
+        const fresh = w.time < f.s.safeUntil;
+        ctx.save();
+        ctx.strokeStyle = fresh ? 'rgba(47, 111, 237, 0.9)' : 'rgba(47, 111, 237, 0.35)';
+        ctx.lineWidth = fresh ? 4 : 2;
+        ctx.globalAlpha = fresh ? 0.6 + 0.4 * Math.sin(t * 18) : 1;
+        ctx.beginPath();
+        ctx.arc(x, y - f.hp * 0.45, f.hp * 0.75, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
   }
 
+  drawVehicles(w, sx, sy);
+  drawRain(w, t, sx, sy);
   if (game.story?.run) drawTargets(game.story.run.targets, t, sx, sy, true);
 
   // Names above the other leaders, and hands being offered.
@@ -724,12 +761,24 @@ function render(t) {
     const x = sx(s.x);
     const y = sy(s.y) - hp * 1.62; // above the leader's flag
     if (s.id !== game.meId) {
-      ctx.font = '600 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+      // A rival out to get you: its name in red, and a ring that beats like a pulse.
+      const hunting = s.ai?.hunting && (s.ai.target === game.meId || game.story?.run?.allies?.some((a) => a.id === s.ai.target));
+      const label = hunting ? `🎯 ${s.name}` : s.name;
+      ctx.font = `${hunting ? 800 : 600} 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
       ctx.strokeStyle = 'rgba(255,255,255,0.92)';
       ctx.lineWidth = 3;
-      ctx.strokeText(s.name, x, y - 4);
-      ctx.fillStyle = INK;
-      ctx.fillText(s.name, x, y - 4);
+      ctx.strokeText(label, x, y - 4);
+      ctx.fillStyle = hunting ? '#c8252c' : INK;
+      ctx.fillText(label, x, y - 4);
+      if (hunting) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(229, 72, 77, ${0.55 + 0.35 * Math.sin(t * 9)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, sy(s.y) - hp * 0.45, hp * (0.62 + 0.06 * Math.sin(t * 9)), 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     if (s.offer && s.offer.until > w.time && (s.offer.to === game.meId || s.id === game.meId)) {
       const bob = Math.sin(t * 6) * 3;
@@ -740,8 +789,206 @@ function render(t) {
   const my = me();
   if (my?.alive && game.alive) drawPointer(my, t);
   drawEdgeWarning(my, w, map);
+  drawOffscreenHunters(w, sx, sy);
   if (game.story?.run) drawOffscreenTargets(game.story.run.targets, sx, sy);
   drawMinimap(w, map);
+}
+
+// ------------------------------------------------------------------------------------------------ obstacles (story)
+let stripes = null;
+function stripePattern() {
+  if (stripes) return stripes;
+  const c = document.createElement('canvas');
+  c.width = c.height = 16;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 16, 16);
+  g.fillStyle = '#f76b15';
+  g.beginPath();
+  g.moveTo(0, 0);
+  g.lineTo(8, 0);
+  g.lineTo(0, 8);
+  g.closePath();
+  g.moveTo(16, 0);
+  g.lineTo(16, 8);
+  g.lineTo(8, 16);
+  g.lineTo(0, 16);
+  g.closePath();
+  g.fill();
+  stripes = ctx.createPattern(c, 'repeat');
+  return stripes;
+}
+/** Storm clouds and roadworks: on the ground, under the chains. */
+function drawHazards(w, t, sx, sy) {
+  if (!w.zones) return; // online rooms have none
+  const z = cam.zoom;
+  for (const zone of w.zones) {
+    const p = w.zoneAt(zone);
+    const x = sx(p.x);
+    const y = sy(p.y);
+    const r = zone.r * z;
+    if (x + r < 0 || x - r > W || y + r < 0 || y - r > H) continue;
+    const g = ctx.createRadialGradient(x, y, r * 0.15, x, y, r);
+    g.addColorStop(0, 'rgba(52, 58, 72, 0.42)');
+    g.addColorStop(0.75, 'rgba(52, 58, 72, 0.26)');
+    g.addColorStop(1, 'rgba(52, 58, 72, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+    ctx.font = `${Math.max(22, Math.min(46, r * 0.22))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(Math.sin(t * 2.3 + zone.ax) > 0.93 ? '🌩️' : '⛈️', x, y);
+    ctx.globalAlpha = 1;
+  }
+  for (const b of w.bars) {
+    const x1 = sx(b.x1);
+    const y1 = sy(b.y1);
+    const x2 = sx(b.x2);
+    const y2 = sy(b.y2);
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    if (mx < -80 || mx > W + 80 || my < -80 || my > H + 80) continue;
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    const thick = Math.max(5, b.w * z);
+    ctx.save();
+    ctx.translate(mx, my);
+    ctx.rotate(Math.atan2(y2 - y1, x2 - x1));
+    ctx.fillStyle = 'rgba(70, 55, 30, 0.18)';
+    ctx.fillRect(-len / 2 + 2, -thick / 2 + 3, len, thick);
+    ctx.fillStyle = stripePattern();
+    ctx.fillRect(-len / 2, -thick / 2, len, thick);
+    ctx.strokeStyle = '#b4470b';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-len / 2, -thick / 2, len, thick);
+    // Traffic cones at both ends.
+    for (const cx of [-len / 2, len / 2]) {
+      const h = Math.max(7, thick * 1.2);
+      ctx.fillStyle = '#f76b15';
+      ctx.beginPath();
+      ctx.moveTo(cx - h * 0.45, h * 0.5);
+      ctx.lineTo(cx, -h * 0.7);
+      ctx.lineTo(cx + h * 0.45, h * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - h * 0.22, -h * 0.12, h * 0.44, h * 0.18);
+    }
+    ctx.restore();
+  }
+}
+/** Buses and trains, over the chains (they cut straight through them). */
+function drawVehicles(w, sx, sy) {
+  if (!w.movers) return;
+  const z = cam.zoom;
+  for (const m of w.movers) {
+    const p = w.moverAt(m);
+    const x = sx(p.x);
+    const y = sy(p.y);
+    const L = Math.max(22, (m.half * 2 + m.r * 2) * z);
+    const Wd = Math.max(9, m.r * 2 * z);
+    if (x < -L || x > W + L || y < -L || y > H + L) continue;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(p.a);
+    ctx.fillStyle = 'rgba(40, 32, 20, 0.22)';
+    ctx.beginPath();
+    roundRect(ctx, -L / 2 + 2, -Wd / 2 + 3, L, Wd, Wd * 0.3);
+    ctx.fill();
+    const train = m.label === 'train';
+    ctx.fillStyle = train ? '#e4e8ee' : '#1f8a4c';
+    ctx.strokeStyle = train ? '#56607a' : '#10582f';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    roundRect(ctx, -L / 2, -Wd / 2, L, Wd, Wd * 0.3);
+    ctx.fill();
+    ctx.stroke();
+    // Windows along both sides, a windscreen in front.
+    ctx.fillStyle = train ? '#2f5bd3' : '#cfe8f5';
+    const n = Math.max(3, Math.round(L / Math.max(10, Wd * 1.1)));
+    for (let i = 0; i < n; i++) {
+      const wx = -L / 2 + (L * (i + 0.5)) / (n + 0.6);
+      ctx.fillRect(wx - L / (n * 3.4), -Wd / 2 + Wd * 0.14, L / (n * 1.7), Wd * 0.18);
+      ctx.fillRect(wx - L / (n * 3.4), Wd / 2 - Wd * 0.32, L / (n * 1.7), Wd * 0.18);
+    }
+    ctx.fillStyle = '#23201b';
+    ctx.fillRect(L / 2 - Wd * 0.28, -Wd * 0.32, Wd * 0.16, Wd * 0.64);
+    if (train) {
+      ctx.fillStyle = '#2f5bd3';
+      ctx.fillRect(-L / 2, -Wd * 0.06, L, Wd * 0.12);
+    }
+    ctx.restore();
+  }
+}
+/** Rain in the storms: short slanted streaks, over everything. */
+function drawRain(w, t, sx, sy) {
+  if (!w.zones?.length) return;
+  const z = cam.zoom;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(60, 80, 110, 0.45)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (const zone of w.zones) {
+    const p = w.zoneAt(zone);
+    const x = sx(p.x);
+    const y = sy(p.y);
+    const r = zone.r * z;
+    if (x + r < 0 || x - r > W || y + r < 0 || y - r > H) continue;
+    for (let i = 0; i < 70; i++) {
+      const a = (i * 2.399) % TAU;
+      const d = r * Math.sqrt(((i * 0.618) % 1) * 0.95);
+      const fall = ((t * 1.6 + i * 0.37) % 1) * 26 - 13;
+      const rx = x + Math.cos(a) * d + fall * 0.4;
+      const ry = y + Math.sin(a) * d + fall;
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 3, ry + 9);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+function roundRect(g, x, y, w, h, r) {
+  if (g.roundRect) g.roundRect(x, y, w, h, r);
+  else g.rect(x, y, w, h);
+}
+/** Red arrows at the screen's edge toward rivals hunting you (from further off with the situation room). */
+function drawOffscreenHunters(w, sx, sy) {
+  const s = me();
+  if (!s?.alive || !game.alive || game.mode === 'online') return;
+  const range = game.mode === 'story' && game.story?.perks?.includes('intel') ? 1700 : 750;
+  for (const o of w.snakes.values()) {
+    if (!o.alive || !o.ai?.hunting || o.ai.target !== game.meId) continue;
+    const d = Math.hypot(o.x - s.x, o.y - s.y);
+    if (d > range) continue;
+    const x = sx(o.x);
+    const y = sy(o.y);
+    if (x > 20 && x < W - 20 && y > 20 && y < H - 20) continue;
+    const a = Math.atan2(y - H / 2, x - W / 2);
+    const m = 30;
+    const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m - 30) / Math.abs(Math.sin(a) || 1e-6));
+    const ex = W / 2 + Math.cos(a) * k;
+    const ey = H / 2 + Math.sin(a) * k;
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.rotate(a);
+    ctx.globalAlpha = 0.55 + 0.45 * (1 - d / range);
+    ctx.fillStyle = '#e5484d';
+    ctx.beginPath();
+    ctx.moveTo(18, 0);
+    ctx.lineTo(-6, 12);
+    ctx.lineTo(-1, 0);
+    ctx.lineTo(-6, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    ctx.font = '800 11px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#c8252c';
+    ctx.fillText(o.name, ex - Math.cos(a) * 26, ey - Math.sin(a) * 22);
+  }
 }
 
 /** The direction arrow, like a compass needle just ahead of your leader (where your finger is steering). */
@@ -870,16 +1117,26 @@ function drawTargets(targets, t, sx, sy, over) {
 function drawOffscreenTargets(targets, sx, sy) {
   const s = me();
   if (!s) return;
+  const placed = [];
   for (const p of targets) {
     if (!p.active || p.done) continue;
     const x = sx(p.x);
     const y = sy(p.y);
     if (x > 30 && x < W - 30 && y > 30 && y < H - 30) continue;
-    const a = Math.atan2(y - H / 2, x - W / 2);
+    const dir = Math.atan2(y - H / 2, x - W / 2);
+    let a = dir;
     const m = 46;
-    const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m - 40) / Math.abs(Math.sin(a) || 1e-6));
-    const ex = W / 2 + Math.cos(a) * k;
-    const ey = H / 2 + Math.sin(a) * k;
+    const at = (a) => {
+      const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m - 40) / Math.abs(Math.sin(a) || 1e-6));
+      return [W / 2 + Math.cos(a) * k, H / 2 + Math.sin(a) * k];
+    };
+    let [ex, ey] = at(a);
+    // Several places the same way: fan the arrows out along the edge so each can be read.
+    for (let tries = 0; tries < 8 && placed.some(([px, py]) => Math.hypot(px - ex, py - ey) < 58); tries++) {
+      a += (tries % 2 ? -1 : 1) * 0.14 * (tries + 1);
+      [ex, ey] = at(a);
+    }
+    placed.push([ex, ey]);
     ctx.save();
     ctx.translate(ex, ey);
     ctx.beginPath();
@@ -889,7 +1146,7 @@ function drawOffscreenTargets(targets, sx, sy) {
     ctx.strokeStyle = '#b07c0a';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.rotate(a);
+    ctx.rotate(dir);
     ctx.beginPath();
     ctx.moveTo(14, 0);
     ctx.lineTo(2, 8);
@@ -1003,18 +1260,40 @@ function drawMinimap(w, map) {
   mctx.lineWidth = 1 * DPR;
   mctx.strokeRect(px(cam.x - hw), py(cam.y - hh), hw * 2 * k, hh * 2 * k);
   const my = me();
-  // Everyone: online the server's radar (all the room, every two seconds) plus what is in view, else the world.
+  // Storms, as grey clouds.
+  for (const zone of w.zones || []) {
+    const p = w.zoneAt(zone);
+    mctx.fillStyle = 'rgba(52, 58, 72, 0.28)';
+    mctx.beginPath();
+    mctx.arc(px(p.x), py(p.y), Math.max(3 * DPR, zone.r * k), 0, TAU);
+    mctx.fill();
+  }
+  // Everyone: online the server's radar (all the room, every two seconds) plus what is in view, else the world. In
+  // the story only the chains near you show, unless you have a situation room (then all, hunters ringed in red).
+  const intel = game.mode !== 'story' || game.story?.perks?.includes('intel');
   const dots = new Map();
   if (game.mode === 'online' && w.radar) for (const [id, x, y, color, score, team] of w.radar) dots.set(id, { x: x * 10, y: y * 10, color, score, team });
-  for (const s of w.snakes.values()) if (s.alive) dots.set(s.id, { x: s.x, y: s.y, color: s.color, score: scoreOf(s.mass), team: s.team });
+  for (const s of w.snakes.values()) {
+    if (!s.alive) continue;
+    if (!intel && my && Math.hypot(s.x - my.x, s.y - my.y) > 950) continue;
+    dots.set(s.id, { x: s.x, y: s.y, color: s.color, score: scoreOf(s.mass), team: s.team, hunt: s.ai?.hunting && s.ai.target === game.meId });
+  }
   for (const [id, d] of dots) {
     const isMe = id === game.meId;
     if (isMe) continue;
     const mate = my && my.team && d.team === my.team;
+    const r = (mate ? 2.8 : 2.2) * DPR + Math.min(2.5, d.score / 120) * DPR;
     mctx.fillStyle = mate ? '#b07c0a' : COLORS[d.color % COLORS.length];
     mctx.beginPath();
-    mctx.arc(px(d.x), py(d.y), (mate ? 2.8 : 2.2) * DPR + Math.min(2.5, d.score / 120) * DPR, 0, TAU);
+    mctx.arc(px(d.x), py(d.y), r, 0, TAU);
     mctx.fill();
+    if (d.hunt) {
+      mctx.strokeStyle = '#e5484d';
+      mctx.lineWidth = 1.5 * DPR;
+      mctx.beginPath();
+      mctx.arc(px(d.x), py(d.y), r + 2.5 * DPR, 0, TAU);
+      mctx.stroke();
+    }
   }
   // Mission places.
   for (const p of game.story?.run?.targets || []) {
@@ -1111,7 +1390,7 @@ function updateHud() {
     const rank = game.mode === 'online' ? board?.rank || 0 : alive.indexOf(s) + 1;
     const total = game.mode === 'online' ? board?.total || 0 : alive.length;
     $('score').textContent = score.toLocaleString('he-IL');
-    $('rank').textContent = rank && total > 1 ? `מקום ${rank} מתוך ${total}` : '';
+    $('rank').textContent = rank && total > 1 && game.mode !== 'story' ? `מקום ${rank} מתוך ${total}` : '';
     game.best.maxScore = Math.max(game.best.maxScore, score);
     if (rank && total > 1) game.best.rank = Math.min(game.best.rank, rank);
     game.best.hands = Math.max(game.best.hands, handsOf(s), game.handIds.size);
@@ -1124,7 +1403,7 @@ function updateHud() {
       btn.classList.toggle('pulse', cand.offer?.to === s.id);
       if (game.hintStage < 2) {
         game.hintStage = 2;
-        hint('לחצו 🤝 – ביחד עוברים זה דרך זה ואוספים פי 1.5', 4500);
+        hint('לחצו 🤝 – מחזיקים ידיים, עוברים זה דרך זה ואוספים פי 1.5', 4500);
       }
     } else btn.hidden = true;
     if (game.hintStage === 0 && now - game.best.born > 6000) {
@@ -1152,7 +1431,7 @@ function updateHud() {
   );
   const name = mapName(w.city);
   if (game.mode === 'story') {
-    $('players').textContent = `🗳️ ${loadProgress().mandates} מנדטים מתוך ${TO_WIN}`;
+    $('players').textContent = '';
   } else if (board) {
     const here = board.here ?? 1;
     $('players').textContent = `${name ? `${name} · ` : ''}${here === 1 ? 'רק אתה כאן' : `${here} משחקים כאן`}`;
@@ -1200,98 +1479,433 @@ function trackPerformance(dt) {
   }
 }
 
-// ------------------------------------------------------------------------------------------------ story
-function renderStory() {
-  const p = loadProgress();
-  const done = p.i >= MISSIONS.length || p.mandates >= TO_WIN;
-  $('mandates-bar').style.width = `${Math.min(100, (p.mandates / 80) * 100)}%`;
-  $('mandates-text').textContent = done
-    ? `🎉 ${p.mandates} מנדטים – ניצחתם בבחירות!`
-    : `${p.mandates} מנדטים מתוך ${TO_WIN} · משימה ${p.i + 1} מתוך ${MISSIONS.length}`;
-  if (done) {
-    $('story-chapter').textContent = 'סוף הסיפור';
-    $('story-mission').textContent = 'הקמתם ממשלה';
-    $('story-brief').textContent = `${p.mandates} מנדטים. מתחילים בשרשרת של אדם אחד, ומגיעים לממשלה – כי ביחד אנחנו שרשרת. אפשר לשתף, או להתחיל את הדרך מחדש.`;
-    $('story-go').textContent = 'שתפו את הניצחון';
-  } else {
-    const m = MISSIONS[p.i];
-    const onMap = maps.byId.has(m.map) ? m.map : '';
-    $('story-chapter').textContent = `${m.chapter}${onMap ? '' : ' (על המפה שבחרתם)'} · +${m.mandates} מנדטים`;
-    $('story-mission').textContent = m.title;
-    $('story-brief').textContent = m.brief;
-    $('story-go').textContent = p.i === 0 && p.mandates === 0 ? 'יוצאים לדרך' : 'למשימה';
-  }
-  $('story-reset').hidden = p.i === 0 && p.mandates === 0;
+// ------------------------------------------------------------------------------------------------ the story
+// "נגד כל הסיכויים" (campaign.js): the Knesset, the road across the country, a chapter's briefing, its result, the
+// strategies between the books, and election night.
+const camp = { state: loadCampaign(), view: 'chapter', lost: [], resetArmed: 0 };
+const PARTY = () => CFG.party || 'עמך ישראל';
+const OTHER_GREYS = ['#b9b1a3', '#a59d8f', '#cbc4b6', '#948c7e'];
+const textVars = () => ({ party: PARTY(), seats: camp.state.seats.ours });
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
 }
-function openStory() {
-  renderStory();
+function rowColor(row) {
+  if (row.ours) return COLORS[OURS];
+  if (row.undecided) return '#e4ded2';
+  if (row.other) return OTHER_GREYS[Math.max(0, OTHERS.findIndex((p) => p.id === row.id)) % OTHER_GREYS.length];
+  return COLORS[row.color % COLORS.length];
+}
+/** Under the threshold, our standing is a poll percentage (the seats wait with the undecided). */
+function oursLabel(st) {
+  const n = st.seats.ours;
+  return n >= THRESHOLD ? `${n} מנדטים` : `${['1.2', '1.9', '2.6', '3.1'][n] ?? '3.1'}% · מתחת לאחוז החסימה`;
+}
+/** The Knesset rows as shown: ours first, the rest by size, the undecided last. */
+function knessetRows(st) {
+  const rows = knesset(st, PARTY());
+  const ours = rows.find((r) => r.ours);
+  const rest = rows.filter((r) => !r.ours && !r.undecided);
+  let undecided = rows.find((r) => r.undecided)?.seats ?? 0;
+  if (ours.seats < THRESHOLD) {
+    undecided += ours.seats;
+    ours.seats = 0;
+  }
+  return [ours, ...rest, ...(undecided ? [{ id: 'undecided', name: 'מתלבטים', seats: undecided, undecided: true }] : [])];
+}
+/** The Knesset as a half circle of 120 seats (ours from the right), our number in the middle, and a legend. */
+function knessetBlock(st) {
+  const box = el('div', 'knesset');
+  const c = el('canvas');
+  c.setAttribute('aria-hidden', 'true');
+  box.append(c);
+  const rows = knessetRows(st);
+  const lead = rows.filter((r) => !r.undecided).reduce((a, b) => (b.seats > a.seats ? b : a));
+  const legend = el('div', 'legend');
+  for (const r of rows) {
+    const chip = el('span', r.ours ? 'ours' : '');
+    const dot = el('i');
+    dot.style.background = rowColor(r);
+    chip.append(dot, `${r === lead ? '👑 ' : ''}${r.name} `, el('b', '', r.ours && r.seats === 0 ? oursLabel(st).split(' · ')[0] : String(r.seats)));
+    legend.append(chip);
+  }
+  box.append(legend);
+  box.setAttribute('aria-label', `הכנסת: ${rows.map((r) => `${r.name} ${r.seats}`).join(', ')}`);
+  requestAnimationFrame(() => drawKnesset(c, rows));
+  return box;
+}
+function drawKnesset(c, rows) {
+  const cssW = c.clientWidth || 300;
+  const cssH = Math.round(cssW * 0.52);
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = Math.round(cssW * dpr);
+  c.height = Math.round(cssH * dpr);
+  c.style.height = `${cssH}px`;
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = cssW / 2;
+  const cy = cssH - 4;
+  const R1 = Math.min(cssW / 2 - 6, cssH - 8);
+  const R0 = R1 * 0.4;
+  const nRows = 6;
+  const radii = Array.from({ length: nRows }, (_, i) => R0 + ((R1 - R0) * i) / (nRows - 1));
+  const sum = radii.reduce((a, b) => a + b, 0);
+  const counts = radii.map((r) => Math.round((120 * r) / sum));
+  let diff = 120 - counts.reduce((a, b) => a + b, 0);
+  for (let i = nRows - 1; diff !== 0; i = (i + nRows - 1) % nRows) {
+    counts[i] += Math.sign(diff);
+    diff -= Math.sign(diff);
+  }
+  const seats = [];
+  radii.forEach((r, i) => {
+    for (let j = 0; j < counts[i]; j++) {
+      const a = (Math.PI * (j + 0.5)) / counts[i];
+      seats.push({ x: cx + Math.cos(a) * r, y: cy - Math.sin(a) * r, a });
+    }
+  });
+  seats.sort((p, q) => p.a - q.a);
+  const dot = ((R1 - R0) / (nRows - 1)) * 0.4;
+  let k = 0;
+  for (const row of rows) {
+    g.fillStyle = rowColor(row);
+    for (let n = 0; n < row.seats && k < seats.length; n++, k++) {
+      g.beginPath();
+      g.arc(seats[k].x, seats[k].y, dot, 0, TAU);
+      g.fill();
+    }
+  }
+  const ours = rows[0]?.seats ?? 0;
+  g.textAlign = 'center';
+  g.fillStyle = COLORS[OURS];
+  g.font = `900 ${Math.round(R0 * 0.7)}px system-ui, sans-serif`;
+  g.fillText(String(ours), cx, cy - R0 * 0.3);
+  g.fillStyle = 'rgba(35, 32, 27, 0.62)';
+  g.font = `700 ${Math.max(10, Math.round(R0 * 0.2))}px system-ui, sans-serif`;
+  g.fillText('מנדטים', cx, cy - 2);
+}
+
+// The road across the country: the country map's picture, a dot for every chapter, done ones in our colour.
+let routeImg = null;
+function chapterPoint(ch) {
+  const israel = maps.byId.get('israel');
+  if (!israel?.center) return null;
+  const [lat0, lon0] = israel.center;
+  const phi = (lat0 * Math.PI) / 180;
+  const ky = 111132.954 - 559.822 * Math.cos(2 * phi) + 1.175 * Math.cos(4 * phi);
+  const kx = 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi);
+  const at = (c) => ({ x: ((c[1] - lon0) * kx) / 50, y: (-(c[0] - lat0) * ky) / 50 });
+  const byName = (he) => [...maps.byId.values()].find((m) => m.he === he || m.he?.replace(/[–-]/g, '') === he.replace(/[–-]/g, ''));
+  if (ch.map !== 'israel') {
+    const m = maps.byId.get(ch.map);
+    return m?.center ? at(m.center) : null;
+  }
+  const names = ch.goal.names || ['ירושלים'];
+  const pts = names.map(byName).filter((m) => m?.center).map((m) => at(m.center));
+  if (!pts.length) return null;
+  return { x: pts.reduce((a, p) => a + p.x, 0) / pts.length, y: pts.reduce((a, p) => a + p.y, 0) / pts.length };
+}
+function routeBlock(st) {
+  const box = el('div', 'route');
+  const c = el('canvas');
+  c.setAttribute('aria-hidden', 'true');
+  const list = el('ol', 'route-list');
+  let book = -1;
+  CHAPTERS.forEach((ch, i) => {
+    if (ch.book !== book) {
+      book = ch.book;
+      list.append(el('li', 'book', `${BOOK_NAMES[book]} · ${BOOKS[book].title}`));
+    }
+    const li = el('li', i < st.next ? 'done' : i === st.next ? 'now' : '');
+    li.append(el('span', '', `${i + 1}. ${ch.title}`), el('b', '', i < st.next ? '⭐'.repeat(st.stars[i] || 1) : i === st.next ? '◀' : ''));
+    list.append(li);
+  });
+  box.append(c, list);
+  requestAnimationFrame(() => drawRoute(c, st));
+  return box;
+}
+function drawRoute(c, st) {
+  const E = 4640;
+  const X0 = -1750;
+  const X1 = 1550;
+  const Y0 = -4450;
+  const Y1 = 4450;
+  const cssW = c.clientWidth || 96;
+  const cssH = Math.round((cssW * (Y1 - Y0)) / (X1 - X0));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = Math.round(cssW * dpr);
+  c.height = Math.round(cssH * dpr);
+  c.style.height = `${cssH}px`;
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!routeImg) {
+    routeImg = new Image();
+    routeImg.onload = () => !$('story').hidden && renderCampaign();
+    routeImg.src = `${CFG.maps}israel.jpg`;
+  }
+  if (routeImg.complete && routeImg.naturalWidth) {
+    const s = routeImg.naturalWidth / (2 * E);
+    g.drawImage(routeImg, (X0 + E) * s, (Y0 + E) * s, (X1 - X0) * s, (Y1 - Y0) * s, 0, 0, cssW, cssH);
+  } else {
+    g.fillStyle = '#e9e3d6';
+    g.fillRect(0, 0, cssW, cssH);
+  }
+  const tx = (x) => ((x - X0) / (X1 - X0)) * cssW;
+  const ty = (y) => ((y - Y0) / (Y1 - Y0)) * cssH;
+  const pts = CHAPTERS.map(chapterPoint);
+  // The road so far: from the first chapter to the one ahead.
+  g.strokeStyle = COLORS[OURS];
+  g.lineWidth = 2;
+  g.setLineDash([4, 3]);
+  g.beginPath();
+  let started = false;
+  pts.slice(0, st.next + 1).forEach((p) => {
+    if (!p) return;
+    g[started ? 'lineTo' : 'moveTo'](tx(p.x), ty(p.y));
+    started = true;
+  });
+  g.stroke();
+  g.setLineDash([]);
+  pts.forEach((p, i) => {
+    if (!p) return;
+    const done = i < st.next;
+    const now = i === st.next;
+    g.beginPath();
+    g.arc(tx(p.x), ty(p.y), now ? 6 : 4.2, 0, TAU);
+    g.fillStyle = done ? COLORS[OURS] : now ? '#ffffff' : 'rgba(255,255,255,0.8)';
+    g.fill();
+    g.lineWidth = now ? 3 : 1.4;
+    g.strokeStyle = done ? '#ffffff' : now ? '#e5484d' : 'rgba(35, 32, 27, 0.5)';
+    g.stroke();
+  });
+}
+function perksLine(st) {
+  if (!st.perks.length) return null;
+  const p = el('p', 'perks-line');
+  p.append(el('b', '', 'האסטרטגיות שלכם: '), st.perks.map((id) => PERKS.find((x) => x.id === id)).filter(Boolean).map((x) => `${x.icon} ${x.name}`).join(' · '));
+  return p;
+}
+function gainsText(gains) {
+  const n = gains.reduce((a, g) => a + g.n, 0);
+  const from = gains.map((g) => `${g.n} ${g.from === 'undecided' ? 'מהמתלבטים' : `מ${partyOf(g.from)?.name ?? g.from}`}`).join(', ');
+  return n ? `+${n} ${n === 1 ? 'מנדט' : 'מנדטים'}: ${from}` : '';
+}
+
+function renderCampaign() {
+  const st = camp.state;
+  const body = $('camp-body');
+  body.replaceChildren();
+  const go = $('story-go');
+  go.hidden = false;
+  const view = camp.view === 'result' && st.last ? 'result' : st.pending || 'chapter';
+  const vars = textVars();
+  const kicker = $('camp-kicker');
+  const title = $('story-title');
+  if (view === 'book') {
+    const b = CHAPTERS[st.next]?.book ?? 0;
+    const lost = openBook(st, b);
+    if (lost.length) camp.lost = lost;
+    saveCampaign(st);
+    kicker.textContent = 'נגד כל הסיכויים';
+    title.textContent = `${BOOK_NAMES[b]}: ${BOOKS[b].title}`;
+    body.append(el('p', 'story-text', fill(BOOKS[b].text, vars)));
+    if (b === 2 && camp.lost.length) body.append(el('p', 'loss', `−${camp.lost.reduce((a, x) => a + x.n, 0)} מנדטים: ${camp.lost.map((x) => `${x.n} ל${partyOf(x.to)?.name}`).join(', ')}`));
+    if (b === 0) body.append(el('p', 'note', `הסיפור והדמויות בדיוניים. ${POLL_NOTE}`));
+    body.append(knessetBlock(st));
+    go.textContent = 'המשך';
+  } else if (view === 'result') {
+    const { index, stars, gains } = st.last;
+    const ch = CHAPTERS[index];
+    kicker.textContent = `פרק ${index + 1} מתוך ${CHAPTERS.length} הושלם`;
+    title.textContent = `✅ ${ch.title}`;
+    body.append(el('p', 'stars-big', '⭐'.repeat(stars) + '☆'.repeat(3 - stars)));
+    const gt = gainsText(gains);
+    if (gt) body.append(el('p', 'gain', gt));
+    if (st.seats.ours >= THRESHOLD && st.seats.ours - gains.reduce((a, g) => a + g.n, 0) < THRESHOLD) body.append(el('p', 'gain big', '🎉 עברתם את אחוז החסימה!'));
+    body.append(el('p', 'story-text', fill(ch.outro, vars)));
+    body.append(knessetBlock(st));
+    go.textContent = 'המשך';
+  } else if (view === 'perks') {
+    const round = CHAPTERS[st.next - 1]?.book ?? 0;
+    kicker.textContent = `סוף ${BOOK_NAMES[round]}`;
+    title.textContent = 'בחרו אסטרטגיה';
+    body.append(el('p', 'note', 'היכולת שתבחרו תלווה אתכם עד סוף הדרך.'));
+    const grid = el('div', 'perks');
+    for (const id of PERK_ROUNDS[round] || []) {
+      const p = PERKS.find((x) => x.id === id);
+      const b = el('button', 'perk');
+      b.type = 'button';
+      b.append(el('span', 'icon', p.icon), el('b', '', p.name), el('small', '', p.text));
+      b.addEventListener('click', () => {
+        choosePerk(st, id);
+        saveCampaign(st);
+        camp.view = 'chapter';
+        renderCampaign();
+      });
+      grid.append(b);
+    }
+    body.append(grid);
+    go.hidden = true;
+  } else if (view === 'end') {
+    kicker.textContent = 'ליל הבחירות';
+    title.textContent = 'המפלגה הגדולה ביותר';
+    for (const para of fill(EPILOGUE, vars).split('\n')) body.append(el('p', 'story-text', para));
+    body.append(el('p', 'story-text strong', 'לבד אתה חזק – ביחד אנחנו שרשרת.'));
+    body.append(knessetBlock(st));
+    const total = st.stars.reduce((a, b) => a + (b || 0), 0);
+    body.append(el('p', 'note', `⭐ ${total} כוכבים מתוך ${CHAPTERS.length * 3} · הסיפור והדמויות בדיוניים.`));
+    go.textContent = 'שתפו את הניצחון';
+  } else {
+    const ch = CHAPTERS[st.next];
+    const place = maps.byId.get(ch.map)?.he ?? '';
+    kicker.textContent = `${BOOK_NAMES[ch.book]}: ${BOOKS[ch.book].title} · פרק ${st.next + 1} מתוך ${CHAPTERS.length}`;
+    title.textContent = ch.title;
+    const card = el('div', 'mission-card');
+    card.append(el('small', '', place ? `📍 ${place}` : ''), el('p', 'story-text', fill(ch.intro, vars)));
+    const goal = el('p', 'goal');
+    goal.append(el('b', '', `🎯 ${goalText(ch)}`), ch.time ? ` · ⏱️ ${mmss(ch.time)}` : '');
+    card.append(goal);
+    const stars = el('ul', 'stars');
+    for (const text of starTexts(ch)) stars.append(el('li', '', text));
+    card.append(stars);
+    const chips = el('div', 'chips');
+    for (const [id] of ch.rivals) {
+      const p = partyOf(id);
+      if (!p) continue;
+      const chip = el('span', 'chip');
+      const dot = el('i');
+      dot.style.background = COLORS[p.color % COLORS.length];
+      chip.append(dot, p.name);
+      chips.append(chip);
+    }
+    const o = ch.obstacles || {};
+    if (o.bars) chips.append(el('span', 'chip', '🚧 עבודות בכביש'));
+    if (o.buses) chips.append(el('span', 'chip', '🚌 אוטובוסים'));
+    if (o.trains) chips.append(el('span', 'chip', '🚆 רכבות'));
+    if (o.storms) chips.append(el('span', 'chip', '⛈️ סערות'));
+    card.append(chips);
+    body.append(card);
+    const line = perksLine(st);
+    if (line) body.append(line);
+    body.append(knessetBlock(st));
+    body.append(routeBlock(st));
+    go.textContent = st.next === 0 ? 'יוצאים לדרך' : 'למשימה';
+  }
+  const started = st.next > 0 || st.perks.length > 0;
+  $('story-reset').hidden = !started;
+  $('story-reset').textContent = 'מההתחלה';
+  camp.resetArmed = 0;
+  body.scrollTop = 0;
+}
+function openCampaign() {
+  camp.state = loadCampaign();
+  camp.view = 'chapter';
+  renderCampaign();
   show('story');
 }
+function campaignGo() {
+  const st = camp.state;
+  const view = camp.view === 'result' && st.last ? 'result' : st.pending || 'chapter';
+  if (view === 'book') {
+    st.pending = null;
+    camp.lost = [];
+    saveCampaign(st);
+    renderCampaign();
+  } else if (view === 'result') {
+    camp.view = 'chapter';
+    renderCampaign();
+  } else if (view === 'end') shareVictory();
+  else if (view === 'chapter') startStory();
+}
+function resetCampaign() {
+  const now = performance.now();
+  if (now - camp.resetArmed > 3000) {
+    camp.resetArmed = now;
+    $('story-reset').textContent = 'בטוחים? לחצו שוב';
+    return;
+  }
+  camp.state = newCampaign();
+  saveCampaign(camp.state);
+  camp.view = 'chapter';
+  renderCampaign();
+}
 async function startStory() {
-  const p = loadProgress();
-  if (p.i >= MISSIONS.length || p.mandates >= TO_WIN) {
+  const st = camp.state;
+  if (st.pending === 'end' || st.next >= CHAPTERS.length) {
     shareVictory();
     return;
   }
   audio.unlock();
   commitName();
   game.net?.idle();
-  const mission = MISSIONS[p.i];
-  const id = maps.byId.has(mission.map) ? mission.map : maps.current;
+  const index = st.next;
+  const ch = CHAPTERS[index];
+  const id = maps.byId.has(ch.map) ? ch.map : maps.current;
   $('story-go').disabled = true;
-  const map = await Promise.race([cityMap(id), new Promise((r) => setTimeout(() => r(null), 6000))]);
+  const map = await Promise.race([cityMap(id), new Promise((r) => setTimeout(() => r(null), 8000))]);
   $('story-go').disabled = false;
   const w = newWorld(map);
   for (let i = 0; i < 60; i++) {
     w.step(1 / 30);
     w.events.length = 0;
   }
-  const s = w.addSnake({ name: game.name, skin: game.skin });
+  const pm = perkMods(st.perks);
+  const at = map ? startPoint(ch, map) : null;
+  const s = w.addSnake({
+    name: game.name,
+    skin: game.skin,
+    color: OURS,
+    mass: C.startMass + (ch.mass || 0) + pm.extra,
+    mods: pm.mods,
+    shield: pm.shield,
+    at: at ? { x: at.x + 30, y: at.y + 30 } : null,
+  });
   game.world = w;
   game.meId = s.id;
   game.mode = 'story';
-  game.story = { index: p.i, run: startMission(mission, map), map };
-  $('mission-title').textContent = `${mission.title} · +${mission.mandates}`;
+  game.story = { index, chapter: ch, map, perks: st.perks.slice(), run: startChapter(ch, map, w, { playerId: s.id, perks: st.perks }) };
+  $('mission-title').textContent = `פרק ${index + 1} · ${ch.title}`;
+  $('mission-meta').textContent = '';
   beginRound(s);
-  toast(mission.brief, 5200);
+  toast(`🎯 ${goalText(ch)}`, 4600);
 }
 function updateStory(dt) {
   const st = game.story;
   if (!st?.run || !game.alive) return;
-  const s = me();
-  const res = st.run.update(s?.alive ? s : null, s ? scoreOf(s.mass) : 0, dt);
+  const res = st.run.update(dt);
+  for (const text of res.warn) toast(text, 2600);
   $('mission-text').textContent = res.text;
   $('mission-bar').style.width = `${Math.round(res.progress * 100)}%`;
+  const timed = st.chapter.time || st.chapter.goal.type === 'survive';
+  $('mission-meta').textContent = `${timed ? `⏱️ ${mmss(res.left)}  ` : ''}${'⭐'.repeat(res.stars)}${'☆'.repeat(3 - res.stars)}`;
   if (res.failed) {
     game.alive = false;
-    game.deathInfo = { timeout: true };
+    game.deathInfo = { why: res.why };
+    navigator.vibrate?.(120);
     audio.sfx('break');
     audio.setScene('over');
-    setTimeout(showOver, 600);
+    setTimeout(showOver, 700);
     return;
   }
   if (res.done) {
-    const p = loadProgress();
-    const mission = MISSIONS[st.index];
-    p.mandates += mission.mandates;
-    p.i = st.index + 1;
-    saveProgress(p);
+    winChapter(camp.state, st.index, res.stars);
+    saveCampaign(camp.state);
+    camp.view = 'result';
     game.alive = false;
     game.running = false;
     game.story = null;
     audio.sfx('link');
     navigator.vibrate?.([60, 40, 60, 40, 120]);
     hide('hud');
-    renderStory();
-    $('story-title').textContent = `✅ ${mission.title}: +${mission.mandates} מנדטים`;
-    $('story-intro').hidden = true;
+    renderCampaign();
     show('story');
     audio.setScene('menu');
   }
 }
 function shareVictory() {
-  const p = loadProgress();
-  shareText(`ניצחתי בבחירות ב-${NAME} עם ${p.mandates} מנדטים והקמתי ממשלה 🗳️ ביחד אנחנו שרשרת – נראה אתכם:`, cardCanvas({ mandates: p.mandates }));
+  const n = camp.state.seats.ours;
+  shareText(`הובלתי את ${PARTY()} מ־1.2% ל־${n} מנדטים – המפלגה הגדולה ביותר 🗳️ ביחד אנחנו שרשרת. נראה אתכם:`, cardCanvas({ mandates: n }));
 }
 
 // ------------------------------------------------------------------------------------------------ lobby: maps
@@ -1602,14 +2216,14 @@ function cardCanvas({ mandates = 0 } = {}) {
   }
   g.font = '600 48px system-ui, sans-serif';
   g.fillStyle = INK;
-  g.fillText(mandates ? 'ניצחתי בבחירות עם' : 'הבאתי לשרשרת', 540, 430);
+  g.fillText(mandates ? `הובלתי את ${CFG.party || 'המפלגה'} ל־` : 'הבאתי לשרשרת', 540, 430);
   g.font = '900 190px system-ui, sans-serif';
   g.fillStyle = color;
   g.fillText((mandates || game.best.maxScore).toLocaleString('he-IL'), 540, 610);
   g.font = '700 54px system-ui, sans-serif';
   g.fillStyle = INK;
   const where = mapName(game.world?.city || maps.current);
-  g.fillText(mandates ? 'מנדטים 🗳️' : where ? `אנשים ב${where}` : 'אנשים', 540, 680);
+  g.fillText(mandates ? 'מנדטים – המפלגה הגדולה ביותר 🗳️' : where ? `אנשים ב${where}` : 'אנשים', 540, 680);
   // The chain itself: people holding hands across the card, the leader with a flag and a face.
   const n = 9;
   const hp = 150;
@@ -1717,18 +2331,9 @@ $('again').addEventListener('click', () => (game.mode === 'story' ? (hide('over'
 $('to-menu').addEventListener('click', toMenu);
 $('share').addEventListener('click', share);
 $('share-close').addEventListener('click', () => hide('share-fallback'));
-$('story-btn').addEventListener('click', () => {
-  $('story-title').textContent = 'הדרך לממשלה';
-  $('story-intro').hidden = false;
-  openStory();
-});
-$('story-go').addEventListener('click', () => startStory());
-$('story-reset').addEventListener('click', () => {
-  saveProgress({ i: 0, mandates: 0 });
-  $('story-title').textContent = 'הדרך לממשלה';
-  $('story-intro').hidden = false;
-  renderStory();
-});
+$('story-btn').addEventListener('click', openCampaign);
+$('story-go').addEventListener('click', campaignGo);
+$('story-reset').addEventListener('click', resetCampaign);
 for (const b of document.querySelectorAll('.sheet .close')) {
   b.addEventListener('click', () => {
     const sheet = b.closest('.sheet');

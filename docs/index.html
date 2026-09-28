@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wlElr0v5dBU30TNQSYkTqmw/i5KtZNzrJGktI/+7aBQ=' 'sha256-rmm96XNV4gHVGsGlV9iXjKk6vk3qKu4a7cYaIJAlpHc='; style-src 'sha256-vLmOaMk5TmHp0fj2cf3HHOmW6JbUnQBuBeH3+z9ANTE='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-Vhv+5ggZMH5fejIaKQ9wEaxu2uaT4ci9At5qx/lEgik='; style-src 'sha256-R2isNwkw67sSOuqzWSA1EMCjdoZqhd9Qhy0XF/kE9IU='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -196,16 +196,52 @@ a { color: inherit; }
   min-height: 50px; font-weight: 800; font-size: 15px; background: #fff; cursor: pointer; }
 .file input { display: none; }
 
-/* story */
-.mandates { display: grid; gap: 4px; }
-.mandates .bar { height: 12px; position: relative; overflow: visible; }
-.mandates .bar i { background: linear-gradient(90deg, var(--blue), #3d6fd8); }
-.mandates .bar s { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--danger); right: calc(61 / 80 * 100%); }
-.mandates small { font-size: 12px; color: var(--ink-2); }
-.mission-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; text-align: right; }
-.mission-card small { font-size: 12px; color: var(--blue); font-weight: 800; }
-.mission-card b { display: block; font-size: 18px; margin: 2px 0 4px; }
-.mission-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+/* the story: a scrolling middle between a fixed title and fixed buttons */
+.sheet .card.camp { grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; width: min(460px, 100%); background: #fbf9f4; }
+.camp-top { text-align: center; display: grid; gap: 2px; }
+.camp-top small { font-size: 12px; font-weight: 800; color: var(--blue); }
+.camp-body { overflow-y: auto; display: grid; gap: 10px; align-content: start; touch-action: pan-y; text-align: right; padding: 2px; }
+.camp-actions { display: grid; gap: 8px; }
+.story-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink); text-wrap: pretty; }
+.story-text.strong { font-weight: 900; color: var(--blue); }
+.mission-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: grid; gap: 8px; }
+.mission-card > small { font-size: 12px; color: var(--ink-2); font-weight: 800; }
+.goal { margin: 0; font-size: 14px; color: var(--ink-2); }
+.goal b { color: var(--ink); }
+.stars { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 12.5px; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+  font-size: 12px; font-weight: 700; background: var(--paper); }
+.chip i, .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.knesset { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px 10px 8px; display: grid; gap: 8px; }
+.knesset canvas { width: 100%; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--ink-2); justify-content: center; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.legend span.ours { color: var(--blue); font-weight: 900; }
+.legend b { color: var(--ink); }
+.route { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; align-items: start; background: #fff; border: 1px solid var(--line);
+  border-radius: 16px; padding: 10px; }
+.route canvas { width: 92px; border-radius: 10px; display: block; }
+.route-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; font-size: 12.5px; color: var(--ink-2); }
+.route-list li { display: flex; justify-content: space-between; gap: 6px; }
+.route-list li.book { font-weight: 900; color: var(--ink); margin-top: 6px; font-size: 12px; }
+.route-list li.book:first-child { margin-top: 0; }
+.route-list li.done { color: var(--ink); }
+.route-list li.now { color: var(--blue); font-weight: 900; }
+.route-list b { font-weight: 400; white-space: nowrap; }
+.perks-line { margin: 0; font-size: 13px; color: var(--ink-2); }
+.perks { display: grid; gap: 8px; }
+.perk { display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 10px; text-align: right; align-items: center;
+  border: 1px solid var(--line); background: #fff; border-radius: 16px; padding: 12px; }
+.perk .icon { grid-row: span 2; font-size: 30px; text-align: center; }
+.perk b { font-size: 16px; }
+.perk small { font-size: 13px; color: var(--ink-2); line-height: 1.4; }
+.perk:active { background: var(--paper); }
+.stars-big { margin: 0; font-size: 34px; text-align: center; letter-spacing: 4px; }
+.gain { margin: 0; font-size: 15px; font-weight: 800; color: #1f7a38; text-align: center; }
+.gain.big { font-size: 18px; color: var(--blue); }
+.loss { margin: 0; font-size: 15px; font-weight: 800; color: var(--danger); text-align: center; }
+#mission small { color: var(--ink); font-weight: 700; direction: rtl; }
 @media (prefers-reduced-motion: reduce) { #hand.pulse { animation: none; } #toast { transition: none; } }
 @media (min-width: 900px) { #score { font-size: 36px; } .hud-board { width: 240px; } #leaderboard { font-size: 13px; } }
 </style>
@@ -216,7 +252,7 @@ a { color: inherit; }
 <div id="hud" hidden>
   <div class="hud-score"><div id="score">0</div><div class="unit">אנשים בשרשרת</div><div id="rank"></div></div>
   <div class="hud-board"><ol id="leaderboard" aria-label="טבלת המובילים"></ol><div id="players"></div></div>
-  <div id="mission" hidden><b id="mission-title"></b><span id="mission-text"></span><div class="bar"><i id="mission-bar"></i></div><small id="mission-mandates"></small></div>
+  <div id="mission" hidden><b id="mission-title"></b><span id="mission-text"></span><div class="bar"><i id="mission-bar"></i></div><small id="mission-meta"></small></div>
   <div id="waiting" hidden><span>👀 לבד במפה – מחכים לעוד אנשים</span><button id="waiting-share" type="button">הזמינו</button></div>
   <button id="boost" type="button" aria-label="ריצה (החזיקו, או אצבע שנייה על המסך)">⚡</button>
   <button id="hand" type="button" hidden>🤝 <span>תנו יד</span></button>
@@ -257,7 +293,7 @@ a { color: inherit; }
     </div>
     <button id="play" class="primary" type="button">שחקו עכשיו</button>
     <div class="row2">
-      <button id="story-btn" class="secondary" type="button">📖 הדרך לממשלה</button>
+      <button id="story-btn" class="secondary" type="button">📖 נגד כל הסיכויים</button>
       <button id="music-btn" class="secondary" type="button">🎵 מוסיקה</button>
     </div>
     <p id="net-status" aria-live="polite"></p>
@@ -270,7 +306,7 @@ a { color: inherit; }
     <h2 id="over-title">השרשרת נקרעה</h2>
     <div><div class="big" id="stat-score">0</div><div class="big-label">הכי הרבה אנשים בשרשרת שלך</div></div>
     <div class="stats">
-      <div><b id="stat-rank">–</b><span>המקום הכי גבוה</span></div>
+      <div><b id="stat-rank">–</b><span id="stat-rank-label">המקום הכי גבוה</span></div>
       <div><b id="stat-hands">0</b><span>החזקת ידיים עם</span></div>
       <div><b id="stat-time">0</b><span>זמן בשרשרת</span></div>
     </div>
@@ -316,15 +352,15 @@ a { color: inherit; }
 </section>
 
 <section id="story" class="screen sheet" hidden aria-labelledby="story-title">
-  <div class="card">
-    <h2 id="story-title">הדרך לממשלה</h2>
-    <p id="story-intro" class="note">יש לכם תנועה וחלום, ואף מנדט. יוצאים לרחובות, אוספים אנשים, תולים דגלים ומגיעים למקומות שחשובים. כל משימה מביאה מנדטים, ו־61 מהם מביאים ניצחון בבחירות והקמת ממשלה. סיפור בדיוני; ההתקדמות נשמרת רק בטלפון שלכם.</p>
-    <div class="mandates"><div class="bar"><i id="mandates-bar"></i><s></s></div><small id="mandates-text">0 מנדטים מתוך 61</small></div>
-    <div class="mission-card"><small id="story-chapter"></small><b id="story-mission"></b><p id="story-brief"></p></div>
-    <button id="story-go" class="primary" type="button">יוצאים לדרך</button>
-    <div class="row2">
-      <button id="story-reset" class="secondary" type="button">מההתחלה</button>
-      <button class="secondary close" type="button">סגירה</button>
+  <div class="card camp">
+    <div class="camp-top"><small id="camp-kicker">נגד כל הסיכויים</small><h2 id="story-title">נגד כל הסיכויים</h2></div>
+    <div id="camp-body" class="camp-body"></div>
+    <div class="camp-actions">
+      <button id="story-go" class="primary" type="button">יוצאים לדרך</button>
+      <div class="row2">
+        <button id="story-reset" class="secondary" type="button">מההתחלה</button>
+        <button class="secondary close" type="button">סגירה</button>
+      </div>
     </div>
   </div>
 </section>
@@ -336,7 +372,7 @@ a { color: inherit; }
     <button id="share-close" class="secondary" type="button">סגירה</button>
   </div>
 </section>
-<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[]};</script>
+<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","party":"עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[]};</script>
 <script>
 (() => {
 'use strict';
@@ -525,6 +561,11 @@ class World {
     this.sparkLog = null; // { added: [spark], removed: [id] }
     this.sparkGrid = new Grid(C.sparkCell, this.R);
     this.bodyGrid = new Grid(C.bodyCell, this.R, true);
+    // Things in the way, for the single-player story only (see setObstacles): roadworks across streets, buses and
+    // trains running along them, and drifting storms that slow everyone down. Rooms online have none.
+    this.bars = [];
+    this.movers = [];
+    this.zones = [];
     // Flat buffers for the body-point grid, rebuilt every step.
     this.bpX = [];
     this.bpY = [];
@@ -575,6 +616,74 @@ class World {
     return { x: 0, y: 0 };
   }
 
+  // --------------------------------------------------------------------------------------------- obstacles
+  /**
+   * bars: [{ x1, y1, x2, y2, w, label }] (a barrier w wide from one end to the other);
+   * movers: [{ pts: [x, y, …], speed, half, r, phase, label }] (a capsule running to and fro along a path);
+   * zones: [{ ax, ay, bx, by, period, r, slow, label }] (a circle drifting between two points, slowing whoever is in it).
+   */
+  setObstacles({ bars = [], movers = [], zones = [] } = {}) {
+    this.bars = bars.map((b) => ({ w: 14, label: 'block', ...b }));
+    this.movers = movers
+      .filter((m) => m.pts && m.pts.length >= 4)
+      .map((m) => {
+        const cum = [0];
+        for (let i = 2; i < m.pts.length; i += 2) cum.push(cum[cum.length - 1] + Math.hypot(m.pts[i] - m.pts[i - 2], m.pts[i + 1] - m.pts[i - 1]));
+        return { speed: 120, half: 22, r: 10, phase: 0, label: 'bus', ...m, cum, len: cum[cum.length - 1] || 1 };
+      });
+    this.zones = zones.map((z) => ({ period: 60, r: 400, slow: 0.55, label: 'storm', ...z }));
+  }
+  /** Where a mover is at time t: its middle and heading. */
+  moverAt(m, t = this.time) {
+    const L = m.len;
+    let d = (((m.phase + m.speed * t) % (2 * L)) + 2 * L) % (2 * L);
+    let back = false;
+    if (d > L) {
+      d = 2 * L - d;
+      back = true;
+    }
+    const cum = m.cum;
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < d) i++;
+    const seg = cum[i] - cum[i - 1] || 1;
+    const k = Math.max(0, Math.min(1, (d - cum[i - 1]) / seg));
+    const x0 = m.pts[2 * i - 2];
+    const y0 = m.pts[2 * i - 1];
+    const dx = m.pts[2 * i] - x0;
+    const dy = m.pts[2 * i + 1] - y0;
+    return { x: x0 + dx * k, y: y0 + dy * k, a: Math.atan2(dy, dx) + (back ? Math.PI : 0) };
+  }
+  zoneAt(z, t = this.time) {
+    const k = (1 - Math.cos((TAU * t) / z.period)) / 2;
+    return { x: z.ax + (z.bx - z.ax) * k, y: z.ay + (z.by - z.ay) * k };
+  }
+  /** How much a storm slows whoever stands at (x, y): 1 is not at all. */
+  slowAt(x, y) {
+    let f = 1;
+    for (const z of this.zones) {
+      const p = this.zoneAt(z);
+      if ((p.x - x) ** 2 + (p.y - y) ** 2 < z.r * z.r) f = Math.min(f, z.slow);
+    }
+    return f;
+  }
+  /** The label of a barrier or vehicle within pad of (x, y) (now, or `ahead` seconds from now), or ''. */
+  blocked(x, y, pad, ahead = 0) {
+    for (const b of this.bars) {
+      const lim = b.w / 2 + pad;
+      if (segDist2(x, y, b.x1, b.y1, b.x2, b.y2) < lim * lim) return b.label;
+    }
+    for (const m of this.movers) {
+      for (const t of ahead ? [this.time, this.time + ahead] : [this.time]) {
+        const p = this.moverAt(m, t);
+        const cx = Math.cos(p.a) * m.half;
+        const cy = Math.sin(p.a) * m.half;
+        const lim = m.r + pad;
+        if (segDist2(x, y, p.x - cx, p.y - cy, p.x + cx, p.y + cy) < lim * lim) return m.label;
+      }
+    }
+    return '';
+  }
+
   spawnNaturalSpark() {
     if (Math.random() < 0.08) {
       // A small crowd: worth chasing.
@@ -614,10 +723,15 @@ class World {
     return best;
   }
 
-  addSnake({ name = randomName(), color, bot = false, mass = C.startMass, skin = '' } = {}) {
+  /**
+   * A new chain. Story extras: `at` ({ x, y, a? }) places it, `ai` sets a bot's role (see thinkRole), `mods` changes
+   * how it plays ({ speed, turn, boost, reach, value } multipliers and extra reach) and `shield` is how many crashes it
+   * survives.
+   */
+  addSnake({ name = randomName(), color, bot = false, mass = C.startMass, skin = '', at = null, ai = null, mods = null, shield = 0 } = {}) {
     const id = this.nextId++;
-    const { x, y } = this.safeSpawnPoint();
-    const a = Math.atan2(-y, -x) + (Math.random() - 0.5) * 1.2; // face inwards
+    const { x, y } = at ?? this.safeSpawnPoint();
+    const a = at?.a ?? Math.atan2(-y, -x) + (Math.random() - 0.5) * 1.2; // face inwards
     const s = {
       id,
       name,
@@ -641,7 +755,11 @@ class World {
       hands: new Set(),
       boostAcc: 0,
       dropAt: 0,
-      ai: bot ? newAi() : null,
+      ai: bot ? { ...newAi(), ...ai } : null,
+      mods,
+      shield,
+      safeUntil: 0,
+      hit: '',
     };
     const n = Math.ceil(lengthFor(mass) / C.spacing) + 1;
     for (let i = 0; i < n; i++) {
@@ -698,7 +816,7 @@ class World {
       if (Math.hypot(o.x - s.x, o.y - s.y) < range * 1.6) return o;
     }
     for (const o of this.snakes.values()) {
-      if (o === s || !o.alive || this.sameTeam(s, o)) continue;
+      if (o === s || !o.alive || this.sameTeam(s, o) || o.ai?.accept === 0) continue; // (rivals never take a hand)
       const size = (this.teamOf(s)?.members.size ?? 1) + (this.teamOf(o)?.members.size ?? 1);
       if (size > C.teamMax) continue;
       const d = Math.hypot(o.x - s.x, o.y - s.y);
@@ -771,22 +889,27 @@ class World {
       const killer = this.collision(s);
       if (killer !== null) dead.push([s, killer]);
     }
-    for (const [s, killer] of dead) this.kill(s, killer);
+    for (const [s, killer] of dead) {
+      if (s.shield > 0) this.shieldHit(s, killer);
+      else this.kill(s, killer);
+    }
     for (const s of this.snakes.values()) if (s.alive) this.eat(s);
     this.maintain(dt);
   }
 
   move(s, dt) {
     const r = radiusFor(s.mass);
-    const turn = C.turnRate * Math.pow(14 / Math.max(14, r), 0.55);
+    const mods = s.mods;
+    const turn = C.turnRate * Math.pow(14 / Math.max(14, r), 0.55) * (mods?.turn ?? 1);
     const d = angleDiff(s.a, s.ta);
     s.a += Math.max(-turn * dt, Math.min(turn * dt, d));
     const boosting = s.boost && s.mass > C.minBoostMass;
-    const speed = boosting ? C.boostSpeed : C.baseSpeed;
+    let speed = (boosting ? C.boostSpeed : C.baseSpeed) * (mods?.speed ?? 1);
+    if (this.zones.length) speed *= this.slowAt(s.x, s.y);
     s.x += Math.cos(s.a) * speed * dt;
     s.y += Math.sin(s.a) * speed * dt;
     if (boosting) {
-      const cost = C.boostCost * dt;
+      const cost = C.boostCost * dt * (mods?.boost ?? 1);
       s.mass -= cost;
       s.boostAcc += cost;
       if (this.time >= s.dropAt && s.px.length > 2) {
@@ -851,7 +974,18 @@ class World {
    */
   collision(s) {
     const r = radiusFor(s.mass);
-    if (!this.inside(s.x + Math.cos(s.a) * r * 0.4, s.y + Math.sin(s.a) * r * 0.4)) return 0; // off the map
+    if (this.time < s.safeUntil) return null; // just survived a crash: a moment to get away
+    if (!this.inside(s.x + Math.cos(s.a) * r * 0.4, s.y + Math.sin(s.a) * r * 0.4)) {
+      s.hit = 'edge';
+      return 0; // off the map
+    }
+    if (this.bars.length || this.movers.length) {
+      const b = this.blocked(s.x, s.y, r * 0.8);
+      if (b) {
+        s.hit = b;
+        return 0;
+      }
+    }
     let killer = null;
     this.bodyGrid.query(s.x, s.y, r + 40, (i) => {
       const owner = this.bpOwner[i];
@@ -887,12 +1021,35 @@ class World {
     const killer = killerId ? this.snakes.get(killerId) : null;
     if (killer) killer.kills += 1;
     this.leaveTeam(s);
-    this.events.push({ t: 'death', id: s.id, killer: killerId ?? 0 });
+    const e = { t: 'death', id: s.id, killer: killerId ?? 0 };
+    if (!killerId && s.hit && s.hit !== 'edge') e.cause = s.hit; // roadworks, a bus, a train
+    this.events.push(e);
+  }
+
+  /** A crash the chain survives (a shield): the back of it lets go, and it turns away from what it hit. */
+  shieldHit(s, killerId) {
+    s.shield -= 1;
+    s.safeUntil = this.time + 1.8;
+    const keep = Math.max(C.startMass, s.mass * 0.7);
+    const lost = s.mass - keep;
+    s.mass = keep;
+    const from = Math.floor(s.px.length * 0.6);
+    const n = Math.max(3, Math.min(40, Math.floor((s.px.length - from) / 3)));
+    for (let k = 0; k < n && lost > 0; k++) {
+      const i = Math.min(s.px.length - 1, from + Math.floor(((s.px.length - from) * k) / n));
+      this.addSpark(s.px[i] + (Math.random() - 0.5) * 14, s.py[i] + (Math.random() - 0.5) * 14, lost / n, 6, COLORS[s.color], C.deathSparkTtl);
+    }
+    if (!killerId) {
+      // Off the edge or into something: back the way it came.
+      s.a += Math.PI;
+      s.ta = s.a;
+    }
+    this.events.push({ t: 'shield', id: s.id, killer: killerId ?? 0, cause: killerId ? '' : s.hit });
   }
 
   eat(s) {
     const r = radiusFor(s.mass);
-    const reach = r + 14;
+    const reach = r + 14 + (s.mods?.reach ?? 0);
     const eaten = [];
     this.sparkGrid.query(s.x, s.y, reach + 12, (sp) => {
       const lim = reach + sp.r;
@@ -902,7 +1059,8 @@ class World {
       return false;
     });
     if (!eaten.length) return;
-    const bonus = this.teamBonusActive(s) ? C.teamBonus : 1;
+    const team = this.teamBonusActive(s) ? C.teamBonus : 1;
+    const bonus = team * (s.mods?.value ?? 1);
     let gained = 0;
     for (const sp of eaten) {
       this.removeSpark(sp);
@@ -910,7 +1068,7 @@ class World {
     }
     s.mass += gained;
     this.collected += eaten.length;
-    this.events.push({ t: 'eat', id: s.id, n: eaten.length, bonus: bonus > 1 });
+    this.events.push({ t: 'eat', id: s.id, n: eaten.length, bonus: team > 1 });
   }
 
   teamBonusActive(s) {
@@ -934,9 +1092,10 @@ class World {
   }
 
   // --------------------------------------------------------------------------------------------- bots
-  /** Is a point dangerous for snake s (another body or a head about to be there, or the edge)? Returns 0 or 1. */
+  /** Is a point dangerous for snake s (a body, a head about to be there, the edge, something in the way)? 0 or 1. */
   hazard(s, x, y, pad, heads) {
     if (!this.roomy(x, y, pad + 30)) return 1;
+    if ((this.bars.length || this.movers.length) && this.blocked(x, y, pad + 16, 0.45)) return 1;
     for (const h of heads) {
       const lim = pad + h.r + 26;
       if ((h.x - x) ** 2 + (h.y - y) ** 2 < lim * lim) return 1;
@@ -953,10 +1112,69 @@ class World {
       : 0;
   }
 
+  /** Where the heads near s will be in a moment, so a bot keeps clear of head-on bumps (`skip` is left out). */
+  headsNear(s, range, skip = null) {
+    const heads = [];
+    for (const o of this.snakes.values()) {
+      if (o === s || o === skip || !o.alive || this.sameTeam(s, o)) continue;
+      if (Math.hypot(o.x - s.x, o.y - s.y) > range) continue;
+      const or = radiusFor(o.mass);
+      const sp = o.boost ? C.boostSpeed : C.baseSpeed;
+      for (const t of [0.15, 0.35, 0.6]) heads.push({ x: o.x + Math.cos(o.a) * sp * t, y: o.y + Math.sin(o.a) * sp * t, r: or });
+    }
+    return heads;
+  }
+
+  /**
+   * Turns s towards (tx, ty), or the safe direction nearest to it: each way it could go is walked forward for 0.6 s
+   * the way the chain really turns, and the sooner that path meets a body, a head or the edge, the worse. Returns how
+   * soon straight on would have (0: it is clear).
+   */
+  steer(s, tx, ty, skip = null, margin = 0) {
+    const r = radiusFor(s.mass);
+    const desired = Math.atan2(ty - s.y, tx - s.x);
+    const heads = this.headsNear(s, 380, skip);
+    const turn = C.turnRate * Math.pow(14 / Math.max(14, r), 0.55) * (s.mods?.turn ?? 1) * 0.1;
+    const speed = (s.boost && s.mass > C.minBoostMass ? C.boostSpeed : C.baseSpeed) * 0.1;
+    const pad = r + margin * 0.5;
+    let bestA = desired;
+    let bestV = -Infinity;
+    let danger = 0;
+    for (const off of OFFSETS) {
+      const cand = desired + off;
+      let a = s.a;
+      let x = s.x;
+      let y = s.y;
+      let h = 0;
+      for (let k = 1; k <= 6; k++) {
+        a += Math.max(-turn, Math.min(turn, angleDiff(a, cand)));
+        x += Math.cos(a) * speed;
+        y += Math.sin(a) * speed;
+        const reach = r * 0.6 + margin;
+        if (this.hazard(s, x + Math.cos(a) * reach, y + Math.sin(a) * reach, pad, heads)) {
+          h = 7 - k;
+          break;
+        }
+      }
+      const v = Math.cos(off) - h * 1.6 - Math.abs(angleDiff(s.a, cand)) * 0.12;
+      if (off === 0) danger = h;
+      if (v > bestV) {
+        bestV = v;
+        bestA = cand;
+      }
+    }
+    s.ta = bestA;
+    return danger;
+  }
+
   think(s) {
     const ai = s.ai;
+    if (ai.role) {
+      this.thinkRole(s);
+      this.answerHands(s);
+      return;
+    }
     ai.next = this.time + 0.11 + Math.random() * 0.12;
-    const r = radiusFor(s.mass);
     let tx;
     let ty;
     let chasing = 0;
@@ -970,7 +1188,6 @@ class World {
         const d = Math.hypot(sp.x - s.x, sp.y - s.y);
         const ahead = Math.cos(angleDiff(s.a, Math.atan2(sp.y - s.y, sp.x - s.x)));
         const sc = (sp.v * (1.2 + ahead)) / (d + 40);
-        if (sc <= bestScore) return false;
         if (sc > bestScore) {
           bestScore = sc;
           best = sp;
@@ -1010,53 +1227,198 @@ class World {
         ty = hunt.y + Math.sin(hunt.a) * 120;
       }
     }
-    const desired = Math.atan2(ty - s.y, tx - s.x);
-    const look = [r * 1.4 + 22, r * 1.6 + 70, r * 1.8 + 130];
-    // Where nearby heads will be shortly: bots steer clear of head-on bumps.
-    const heads = [];
-    for (const o of this.snakes.values()) {
-      if (o === s || !o.alive || this.sameTeam(s, o)) continue;
-      const d = Math.hypot(o.x - s.x, o.y - s.y);
-      if (d > 360) continue;
-      const or = radiusFor(o.mass);
-      const sp = o.boost ? C.boostSpeed : C.baseSpeed;
-      for (const t of [0.15, 0.35, 0.6]) heads.push({ x: o.x + Math.cos(o.a) * sp * t, y: o.y + Math.sin(o.a) * sp * t, r: or });
-    }
-    let bestA = desired;
-    let bestV = -Infinity;
-    let danger = 0;
-    for (const off of OFFSETS) {
-      const cand = desired + off;
-      let h = 0;
-      for (let k = 0; k < look.length; k++) {
-        h += this.hazard(s, s.x + Math.cos(cand) * look[k], s.y + Math.sin(cand) * look[k], r, heads) * (3 - k);
-      }
-      const v = Math.cos(off) - h * 2.2 - Math.abs(angleDiff(s.a, cand)) * 0.12;
-      if (off === 0) danger = h;
-      if (v > bestV) {
-        bestV = v;
-        bestA = cand;
-      }
-    }
-    s.ta = bestA;
+    const danger = this.steer(s, tx, ty);
     s.boost = !danger && s.mass > 26 && ((hunt && Math.random() < 0.8) || (chasing > 0.03 && Math.random() < 0.15 * ai.aggr));
-    // Hands: friendly bots accept offers and sometimes offer one.
+    this.answerHands(s);
+  }
+
+  /** Hands: friendly bots accept offers and sometimes offer one; ai.accept overrides how likely they say yes. */
+  answerHands(s) {
+    const ai = s.ai;
     for (const o of this.snakes.values()) {
       if (o === s || !o.alive || !o.offer || o.offer.to !== s.id || o.offer.until < this.time) continue;
       if (!o.offer.considered) {
         o.offer.considered = true;
-        if (Math.random() < (ai.friendly ? 0.8 : 0.3)) this.link(o, s);
+        if (Math.random() < (ai.accept ?? (ai.friendly ? 0.8 : 0.3))) this.link(o, s);
       }
     }
-    if (ai.friendly && !s.offer && Math.random() < 0.02) {
+    if (ai.friendly && !ai.role && !s.offer && Math.random() < 0.02) {
       const c = this.handCandidate(s);
       if (c && c.bot) {
-        if (c.ai.friendly && Math.random() < 0.5) this.link(s, c);
+        if (c.ai.friendly && !c.ai.role && Math.random() < 0.5) this.link(s, c);
       } else if (c) {
         s.offer = { to: c.id, until: this.time + 5 };
         this.events.push({ t: 'offer', from: s.id, to: c.id });
       }
     }
+  }
+
+  /**
+   * The story's bots. ai.role: 'giant' (big and slow: closes a ring around its prey), 'hunter' (cuts across the
+   * prey's path), 'raider' (takes the people around its prey, and cuts it off when it is the smaller one), 'guard'
+   * (keeps its prey away from ai.guard), 'ally' (stays near ai.home, or walks beside ai.follow once they hold hands).
+   * ai.skill (0–1) sets how quick and how accurate; the story sets ai.hunting, ai.target and ai.flank.
+   */
+  thinkRole(s) {
+    const ai = s.ai;
+    const skill = ai.skill ?? 0.5;
+    ai.next = this.time + (0.2 - 0.12 * skill) * (0.85 + Math.random() * 0.3);
+    let plan = null;
+    if (!this.roomy(s.x, s.y, 170)) plan = { x: ai.home?.x ?? 0, y: ai.home?.y ?? 0 };
+    else if (ai.role === 'ally') plan = this.allyPlan(s);
+    else {
+      const prey = ai.hunting ? this.snakes.get(ai.target) : null;
+      if (prey?.alive && !this.sameTeam(s, prey)) plan = this.huntPlan(s, prey, skill);
+    }
+    if (!plan) plan = this.forage(s, null);
+    const margin = 6 + 16 * skill + (s.boost ? 12 : 0);
+    const danger = this.steer(s, plan.x, plan.y, plan.bold ?? null, margin);
+    s.boost = !!plan.boost && !danger && s.mass > C.minBoostMass + 8;
+  }
+
+  /** People to pick up: the best nearby (around `near`'s path, for a raider), else somewhere to wander. */
+  forage(s, near) {
+    const ai = s.ai;
+    const cx = near ? near.x + Math.cos(near.a) * 170 : s.x;
+    const cy = near ? near.y + Math.sin(near.a) * 170 : s.y;
+    let best = null;
+    let bestScore = 0;
+    this.sparkGrid.query(cx, cy, 380, (sp) => {
+      const d = Math.hypot(sp.x - s.x, sp.y - s.y);
+      const ahead = Math.cos(angleDiff(s.a, Math.atan2(sp.y - s.y, sp.x - s.x)));
+      const sc = (sp.v * (1.2 + ahead)) / (d + 40);
+      if (sc > bestScore) {
+        bestScore = sc;
+        best = sp;
+      }
+      return false;
+    });
+    if (best) return { x: best.x, y: best.y, boost: !!near && Math.random() < 0.35 };
+    if (near) return { x: cx, y: cy };
+    if (ai.wx === undefined || this.time > ai.wUntil) {
+      const p = this.somewhere(0.6);
+      ai.wx = p.x;
+      ai.wy = p.y;
+      ai.wUntil = this.time + 3 + Math.random() * 3;
+    }
+    return { x: ai.wx, y: ai.wy };
+  }
+
+  allyPlan(s) {
+    const ai = s.ai;
+    const lead = ai.follow ? this.snakes.get(ai.follow) : null;
+    if (lead?.alive && this.sameTeam(s, lead)) {
+      // Holding hands: walk beside the one who came for us.
+      ai.side ??= Math.random() < 0.5 ? 1 : -1;
+      const a = lead.a + ai.side * 2.3;
+      return { x: lead.x + Math.cos(a) * 120, y: lead.y + Math.sin(a) * 120, boost: lead.boost };
+    }
+    // Away from any other chain that comes close.
+    let fx = 0;
+    let fy = 0;
+    for (const o of this.snakes.values()) {
+      if (o === s || !o.alive || this.sameTeam(s, o) || o.id === ai.follow) continue;
+      const d = Math.hypot(o.x - s.x, o.y - s.y);
+      if (d < 320) {
+        fx += (s.x - o.x) / (d + 1);
+        fy += (s.y - o.y) / (d + 1);
+      }
+    }
+    if (fx || fy) return { x: s.x + fx * 300, y: s.y + fy * 300, boost: true };
+    const home = ai.home ?? { x: s.x, y: s.y };
+    if (ai.wx === undefined || this.time > ai.wUntil) {
+      const a = Math.random() * TAU;
+      const d = 80 + Math.random() * 170;
+      ai.wx = home.x + Math.cos(a) * d;
+      ai.wy = home.y + Math.sin(a) * d;
+      if (!this.roomy(ai.wx, ai.wy, 60)) {
+        ai.wx = home.x;
+        ai.wy = home.y;
+      }
+      ai.wUntil = this.time + 2 + Math.random() * 3;
+    }
+    return { x: ai.wx, y: ai.wy };
+  }
+
+  /** How a story bot goes after its prey; returns { x, y, boost, bold } (bold: the prey's head is not a worry). */
+  huntPlan(s, prey, skill) {
+    const ai = s.ai;
+    const pr = radiusFor(prey.mass);
+    const dx = prey.x - s.x;
+    const dy = prey.y - s.y;
+    const d = Math.hypot(dx, dy);
+    // How fast the prey is turning, measured between thoughts.
+    if (ai.pid !== prey.id) {
+      ai.pid = prey.id;
+      ai.pa = prey.a;
+      ai.pt = this.time;
+      ai.w = 0;
+      ai.orbit = null;
+    } else if (this.time - ai.pt > 0.05) {
+      const w = angleDiff(ai.pa, prey.a) / (this.time - ai.pt);
+      ai.w = Math.max(-3, Math.min(3, w)) * 0.6 + (ai.w ?? 0) * 0.4;
+      ai.pa = prey.a;
+      ai.pt = this.time;
+    }
+    const bigger = s.mass > prey.mass * 1.2;
+    const fx = Math.cos(prey.a);
+    const fy = Math.sin(prey.a);
+    const along = -dx * fx - dy * fy; // how far in front of the prey's head s is
+    const side = -fx * dy + fy * dx; // which side of its path s is on
+    // A giant long enough to go round its prey closes a ring on it, tighter and tighter.
+    if (ai.role === 'giant' && lengthFor(s.mass) > 1000 && d < 650) {
+      if (!ai.orbit) ai.orbit = { dir: side > 0 ? 1 : -1, R: Math.min(420, Math.max(220, d)) };
+      ai.orbit.R = Math.max(70 + pr * 3, ai.orbit.R - (3 + 5 * skill));
+      const ang = Math.atan2(s.y - prey.y, s.x - prey.x) + ai.orbit.dir * (0.5 + 0.3 * skill);
+      return {
+        x: prey.x + Math.cos(ang) * ai.orbit.R,
+        y: prey.y + Math.sin(ang) * ai.orbit.R,
+        boost: Math.random() < skill * 0.5,
+        bold: bigger ? prey : null,
+      };
+    }
+    ai.orbit = null;
+    // A guard only chases near what it guards; a raider only a smaller prey close by.
+    if (ai.role === 'guard' && ai.guard && Math.hypot(prey.x - ai.guard.x, prey.y - ai.guard.y) > 520) {
+      const a = this.time * 0.6 + (ai.phase ?? 0);
+      return { x: ai.guard.x + Math.cos(a) * 170, y: ai.guard.y + Math.sin(a) * 170 };
+    }
+    if (ai.role === 'raider' && !(prey.mass < s.mass * 0.9 && d < 420)) return this.forage(s, prey);
+    // In front of it and close: run straight across its path, so the chain lies in its way.
+    const across = prey.a - Math.sign(side || 1) * (Math.PI / 2 - 0.45);
+    if (along > pr + 40 && along < 240 + 140 * skill && Math.abs(side) < 230 && Math.abs(angleDiff(s.a, across)) < 1.2) {
+      const h = across;
+      ai.mode = 'cut';
+      return { x: s.x + Math.cos(h) * 220, y: s.y + Math.sin(h) * 220, boost: Math.random() < 0.3 + 0.7 * skill, bold: bigger ? prey : null };
+    }
+    // Otherwise: walk the prey's head forward in time (reading its turn, the better the bot) and head for the first
+    // point just in front of it that can be reached in time. A second hunter aims wide (ai.flank) to close the gap.
+    const pSpeed = prey.boost && prey.mass > C.minBoostMass ? C.boostSpeed : C.baseSpeed;
+    const mySpeed = s.mass > C.minBoostMass + 10 ? C.boostSpeed : C.baseSpeed;
+    const lead = pr * 2 + 45 + (1 - skill) * 50 + (ai.flank ? 90 : 0);
+    // Behind it, never along its trail (that is where its body is): overtake in a lane beside it, on our side.
+    const lane = along < pr + 40 ? Math.sign(side || 1) * (pr * 2 + radiusFor(s.mass) + 60) : 0;
+    const off = lane + (ai.flank ?? 0) * 110;
+    let px = prey.x;
+    let py = prey.y;
+    let pa = prey.a;
+    let ax = px;
+    let ay = py;
+    for (let t = 0.15; t <= 2.4; t += 0.15) {
+      pa += (ai.w ?? 0) * 0.15 * skill;
+      px += Math.cos(pa) * pSpeed * 0.15;
+      py += Math.sin(pa) * pSpeed * 0.15;
+      ax = px + Math.cos(pa) * lead + Math.sin(pa) * off;
+      ay = py + Math.sin(pa) * lead - Math.cos(pa) * off;
+      if (Math.hypot(ax - s.x, ay - s.y) <= mySpeed * t * (0.7 + 0.3 * skill)) break;
+    }
+    const noise = (1 - skill) * 70;
+    ai.mode = 'chase';
+    return {
+      x: ax + (Math.random() - 0.5) * noise,
+      y: ay + (Math.random() - 0.5) * noise,
+      boost: d > 260 && d < 700 && Math.random() < 0.25 + 0.55 * skill,
+    };
   }
 }
 
@@ -1064,6 +1426,18 @@ const OFFSETS = [0, 0.45, -0.45, 0.95, -0.95, 1.5, -1.5, 2.3, -2.3, Math.PI];
 
 function newAi() {
   return { next: 0, aggr: Math.random(), friendly: Math.random() < 0.55, wx: undefined, wy: undefined, wUntil: 0 };
+}
+
+/** Squared distance from (px, py) to the segment (ax, ay)–(bx, by). */
+function segDist2(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const len2 = vx * vx + vy * vy;
+  let k = len2 ? ((px - ax) * vx + (py - ay) * vy) / len2 : 0;
+  k = Math.max(0, Math.min(1, k));
+  const x = ax + vx * k - px;
+  const y = ay + vy * k - py;
+  return x * x + y * y;
 }
 
 function botName() {
@@ -3500,143 +3874,16 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
 return { TRACKS, createAudio };
 })();
 __m.story = (() => {
-// Ch-ch-chain-ges — the story: a single-player campaign on the real maps. You start with a movement and no seats;
-// every mission (gather people, hang flags in the squares, reach the places that matter, hold a rally) brings
-// mandates, and 61 of them win the election and form a government. The story and its people are made up; progress
-// is kept only on the player's own phone.
-
-const TO_WIN = 61;
-
-/**
- * The missions, in order. goal.type: 'gather' (n people), 'reach' (a place, with n people), 'flags' (k places),
- * 'rally' (stay by a place with n people for secs), 'race' (reach a place within secs), 'tour' (places in order).
- * Places are picked from the map's named places: by name first, then by kind.
- */
-const MISSIONS = [
-  {
-    map: 'tel-aviv',
-    chapter: 'תל אביב',
-    title: 'צעד ראשון',
-    brief: 'כל תנועה מתחילה באנשים. צאו לרחובות ואספו 25 אנשים לשרשרת.',
-    goal: { type: 'gather', n: 25 },
-    mandates: 3,
-  },
-  {
-    map: 'tel-aviv',
-    chapter: 'תל אביב',
-    title: 'דגלים בכיכרות',
-    brief: 'העיר צריכה לראות אתכם. עברו בשלוש כיכרות ותלו בכל אחת דגל.',
-    goal: { type: 'flags', k: 3, kinds: ['square', 'park', 'sight', 'hall'] },
-    mandates: 4,
-  },
-  {
-    map: 'tel-aviv',
-    chapter: 'תל אביב',
-    title: 'העצרת הראשונה',
-    brief: 'הגיעו לכיכר עם 30 אנשים לפחות והישארו שם 8 שניות: זו העצרת הראשונה שלכם.',
-    goal: { type: 'rally', names: ['כיכר רבין', 'כיכר דיזנגוף', 'כיכר הבימה'], kinds: ['square', 'park', 'hall'], n: 30, secs: 8 },
-    mandates: 5,
-  },
-  {
-    map: 'jerusalem',
-    chapter: 'ירושלים',
-    title: 'הדרך לכנסת',
-    brief: 'בירושלים מתקבלות ההחלטות. הביאו 30 אנשים עד הכנסת.',
-    goal: { type: 'reach', names: ['הכנסת', 'משכן הכנסת'], kinds: ['gov', 'hall'], n: 30 },
-    mandates: 5,
-  },
-  {
-    map: 'jerusalem',
-    chapter: 'ירושלים',
-    title: 'שוק ותחנה',
-    brief: 'איפה שיש אנשים – שם צריך להיות. תלו דגלים בשוק, בתחנה ובכיכר.',
-    goal: { type: 'flags', k: 3, names: ['שוק מחנה יהודה'], kinds: ['market', 'station', 'square'] },
-    mandates: 5,
-  },
-  {
-    map: 'jerusalem',
-    chapter: 'ירושלים',
-    title: 'גל של מתנדבים',
-    brief: 'הקמפיין צובר תאוצה: שרשרת של 60 אנשים.',
-    goal: { type: 'gather', n: 60 },
-    mandates: 6,
-  },
-  {
-    map: 'haifa',
-    chapter: 'חיפה',
-    title: 'סיור בעיר',
-    brief: 'חיפה מחכה: עברו בשלושה מקומות, אחד אחרי השני.',
-    goal: { type: 'tour', k: 3, kinds: ['uni', 'hall', 'park', 'sight', 'square'] },
-    mandates: 5,
-  },
-  {
-    map: 'haifa',
-    chapter: 'חיפה',
-    title: 'מרוץ נגד הזמן',
-    brief: 'הכתבים מחכים! הגיעו למקום המסומן תוך 45 שניות. ⚡ עוזר.',
-    goal: { type: 'race', kinds: ['station', 'square', 'hall'], secs: 45, far: true },
-    mandates: 5,
-  },
-  {
-    map: 'beer-sheva',
-    chapter: 'באר שבע',
-    title: 'לב הנגב',
-    brief: 'הנגב הוא לב הארץ. הגיעו לעירייה עם 50 אנשים.',
-    goal: { type: 'reach', names: ['עיריית באר שבע'], kinds: ['hall', 'square', 'uni'], n: 50 },
-    mandates: 6,
-  },
-  {
-    map: 'israel',
-    chapter: 'כל הארץ',
-    title: 'מסע ארצי',
-    brief: 'עכשיו כל הארץ: ירושלים, תל אביב, חיפה ובאר שבע – לפי הסדר.',
-    goal: { type: 'tour', k: 4, names: ['ירושלים', 'תל אביב-יפו', 'חיפה', 'באר שבע'], kinds: ['city'] },
-    mandates: 7,
-  },
-  {
-    map: 'israel',
-    chapter: 'כל הארץ',
-    title: 'הגל הגדול',
-    brief: 'שרשרת של 120 אנשים מקצה הארץ ועד קצה.',
-    goal: { type: 'gather', n: 120 },
-    mandates: 7,
-  },
-  {
-    map: 'israel',
-    chapter: 'כל הארץ',
-    title: 'ליל הבחירות',
-    brief: 'העצרת הגדולה: 150 אנשים בירושלים, 12 שניות. זה הרגע.',
-    goal: { type: 'rally', names: ['ירושלים'], kinds: ['city'], n: 150, secs: 12 },
-    mandates: 8,
-  },
-];
-
-const KEY = 'chain:story';
-
-/** Saved progress: { i: next mission, mandates }. */
-function loadProgress() {
-  try {
-    const p = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (p && Number.isInteger(p.i) && Number.isFinite(p.mandates)) return { i: Math.max(0, Math.min(MISSIONS.length, p.i)), mandates: p.mandates };
-  } catch {
-    /* storage unavailable */
-  }
-  return { i: 0, mandates: 0 };
-}
-function saveProgress(p) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify({ i: p.i, mandates: p.mandates }));
-  } catch {
-    /* storage unavailable */
-  }
-}
+// Ch-ch-chain-ges — places for the story (campaign.js): where a chapter sends the chain to hang a flag, hold a
+// square or find a friend, chosen from the map's named places. Never a memorial, a cemetery or a holy site.
 
 // Places a game should never send a campaign to hang flags or hold a rally: memorials, cemeteries, holy sites, and
 // places of mourning and protest for the hostages and the fallen.
 const SENSITIVE = /חטופ|נופלים|הנופל|זיכרון|זכרון|יזכור|הנצחה|אנדרטה|מצבה|שכול|קברות|קבר |יד ושם|הר הרצל|שואה|טבח|הכותל|הר הבית|מסגד|כנסיי|בית כנסת|כנסיית/;
 
 /**
- * Chooses the mission's places on the map: named ones first, then by kind, spread apart, inside the arena. Falls
+ * Chooses the mission's places on the map: named ones first, then by kind, at least goal.apart (350) from each other,
+ * inside the arena. Falls
  * back to neighbourhood names, then to any street corner. Returns [{ x, y, name }].
  */
 function pickPlaces(map, goal, count, rand = Math.random) {
@@ -3646,7 +3893,8 @@ function pickPlaces(map, goal, count, rand = Math.random) {
     .filter(([x, y, , name]) => inside(x, y) && !SENSITIVE.test(name))
     .map(([x, y, kind, name]) => ({ x, y, kind, name }));
   const out = [];
-  const far = (p) => out.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > 350);
+  const apart = goal.apart ?? 350;
+  const far = (p) => out.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > apart);
   const take = (p, unique = true) => {
     if (out.length < count && far(p) && !(unique && out.some((q) => q.name === p.name))) out.push(p);
   };
@@ -3677,54 +3925,963 @@ function pickPlaces(map, goal, count, rand = Math.random) {
   return out;
 }
 
+return { pickPlaces };
+})();
+__m.campaign = (() => {
+// Ch-ch-chain-ges — "נגד כל הסיכויים": the single-player campaign. A new party starts under the electoral threshold
+// with twelve people in the street and, chapter by chapter, city by city, becomes the biggest party in the Knesset.
+// Thirteen chapters in five books; between the books you choose a strategy (a lasting ability), and every chapter
+// moves seats from the rivals you beat to you. The rival parties are bots with the names of the other parties,
+// racing for the same voters, cutting across your path and closing rings around you; roadworks, buses, trains and
+// storms get in the way. The story and its people are made up; progress is kept only on the player's own phone.
+//
+// This module is pure logic (no DOM): the chapters and the seats, the director that sends the rivals after you, the
+// obstacles on the map, and each chapter's goal.
+const { C, radiusFor, scoreOf } = __m.sim;
+const { pickPlaces } = __m.story;
+const THRESHOLD = 4; // seats: 3.25% of 120
+const OURS = 0; // our chain's colour (COLORS[0], blue)
+const ALLY_COLOR = 9;
+
 /**
- * A running mission: update(me, score, dt) each frame → { done, failed, text, progress, targets }.
- * me: the player's chain (x, y) or null; targets: [{ x, y, name, done, active }] for the map, arrows and minimap.
+ * The parties racing for the same voters, as their chains in the street. Opening seats: the Walla News poll of 9
+ * September 2026 (ours, polled at 4 there, starts the story at launch day: under the threshold, its 4 seats
+ * undecided). Names, colours and seats are all that is used; edit them here.
  */
-function startMission(mission, map, rand = Math.random) {
-  const g = mission.goal;
-  const want = { gather: 0, reach: 1, flags: g.k || 3, rally: 1, race: 1, tour: g.k || 3 }[g.type] ?? 0;
-  let places = want ? pickPlaces(map, g, want, rand) : [];
-  if (g.type === 'race' && places.length) {
-    // The race goes to the place furthest from the start (picked once the chain appears).
-    places = places.slice(0, 1);
+const RIVALS = [
+  { id: 'yashar', name: 'ישר', seats: 25, color: 2 },
+  { id: 'likud', name: 'הליכוד', seats: 21, color: 3 },
+  { id: 'beyachad', name: 'ביחד', seats: 14, color: 4 },
+  { id: 'democrats', name: 'הדמוקרטים', seats: 9, color: 5 },
+  { id: 'ybeytenu', name: 'ישראל ביתנו', seats: 9, color: 6 },
+  { id: 'otzma', name: 'עוצמה יהודית', seats: 7, color: 8 },
+  { id: 'rz', name: 'הציונות הדתית וזהות', seats: 5, color: 7 },
+  { id: 'reservists', name: 'המילואימניקים', seats: 0, color: 11 },
+  { id: 'bluewhite', name: 'כחול לבן', seats: 0, color: 10 },
+];
+/** In the Knesset but never in the street: parties whose voters hardly overlap with ours keep their seats. */
+const OTHERS = [
+  { id: 'shas', name: 'ש״ס', seats: 7 },
+  { id: 'utj', name: 'יהדות התורה', seats: 7 },
+  { id: 'joint', name: 'הרשימה המשותפת', seats: 7 },
+  { id: 'raam', name: 'רע״ם', seats: 5 },
+];
+const UNDECIDED = 4;
+const POLL_NOTE = 'המנדטים של שאר המפלגות בפתיחה: סקר וואלה, 9.9.2026. מכאן והלאה – הכול תלוי בכם.';
+
+const LOCAL_LISTS = ['צעירי העיר', 'רשימת השכונות', 'הרשימה המקומית', 'שכנים למען העיר', 'גרעין העיר', 'רשימת הרחוב'];
+
+/** Strategies, chosen one per round between the books (like social policies): lasting abilities. */
+const PERKS = [
+  { id: 'volunteers', icon: '🙋', name: 'רשת מתנדבים', text: 'כל פרק מתחיל עם 15 אנשים נוספים בשרשרת.' },
+  { id: 'field', icon: '🧲', name: 'עבודת שטח', text: 'אנשים מצטרפים מרחוק יותר: טווח האיסוף כמעט כפול.' },
+  { id: 'stamina', icon: '🫁', name: 'נשימה ארוכה', text: 'ריצה (⚡) עולה חצי.' },
+  { id: 'intel', icon: '📡', name: 'חמ״ל', text: 'היריבות מסומנות במפה הקטנה, וחצים אדומים מראים מרחוק מי יוצאת לצוד אתכם.' },
+  { id: 'shield', icon: '🛡️', name: 'חוסן', text: 'פעם אחת בכל פרק, התנגשות קורעת רק חלק מהשרשרת.' },
+  { id: 'allies', icon: '🤝', name: 'שותפים מקומיים', text: 'בכל פרק רשימה מקומית מחזיקה אתכם ביד מההתחלה.' },
+  { id: 'momentum', icon: '💨', name: 'מומנטום', text: 'השרשרת מהירה יותר ב־10%.' },
+  { id: 'echo', icon: '📣', name: 'הדהוד', text: 'כל מי שמצטרף שווה פי 1.25.' },
+  { id: 'agile', icon: '🌀', name: 'גמישות', text: 'מסתובבים מהר יותר ב־25%.' },
+];
+const PERK_ROUNDS = [
+  ['volunteers', 'field', 'stamina'],
+  ['intel', 'shield', 'allies'],
+  ['momentum', 'echo', 'agile'],
+];
+
+/** The five books. `event`: seats that move when the book opens (the winter). */
+const BOOKS = [
+  {
+    title: 'הניצוץ',
+    text: 'יום ההשקה. אולם קטן, שלוש מצלמות וכיסאות ריקים. הסקר הראשון נותן ל{party} 1.2 אחוזים, והפרשנים כבר מתערבים מתי תתפרקו. יש לכם שנים־עשר אנשים שמאמינים, וכמה שבועות עד הבחירות.',
+  },
+  {
+    title: 'העיר הגדולה',
+    text: 'מעל אחוז החסימה פתאום כולם רואים אתכם – גם המפלגות הגדולות. בערים הגדולות הן כבר מחכות, ואף אחת מהן לא מתכוונת לפנות לכם מקום.',
+  },
+  {
+    title: 'החורף',
+    text: 'ואז, כמו בכל מערכה, מגיע החורף. סקר חדש: ירידה של שלושה מנדטים. מתנדבים עוזבים, והכותרות כותבות שהבועה התפוצצה. בשלוש בלילה מגיעה הודעה מאבי: "זה הרגע שבו מפלגות קטנות נעלמות. או הרגע שבו הן נולדות."',
+    event: [
+      { to: 'yashar', n: 2 },
+      { to: 'likud', n: 1 },
+    ],
+  },
+  {
+    title: 'הארץ',
+    text: 'באביב יוצאים לדרך: מהגליל ועד המפרץ, עיר אחרי עיר. השרשרת מתארכת, והיריבות כבר ממתינות בצמתים.',
+  },
+  {
+    title: 'יום הבחירות',
+    text: 'שש בבוקר. הקלפיות נפתחות. כל מה שבניתם בשבועות האלה נמדד היום, קול אחרי קול.',
+  },
+];
+const BOOK_NAMES = ['ספר ראשון', 'ספר שני', 'ספר שלישי', 'ספר רביעי', 'ספר חמישי'];
+
+/**
+ * The chapters, in order.
+ * goal.type: 'gather' (n people) · 'tour' (places in order) · 'flags' (k places, any order) · 'hold' (stay by a place
+ * with n people for secs) · 'first' (n people before any of goal.vs) · 'rescue' (hold hands with the chains named in
+ * goal.allies) · 'survive' (secs, ending with at least goal.min) · 'cut' (n rival chains run into yours).
+ * rivals: [party, role, skill, mass] (rivalMods: their handicap); hunters: how many hunt at once (surge: more after a while); grace: seconds of
+ * peace first; seats: [[party, n]] taken when the chapter is won (the first is also where a third star's seat comes
+ * from, except in the first book); bonus: the third star (hands, cut n, people n); par: seconds for the second star.
+ */
+const CHAPTERS = [
+  {
+    book: 0,
+    map: 'afula',
+    title: 'שנים־עשר',
+    intro: 'רחוב אחד בעפולה, שנים־עשר אנשים ושולחן מתקפל. אף אחד לא עוצר. ואז מישהי עוצרת.',
+    goal: { type: 'gather', n: 50 },
+    rivals: [['reservists', 'raider', 0.25, 30]],
+    hunters: 0,
+    locals: 2,
+    obstacles: { bars: 3 },
+    time: 240,
+    par: 60,
+    bonus: { type: 'hands' },
+    seats: [['undecided', 1]],
+    outro: 'נועה, בת 19, עצרה ראשונה. "באתי לשאול מה אתם רוצים," היא אמרה, "ונשארתי כי שאלתם מה אני רוצה." עד הערב היא הביאה חצי שכונה.',
+  },
+  {
+    book: 0,
+    map: 'beer-sheva',
+    title: 'חוג בית',
+    intro: 'רחל, בת 74, הזמינה את כל הבניין לחוג בית בבאר שבע, ואתם מאחרים. עברו בשלוש הכתובות לפי הסדר, לפני שכולם ילכו הביתה.',
+    goal: { type: 'tour', k: 3, kinds: ['place', 'square', 'park', 'hall'], apart: 1000 },
+    rivals: [
+      ['reservists', 'raider', 0.35, 40],
+      ['bluewhite', 'hunter', 0.3, 35],
+    ],
+    hunters: 1,
+    grace: 12,
+    obstacles: { bars: 5, buses: 1 },
+    time: 150,
+    par: 70,
+    bonus: { type: 'people', n: 60 },
+    seats: [['undecided', 1]],
+    outro: 'שלושים איש בסלון של עשרים. רחל הגישה עוגת שמרים ואמרה: "חיכיתי שנים שמישהו יבוא להקשיב, לא רק לדבר."',
+  },
+  {
+    book: 0,
+    map: 'ashdod',
+    title: 'אחוז החסימה',
+    intro: 'שלוש מפלגות קטנות, עיר אחת וקהל אחד. רק מי שתגיע ראשונה ל־100 אנשים תעבור את אחוז החסימה בסקר של הערב.',
+    goal: { type: 'first', n: 100, vs: ['reservists', 'bluewhite'] },
+    rivals: [
+      ['reservists', 'raider', 0.4, 20],
+      ['bluewhite', 'hunter', 0.35, 20],
+    ],
+    rivalMods: { value: 0.5 },
+    hunters: 1,
+    grace: 25,
+    obstacles: { bars: 5, buses: 2 },
+    time: 240,
+    par: 90,
+    bonus: { type: 'cut', n: 1 },
+    seats: [['undecided', 2]],
+    outro: 'סקר חדשות הערב: 3.4 אחוזים. מעל אחוז החסימה. בטלפון – אבי, האסטרטג הוותיק שסירב לכם פעמיים: "טוב. אני בפנים. ועכשיו מתחיל הקשה."',
+  },
+  {
+    book: 1,
+    map: 'tel-aviv',
+    title: 'העיר שלא ישנה',
+    intro: 'תל אביב, אחת בלילה. תלו ארבעה דגלים בכיכרות ובגנים, מתחת לאף של שתי שרשראות שכבר צדות ברחובות.',
+    goal: { type: 'flags', k: 4, kinds: ['square', 'park', 'sight', 'hall'], apart: 900 },
+    rivals: [
+      ['democrats', 'hunter', 0.5, 70],
+      ['beyachad', 'guard', 0.5, 80],
+    ],
+    hunters: 2,
+    grace: 10,
+    obstacles: { bars: 6, buses: 2, trains: 1 },
+    time: 180,
+    par: 70,
+    bonus: { type: 'cut', n: 1 },
+    seats: [
+      ['democrats', 1],
+      ['beyachad', 1],
+    ],
+    outro: 'עד הבוקר הדגל בכיכר צולם אלפי פעמים. נועה העלתה סרטון, ובפעם הראשונה התגובות לא שאלו "מי אתם?" אלא "איך מצטרפים?"',
+  },
+  {
+    book: 1,
+    map: 'jerusalem',
+    title: 'הכיכר',
+    intro: 'ירושלים לא נותנת כלום בחינם. הביאו 70 אנשים לכיכר והחזיקו בה 12 שניות, בזמן שהשרשרת הגדולה בעיר מנסה לכתר אתכם.',
+    goal: { type: 'hold', n: 70, secs: 12, names: ['כיכר ספרא', 'כיכר ציון', 'כיכר החתולות'], kinds: ['square', 'park'] },
+    rivals: [
+      ['likud', 'giant', 0.35, 170],
+      ['otzma', 'guard', 0.5, 60],
+    ],
+    hunters: 1,
+    surge: { at: 70, add: 1 },
+    grace: 30,
+    obstacles: { bars: 6, buses: 2, trains: 1 },
+    time: 240,
+    par: 130,
+    bonus: { type: 'people', n: 120 },
+    seats: [
+      ['likud', 1],
+      ['otzma', 1],
+    ],
+    outro: 'עשרים שניות שהרגישו כמו שנה. כשהכיכר התמלאה, רחל התקשרה מבאר שבע: "ראיתי אתכם בחדשות. אמרתי לשכנות – אלה שלנו."',
+  },
+  {
+    book: 1,
+    map: 'haifa',
+    title: 'הכרמל',
+    intro: 'אבי תקוע עם צוות קטן בעיר התחתית, ושתי שרשראות יריבות כבר סוגרות עליו. הגיעו אליו ואל הצוות שבמעלה הכרמל ותנו יד, לפני שהן יגיעו ראשונות.',
+    goal: { type: 'rescue', allies: ['אבי', 'צוות הכרמל'], kinds: ['station', 'square', 'park', 'sight', 'place'], apart: 1500 },
+    rivals: [
+      ['ybeytenu', 'hunter', 0.6, 90],
+      ['beyachad', 'hunter', 0.55, 80],
+    ],
+    hunters: 2,
+    grace: 4,
+    obstacles: { bars: 7, buses: 2, trains: 1 },
+    time: 150,
+    par: 60,
+    bonus: { type: 'people', n: 90 },
+    seats: [['ybeytenu', 2]],
+    outro: '"עשרים שנה אני בפוליטיקה," אמר אבי כשהחזקתם ידיים, "ואף אחד עוד לא חזר בשבילי."',
+  },
+  {
+    book: 2,
+    map: 'netanya',
+    title: 'הסערה',
+    intro: 'כולם יודעים שאתם פגיעים עכשיו. שלוש שרשראות גדולות יוצאות לצוד את מה שנשאר מכם, וסערה משתוללת בעיר. שרדו 60 שניות, ואל תרדו מתחת ל־30 אנשים.',
+    goal: { type: 'survive', secs: 60, min: 30 },
+    mass: 33,
+    rivals: [
+      ['yashar', 'giant', 0.5, 300],
+      ['likud', 'giant', 0.5, 280],
+      ['beyachad', 'hunter', 0.55, 90],
+    ],
+    hunters: 1,
+    surge: { at: 25, add: 1 },
+    grace: 6,
+    obstacles: { bars: 7, buses: 2, storms: 2 },
+    bonus: { type: 'cut', n: 1 },
+    seats: [['yashar', 2]],
+    outro: 'הסערה עברה. אתם עדיין כאן. אבי כותב: "מי ששורד את החורף – מגיע לאביב."',
+  },
+  {
+    book: 2,
+    map: 'ashkelon',
+    title: 'לאסוף את השברים',
+    intro: 'הצוות התפזר: נועה בצפון העיר, המתנדבים ליד הים, ורחל בדרך מבאר שבע. אספו אותם אחד־אחד ותנו יד – שרשרת אחת, לא שלוש.',
+    goal: { type: 'rescue', allies: ['נועה', 'המתנדבים', 'רחל'], kinds: ['place', 'square', 'park', 'station', 'sight'] },
+    rivals: [
+      ['likud', 'giant', 0.6, 300],
+      ['rz', 'raider', 0.6, 60],
+      ['otzma', 'hunter', 0.55, 70],
+    ],
+    hunters: 2,
+    grace: 10,
+    obstacles: { bars: 7, buses: 2, storms: 1 },
+    time: 270,
+    par: 100,
+    bonus: { type: 'people', n: 100 },
+    seats: [
+      ['likud', 1],
+      ['rz', 1],
+    ],
+    outro: 'כשהמעגל נסגר, מישהו התחיל לשיר. אף אחד לא זוכר מי. עד הבוקר השיר היה בכל הטלפונים.',
+  },
+  {
+    book: 2,
+    map: 'rishon-lezion',
+    title: 'האביב',
+    intro: 'סקר חדש: עלייה ראשונה מאז החורף. עכשיו או לעולם לא – שרשרת של 200 אנשים, מול שלוש יריבות שלא מתכוונות לוותר.',
+    goal: { type: 'gather', n: 200 },
+    rivals: [
+      ['beyachad', 'hunter', 0.65, 100],
+      ['yashar', 'giant', 0.6, 340],
+      ['democrats', 'raider', 0.6, 80],
+    ],
+    hunters: 2,
+    surge: { at: 60, add: 1 },
+    grace: 12,
+    obstacles: { bars: 8, buses: 3, storms: 1 },
+    time: 300,
+    par: 120,
+    bonus: { type: 'cut', n: 2 },
+    seats: [
+      ['beyachad', 2],
+      ['yashar', 1],
+    ],
+    outro: '{seats} מנדטים בסקר. בפעם הראשונה השאלה באולפנים היא לא "האם תעברו", אלא "כמה".',
+  },
+  {
+    book: 3,
+    map: 'israel',
+    title: 'צפונה',
+    intro: 'מהכרמל ועד הגליל: ארבע ערים, ארבע עצרות, ושרשרת אחת שלא עוצרת. חיפה, נהריה, כרמיאל וצפת – לפי הסדר.',
+    start: 'נתניה',
+    goal: { type: 'tour', k: 4, names: ['חיפה', 'נהריה', 'כרמיאל', 'צפת'], kinds: ['city'] },
+    rivals: [
+      ['ybeytenu', 'hunter', 0.65, 110],
+      ['beyachad', 'hunter', 0.7, 110],
+      ['likud', 'giant', 0.6, 320],
+    ],
+    hunters: 2,
+    grace: 6,
+    obstacles: { storms: 2, trains: 1 },
+    time: 120,
+    par: 45,
+    bonus: { type: 'people', n: 120 },
+    seats: [
+      ['ybeytenu', 1],
+      ['beyachad', 1],
+      ['likud', 1],
+    ],
+    outro: 'בכל עיר חיכה מישהו עם דגל. אף אחד לא ביקש מהם. הם פשוט באו.',
+  },
+  {
+    book: 3,
+    map: 'israel',
+    title: 'דרומה',
+    intro: 'בנגב אומרים שהמרחקים גדולים מדי. תוכיחו שזה לא נכון: אשקלון, באר שבע, דימונה ואילת – מהים ועד המפרץ.',
+    start: 'קריית גת',
+    goal: { type: 'tour', k: 4, names: ['אשקלון', 'באר שבע', 'דימונה', 'אילת'], kinds: ['city'] },
+    rivals: [
+      ['likud', 'giant', 0.7, 340],
+      ['otzma', 'raider', 0.7, 90],
+      ['yashar', 'giant', 0.65, 340],
+    ],
+    hunters: 3,
+    grace: 6,
+    obstacles: { storms: 3, trains: 1 },
+    time: 200,
+    par: 70,
+    bonus: { type: 'cut', n: 1 },
+    seats: [
+      ['likud', 2],
+      ['otzma', 1],
+    ],
+    outro: 'באילת, בחצות, רחל ונועה נפגשו בפעם הראשונה. "את הנכדה שלא הייתה לי," אמרה רחל. נועה צחקה, ואז בכתה.',
+  },
+  {
+    book: 3,
+    map: 'tel-aviv',
+    title: 'העימות',
+    intro: 'ערב העימות הגדול. שתי המפלגות הגדולות בטוחות שזה מאבק בין שתיים. הראו שיש שלוש: תנו לשתי שרשראות יריבות להיתקל בשרשרת שלכם.',
+    goal: { type: 'cut', n: 2 },
+    mass: 50,
+    rivals: [
+      ['yashar', 'giant', 0.65, 420],
+      ['likud', 'giant', 0.65, 380],
+      ['beyachad', 'hunter', 0.6, 120],
+    ],
+    hunters: 3,
+    grace: 8,
+    obstacles: { bars: 8, buses: 3, storms: 1 },
+    time: 240,
+    par: 110,
+    bonus: { type: 'people', n: 150 },
+    seats: [
+      ['yashar', 2],
+      ['likud', 2],
+    ],
+    outro: 'למחרת כל הכותרות עסקו באותו רגע. אבי לא אמר מילה. הוא רק שלח צילום מסך של הסקר: {seats}.',
+  },
+  {
+    book: 4,
+    map: 'israel',
+    title: 'הקלפיות נפתחות',
+    intro: '300 אנשים עד שהקלפיות נסגרות, וכל היריבות יודעות את זה. זו הריצה האחרונה.',
+    goal: { type: 'gather', n: 300 },
+    mass: 50,
+    rivals: [
+      ['yashar', 'giant', 0.8, 420],
+      ['likud', 'giant', 0.8, 400],
+      ['beyachad', 'hunter', 0.75, 130],
+      ['democrats', 'hunter', 0.7, 110],
+      ['ybeytenu', 'hunter', 0.7, 110],
+      ['otzma', 'raider', 0.7, 100],
+    ],
+    hunters: 3,
+    surge: { at: 60, add: 1 },
+    grace: 10,
+    obstacles: { storms: 3, trains: 2 },
+    time: 240,
+    par: 90,
+    bonus: { type: 'cut', n: 2 },
+    seats: [
+      ['yashar', 3],
+      ['likud', 2],
+      ['beyachad', 1],
+      ['democrats', 1],
+    ],
+    outro: '22:00. כל הערוצים עוברים למסך אחד. ספירה לאחור. ואז – המדגם.',
+  },
+];
+
+const EPILOGUE =
+  'המדגם: {party} – {seats} מנדטים. המפלגה הגדולה ביותר.\n' +
+  'מאחוז אחד ושנים־עשר אנשים ברחוב בעפולה – לשרשרת הארוכה בארץ. נועה בוכה, רחל מחבקת את כולם, ואבי, בפעם הראשונה בעשרים שנה, לא אומר כלום.\n' +
+  'שבועיים אחר כך, הנשיא מטיל עליכם להרכיב את הממשלה.';
+
+// ------------------------------------------------------------------------------------------------ the seats
+const KEY = 'chain:campaign';
+
+function newCampaign() {
+  const seats = { ours: 0, undecided: UNDECIDED };
+  for (const p of [...RIVALS, ...OTHERS]) seats[p.id] = p.seats;
+  return { v: 1, next: 0, seats, stars: [], perks: [], booksOpened: [], pending: 'book', last: null };
+}
+function loadCampaign() {
+  try {
+    const p = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (p?.v === 1 && Number.isInteger(p.next) && p.seats && Array.isArray(p.stars)) return p;
+  } catch {
+    /* storage unavailable */
   }
-  const targets = places.map((p) => ({ ...p, done: false, active: false }));
-  let held = 0;
+  return newCampaign();
+}
+function saveCampaign(state) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function partyOf(id) {
+  return RIVALS.find((p) => p.id === id) ?? OTHERS.find((p) => p.id === id) ?? null;
+}
+function fill(text, vars) {
+  return String(text).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+}
+
+/** The Knesset now: [{ id, name, seats, color (index or null), ours, other }], biggest first; undecided last. */
+function knesset(state, party = 'עמך ישראל') {
+  const rows = [{ id: 'ours', name: party, seats: state.seats.ours, color: OURS, ours: true }];
+  for (const p of RIVALS) if (state.seats[p.id] > 0) rows.push({ id: p.id, name: p.name, seats: state.seats[p.id], color: p.color });
+  for (const p of OTHERS) rows.push({ id: p.id, name: p.name, seats: state.seats[p.id], color: null, other: true });
+  rows.sort((a, b) => b.seats - a.seats || (a.ours ? -1 : b.ours ? 1 : 0));
+  if (state.seats.undecided > 0) rows.push({ id: 'undecided', name: 'מתלבטים', seats: state.seats.undecided, color: null, undecided: true });
+  return rows;
+}
+/** Under the threshold a party gets no seats: its would-be seats wait with the undecided. */
+function oursShown(state) {
+  return state.seats.ours >= THRESHOLD ? state.seats.ours : 0;
+}
+function biggestRival(state) {
+  let best = null;
+  for (const p of [...RIVALS, ...OTHERS]) if (!best || state.seats[p.id] > state.seats[best.id]) best = p;
+  return best ? { ...best, seats: state.seats[best.id] } : null;
+}
+
+/** Moves n seats to us from `from` (never below the threshold for a party in the Knesset: then from the biggest). */
+function take(state, from, n, gains) {
+  for (let k = 0; k < n; k++) {
+    let src = from;
+    const floor = src === 'undecided' ? 0 : THRESHOLD;
+    if (!(state.seats[src] > floor)) {
+      src = null;
+      for (const p of RIVALS) if (state.seats[p.id] > THRESHOLD && (!src || state.seats[p.id] > state.seats[src])) src = p.id;
+      if (!src) return;
+    }
+    state.seats[src] -= 1;
+    state.seats.ours += 1;
+    const g = gains.find((x) => x.from === src);
+    if (g) g.n += 1;
+    else gains.push({ from: src, n: 1 });
+  }
+}
+
+/** Opens a book: its seat event, once. Returns [{ to, n }] (seats we lost). */
+function openBook(state, book) {
+  if (state.booksOpened.includes(book)) return [];
+  state.booksOpened.push(book);
+  const lost = [];
+  for (const { to, n } of BOOKS[book]?.event || []) {
+    const k = Math.min(n, Math.max(0, state.seats.ours - THRESHOLD));
+    state.seats.ours -= k;
+    state.seats[to] += k;
+    if (k) lost.push({ to, n: k });
+  }
+  return lost;
+}
+
+/** A chapter won: its seats (plus one for three stars), the stars kept, and what comes next. Returns the gains. */
+function winChapter(state, index, stars) {
+  const ch = CHAPTERS[index];
+  const gains = [];
+  if (index !== state.next) return gains;
+  for (const [from, n] of ch.seats) take(state, from, n, gains);
+  // Three stars: one seat more from the chapter's main rival (not in the first book: the threshold comes when it comes).
+  if (stars >= 3 && ch.seats[0][0] !== 'undecided') take(state, ch.seats[0][0], 1, gains);
+  state.stars[index] = Math.max(state.stars[index] || 0, stars);
+  state.next = index + 1;
+  const nextCh = CHAPTERS[state.next];
+  const round = ch.book;
+  state.pending = !nextCh ? 'end' : nextCh.book !== ch.book ? (PERK_ROUNDS[round] ? 'perks' : 'book') : null;
+  state.last = { index, stars, gains };
+  return gains;
+}
+function choosePerk(state, id) {
+  if (!state.perks.includes(id)) state.perks.push(id);
+  state.pending = 'book';
+}
+
+/** How a chapter's perks change the player's chain. */
+function perkMods(perks) {
+  const has = (id) => perks.includes(id);
+  const mods = {};
+  if (has('field')) mods.reach = 26;
+  if (has('stamina')) mods.boost = 0.5;
+  if (has('momentum')) mods.speed = 1.1;
+  if (has('echo')) mods.value = 1.25;
+  if (has('agile')) mods.turn = 1.25;
+  return { mods: Object.keys(mods).length ? mods : null, shield: has('shield') ? 1 : 0, extra: has('volunteers') ? 15 : 0 };
+}
+
+/** The three stars of a chapter, as text. */
+function starTexts(ch) {
+  const out = ['⭐ לסיים את המשימה'];
+  if (ch.goal.type === 'survive') out.push(`⭐ לסיים עם ${ch.goal.min * 2} אנשים לפחות`);
+  else out.push(`⭐ תוך ${mmss(ch.par)}`);
+  const b = ch.bonus;
+  out.push(
+    b.type === 'hands'
+      ? '⭐ לתת יד לרשימה מקומית'
+      : b.type === 'cut'
+        ? `⭐ ${b.n === 1 ? 'שרשרת יריבה אחת נתקלת' : `${b.n} שרשראות יריבות נתקלות`} בשרשרת שלכם`
+        : `⭐ לסיים עם ${b.n} אנשים לפחות`,
+  );
+  return out;
+}
+function goalText(ch) {
+  const g = ch.goal;
+  switch (g.type) {
+    case 'gather':
+      return `אספו ${g.n} אנשים לשרשרת`;
+    case 'tour':
+      return g.names ? `עברו ב${g.names.join(', ')} – לפי הסדר` : `עברו ב־${g.k} מקומות, לפי הסדר`;
+    case 'flags':
+      return `תלו ${g.k} דגלים`;
+    case 'hold':
+      return `החזיקו בכיכר ${g.secs} שניות עם ${g.n} אנשים לפחות`;
+    case 'first':
+      return `הגיעו ראשונים ל־${g.n} אנשים`;
+    case 'rescue':
+      return `תנו יד ל${g.allies.join(', ')}`;
+    case 'survive':
+      return `שרדו ${g.secs} שניות, עם ${g.min} אנשים לפחות`;
+    case 'cut':
+      return `${g.n} שרשראות יריבות נתקלות בשרשרת שלכם`;
+    default:
+      return '';
+  }
+}
+function mmss(secs) {
+  const s = Math.max(0, Math.ceil(secs));
+  return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s} שנ׳`;
+}
+
+// ------------------------------------------------------------------------------------------------ obstacles
+/**
+ * Roadworks across streets, buses on long roads, trains on the railways and storms drifting across the map, away
+ * from the places in `avoid` ([{ x, y, r }]).
+ */
+function makeObstacles(map, spec = {}, rand = Math.random, avoid = []) {
+  const data = map?.data || {};
+  const inside = map?.arena?.inside || (() => true);
+  const R = map?.R || C.arenaRadius;
+  const region = data.kind === 'region';
+  const roads = data.roads || [];
+  const clear = (x, y, r = 0) => inside(x, y) && avoid.every((a) => Math.hypot(a.x - x, a.y - y) > a.r + r);
+  const bars = [];
+  const movers = [];
+  const zones = [];
+  const lines = (list) => (list || []).filter((l) => Array.isArray(l) && l.length >= 4);
+  // Roadworks: a barrier across a street (70 wide), apart from each other.
+  const streets = spec.bars ? [...lines(roads[2]), ...lines(roads[1]), ...lines(roads[0])] : [];
+  for (let tries = 0; bars.length < (spec.bars || 0) && tries < 400 && streets.length; tries++) {
+    const l = streets[Math.floor(rand() * streets.length)];
+    const i = 2 * Math.floor(rand() * (l.length / 2 - 1));
+    const [x0, y0, x1, y1] = [l[i], l[i + 1], l[i + 2], l[i + 3]];
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    if (len < 50) continue;
+    const mx = (x0 + x1) / 2;
+    const my = (y0 + y1) / 2;
+    if (!clear(mx, my, 60) || bars.some((b) => Math.hypot(b.x - mx, b.y - my) < 420)) continue;
+    const nx = -(y1 - y0) / len;
+    const ny = (x1 - x0) / len;
+    bars.push({ x: mx, y: my, x1: mx - nx * 36, y1: my - ny * 36, x2: mx + nx * 36, y2: my + ny * 36, w: 14, label: 'roadworks' });
+  }
+  // Buses (and trains): along a long line, clipped to about 1600 units of it.
+  const runOn = (pool, count, label, half, r, speed) => {
+    const long = pool
+      .map((l) => ({ l, len: lineLength(l) }))
+      .filter((o) => o.len > 700)
+      .sort((a, b) => b.len - a.len)
+      .slice(0, 40);
+    for (let tries = 0; count > 0 && tries < 60 && long.length; tries++) {
+      const { l } = long[Math.floor(rand() * long.length)];
+      const pts = clipLine(l, 1600, rand);
+      const cut = [];
+      for (let k = 0; k + 1 < pts.length; k += 2) if (inside(pts[k], pts[k + 1])) cut.push(pts[k], pts[k + 1]);
+      if (cut.length < 4 || lineLength(cut) < 500) continue;
+      if (avoid.some((a) => nearLine(cut, a.x, a.y, a.r * 0.7))) continue;
+      movers.push({ pts: cut, speed, half, r, phase: rand() * 4000, label });
+      count--;
+    }
+  };
+  if (spec.buses) runOn(joinLines([...lines(roads[0]), ...lines(roads[1])]), spec.buses, 'bus', 22, 10, 105 + rand() * 40);
+  if (spec.trains) runOn(joinLines(lines(data.rail)), spec.trains, 'train', region ? 70 : 48, region ? 14 : 11, region ? 240 : 170);
+  // Storms: a slow drift between two places, back and forth.
+  for (let tries = 0; zones.length < (spec.storms || 0) && tries < 200; tries++) {
+    const a = randomInside(inside, R, rand);
+    const b = randomInside(inside, R, rand);
+    if (!a || !b || Math.hypot(a.x - b.x, a.y - b.y) < R * 0.35) continue;
+    if (avoid.some((p) => p.start && Math.hypot(p.x - a.x, p.y - a.y) < 900)) continue;
+    zones.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, period: 50 + rand() * 40, r: region ? 520 + rand() * 200 : 330 + rand() * 150, slow: 0.55, label: 'storm' });
+  }
+  return { bars, movers, zones };
+}
+/** Joins lines that meet end to end (the map stores roads and railways in short pieces) into long ones. */
+function joinLines(list, tol = 4) {
+  const key = (x, y) => Math.round(x / tol) * 100003 + Math.round(y / tol);
+  const reverse = (l) => {
+    const out = [];
+    for (let i = l.length - 2; i >= 0; i -= 2) out.push(l[i], l[i + 1]);
+    return out;
+  };
+  const at = new Map();
+  const add = (k, i) => {
+    let a = at.get(k);
+    if (!a) at.set(k, (a = []));
+    a.push(i);
+  };
+  list.forEach((l, i) => {
+    add(key(l[0], l[1]), i);
+    add(key(l[l.length - 2], l[l.length - 1]), i);
+  });
+  const used = new Uint8Array(list.length);
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    if (used[i]) continue;
+    used[i] = 1;
+    let pts = list[i].slice();
+    for (const flip of [false, true]) {
+      if (flip) pts = reverse(pts);
+      for (;;) {
+        const k = key(pts[pts.length - 2], pts[pts.length - 1]);
+        const next = (at.get(k) || []).filter((j) => !used[j]);
+        if (!next.length) break; // the end of the line
+        // At a junction: the way that goes on most nearly straight (a main line, not a siding).
+        const n = pts.length;
+        const dir = Math.atan2(pts[n - 1] - pts[n - 3], pts[n - 2] - pts[n - 4]);
+        let pick = null;
+        let turn = 1.1;
+        for (const j of next) {
+          const l = key(list[j][0], list[j][1]) === k ? list[j] : reverse(list[j]);
+          const d = Math.abs(Math.atan2(Math.sin(Math.atan2(l[3] - l[1], l[2] - l[0]) - dir), Math.cos(Math.atan2(l[3] - l[1], l[2] - l[0]) - dir)));
+          if (d < turn) {
+            turn = d;
+            pick = { j, l };
+          }
+        }
+        if (!pick) break;
+        used[pick.j] = 1;
+        for (let m = 2; m < pick.l.length; m++) pts.push(pick.l[m]);
+      }
+    }
+    out.push(pts);
+  }
+  return out;
+}
+/** Where a chapter's chain starts: by a named place on the map (ch.start), or null (anywhere safe). */
+function startPoint(ch, map) {
+  if (!ch.start) return null;
+  const hit = (map?.data?.pois || []).find((p) => p[3] === ch.start);
+  return hit ? { x: hit[0], y: hit[1] } : null;
+}
+function lineLength(l) {
+  let n = 0;
+  for (let i = 2; i < l.length; i += 2) n += Math.hypot(l[i] - l[i - 2], l[i + 1] - l[i - 1]);
+  return n;
+}
+function clipLine(l, max, rand) {
+  const total = lineLength(l);
+  if (total <= max) return l.slice();
+  const start = rand() * (total - max);
+  const out = [];
+  let d = 0;
+  for (let i = 2; i < l.length; i += 2) {
+    const seg = Math.hypot(l[i] - l[i - 2], l[i + 1] - l[i - 1]);
+    if (d + seg >= start && d <= start + max) {
+      if (!out.length) out.push(l[i - 2], l[i - 1]);
+      out.push(l[i], l[i + 1]);
+    }
+    d += seg;
+  }
+  return out;
+}
+function nearLine(l, x, y, r) {
+  for (let i = 0; i < l.length; i += 2) if (Math.hypot(l[i] - x, l[i + 1] - y) < r) return true;
+  return false;
+}
+function randomInside(inside, R, rand) {
+  for (let k = 0; k < 60; k++) {
+    const x = (rand() * 2 - 1) * R * 0.8;
+    const y = (rand() * 2 - 1) * R * 0.8;
+    if (inside(x, y)) return { x, y };
+  }
+  return null;
+}
+
+// ------------------------------------------------------------------------------------------------ a chapter, running
+/**
+ * Starts chapter `ch` in `world` (already made for `map`, with the player's chain `playerId` in it): the rivals, the
+ * local lists and allies, the obstacles, and the goal. Returns { targets, update(dt) → status, event(e), hunting }.
+ * status: { done, failed, why, text, progress, left, stars, warn: [text] }.
+ */
+function startChapter(ch, map, world, { playerId, perks = [], rand = Math.random } = {}) {
+  const g = ch.goal;
+  const me = () => world.snakes.get(playerId);
+  const player = me();
+  const inside = map?.arena?.inside || world.inside;
+  // Places the goal needs.
+  const want = { tour: g.k || 3, flags: g.k || 3, hold: 1, rescue: g.allies?.length || 0 }[g.type] || 0;
+  let places = want ? pickPlaces(map, g, want + (g.type === 'rescue' ? 3 : 0), rand) : [];
+  if (g.type === 'rescue' && player) {
+    // The friends wait far from where the chain starts, and apart from each other.
+    places.sort((a, b) => Math.hypot(b.x - player.x, b.y - player.y) - Math.hypot(a.x - player.x, a.y - player.y));
+    places = places.slice(0, want);
+  }
+  const targets = g.type === 'rescue' ? [] : places.map((p) => ({ ...p, done: false, active: false }));
+  const avoid = [...places.map((p) => ({ x: p.x, y: p.y, r: 160 })), ...(player ? [{ x: player.x, y: player.y, r: 480, start: true }] : [])];
+  world.setObstacles(makeObstacles(map, ch.obstacles, rand, avoid));
+
+  // Rivals: far from the player, each with its role; they come back a while after they are cut.
+  const rivals = [];
+  const farPoint = () => {
+    let best = null;
+    let bestD = -1;
+    for (let k = 0; k < 14; k++) {
+      const p = world.somewhere(0.7);
+      let near = Infinity;
+      for (const o of world.snakes.values()) if (o.alive) near = Math.min(near, Math.hypot(o.x - p.x, o.y - p.y));
+      if (world.blocked(p.x, p.y, 60)) continue;
+      if (near > bestD) {
+        bestD = near;
+        best = p;
+      }
+    }
+    return best ?? world.somewhere(0.7);
+  };
+  const spawnRival = (r, mass) => {
+    const party = RIVALS.find((p) => p.id === r.party);
+    const at = farPoint();
+    const s = world.addSnake({
+      name: party?.name ?? r.party,
+      color: party?.color ?? 1,
+      bot: true,
+      mass,
+      at,
+      ai: { role: r.role, skill: r.skill, accept: 0, friendly: false, home: { x: at.x, y: at.y }, party: r.party },
+      mods: ch.rivalMods ?? null,
+    });
+    r.id = s.id;
+    r.dead = false;
+    return s;
+  };
+  for (const [party, role, skill, mass] of ch.rivals || []) {
+    const r = { party, role, skill, mass, id: 0, dead: false, back: 0 };
+    rivals.push(r);
+    spawnRival(r, mass);
+  }
+  // Local lists: friendly chains to hold hands with.
+  const locals = [];
+  // (Friends to rescue fill the hands a chain can hold: no partner from the start then.)
+  const partnerPerk = perks.includes('allies') && g.type !== 'rescue';
+  const localCount = (ch.locals || 0) + (partnerPerk ? 1 : 0);
+  for (let i = 0; i < localCount; i++) {
+    const s = world.addSnake({ name: LOCAL_LISTS[(i + Math.floor(rand() * 6)) % LOCAL_LISTS.length], color: ALLY_COLOR, bot: true, mass: 22 + rand() * 18, ai: { friendly: true, accept: 0.95 } });
+    locals.push(s.id);
+  }
+  if (partnerPerk && player && locals.length) {
+    // The partner starts beside you, holding your hand.
+    const s = world.snakes.get(locals[locals.length - 1]);
+    world.removeSnake(s.id);
+    const a = player.a + Math.PI * 0.75;
+    const partner = world.addSnake({
+      name: s.name,
+      color: ALLY_COLOR,
+      bot: true,
+      mass: 24,
+      at: { x: player.x + Math.cos(a) * 90, y: player.y + Math.sin(a) * 90, a: player.a },
+      ai: { role: 'ally', follow: playerId, accept: 1, friendly: true, skill: 0.6 },
+      shield: 1,
+    });
+    locals[locals.length - 1] = partner.id;
+    world.link(player, partner);
+  }
+  // Friends to rescue (the story's people): waiting at their places.
+  const allies = [];
+  if (g.type === 'rescue') {
+    g.allies.forEach((name, i) => {
+      const p = places[i] ?? world.somewhere(0.7);
+      const s = world.addSnake({
+        name,
+        color: ALLY_COLOR,
+        bot: true,
+        mass: 20,
+        at: { x: p.x, y: p.y },
+        ai: { role: 'ally', home: { x: p.x, y: p.y }, follow: playerId, accept: 1, friendly: true, skill: 0.6 },
+        shield: 1,
+      });
+      allies.push({ id: s.id, name, place: p.name, linked: false });
+      targets.push({ x: p.x, y: p.y, name, done: false, active: true, follow: s.id });
+    });
+  }
+
   let clock = 0;
+  let held = 0;
   let next = 0;
-  let placedRace = false;
-  const near = (me, t, r) => me && Math.hypot(me.x - t.x, me.y - t.y) < r;
+  let hands = false;
+  let cuts = 0;
+  let failed = '';
+  let finished = null;
+  let beat = 0;
+  const warn = [];
+  const near = (s, t, r) => s && Math.hypot(s.x - t.x, s.y - t.y) < r;
+  const rivalOf = (id) => rivals.find((r) => r.id === id);
+
+  /** The director: after the grace period, sends up to `hunters` rivals after the player (or a friend in trouble). */
+  function direct() {
+    const now = clock;
+    const max = (ch.hunters || 0) + (ch.surge && now >= ch.surge.at ? ch.surge.add : 0);
+    let active = 0;
+    for (const r of rivals) {
+      const s = world.snakes.get(r.id);
+      if (!s?.alive) continue;
+      const ai = s.ai;
+      if (ai.hunting) {
+        const prey = world.snakes.get(ai.target);
+        if (now > ai.until || !prey?.alive || world.sameTeam(s, prey)) {
+          ai.hunting = false;
+          ai.rest = now + 3 + rand() * 4;
+        } else active++;
+      }
+      // Guards stand by the goal: the next flag, the square.
+      if (r.role === 'guard') {
+        const t = targets.find((x) => !x.done) ?? targets[0];
+        ai.guard = t ? { x: t.x, y: t.y } : null;
+        ai.phase ??= rand() * 6;
+      }
+    }
+    if (now < (ch.grace ?? 0)) return;
+    const p = me();
+    if (!p?.alive) return;
+    const free = allies.filter((a) => !a.linked).map((a) => world.snakes.get(a.id)).filter((s) => s?.alive);
+    let flank = 0;
+    while (active < max) {
+      let pick = null;
+      let pickD = Infinity;
+      for (const r of rivals) {
+        const s = world.snakes.get(r.id);
+        if (!s?.alive || s.ai.hunting || now < (s.ai.rest ?? 0)) continue;
+        const d = Math.hypot(s.x - p.x, s.y - p.y);
+        if (d < pickD) {
+          pickD = d;
+          pick = s;
+        }
+      }
+      if (!pick) break;
+      // A friend waiting alone is the easier prey, some of the time.
+      const prey = free.length && rand() < 0.4 ? free[Math.floor(rand() * free.length)] : p;
+      pick.ai.hunting = true;
+      pick.ai.target = prey.id;
+      pick.ai.until = now + 12 + rand() * 9;
+      pick.ai.flank = active === 0 ? 0 : flank++ % 2 ? -1 : 1;
+      active++;
+      warn.push(prey === p ? `⚠️ ${pick.name} יוצאת לחסום אתכם` : `⚠️ ${pick.name} סוגרת על ${prey.name}!`);
+    }
+  }
+
+  function starsNow(p) {
+    const score = p ? scoreOf(p.mass) : 0;
+    let stars = 1;
+    if (g.type === 'survive' ? score >= g.min * 2 : clock <= ch.par) stars++;
+    const b = ch.bonus;
+    const bonus = b.type === 'hands' ? hands : b.type === 'cut' ? cuts >= b.n : score >= b.n;
+    if (bonus) stars++;
+    return stars;
+  }
+
   return {
-    mission,
+    chapter: ch,
     targets,
-    update(me, score, dt) {
+    rivals,
+    allies,
+    /** World events, before the client clears them: cuts, deaths of friends, respawns. */
+    event(e) {
+      if (e.t === 'death') {
+        const r = rivalOf(e.id);
+        if (r) {
+          r.dead = true;
+          r.back = clock + 9;
+          if (e.killer === playerId) cuts++;
+        }
+        const a = allies.find((x) => x.id === e.id);
+        if (a && !a.linked) failed = `השרשרת של ${a.name} נקרעה`;
+      } else if (e.t === 'link' && (e.a === playerId || e.b === playerId)) {
+        hands = true;
+        const other = e.a === playerId ? e.b : e.a;
+        const a = allies.find((x) => x.id === other);
+        if (a) a.linked = true;
+      }
+    },
+    update(dt) {
       clock += dt;
-      const res = { done: false, failed: false, text: '', progress: 0, targets };
+      warn.length = 0;
+      const p = me();
+      const score = p?.alive ? scoreOf(p.mass) : 0;
+      // Rivals come back.
+      for (const r of rivals) if (r.dead && clock >= r.back) spawnRival(r, Math.max(30, r.mass * 0.6));
+      beat -= dt;
+      if (beat <= 0) {
+        beat = 0.5;
+        direct();
+      }
+      // Friends hold hands the moment you reach them.
+      for (const a of allies) {
+        if (a.linked || !p?.alive) continue;
+        const s = world.snakes.get(a.id);
+        if (s?.alive && Math.hypot(s.x - p.x, s.y - p.y) < 150 + radiusFor(p.mass)) {
+          if (world.link(p, s)) a.linked = true;
+        }
+      }
+      for (const t of targets) {
+        if (t.follow) {
+          const s = world.snakes.get(t.follow);
+          if (s?.alive) {
+            t.x = s.x;
+            t.y = s.y;
+          }
+          t.done = allies.find((a) => a.id === t.follow)?.linked ?? false;
+          t.active = !t.done;
+        }
+      }
+      const res = { done: false, failed: false, why: '', text: '', progress: 0, left: ch.time ? ch.time - clock : 0, stars: 1, warn: warn.slice() };
       switch (g.type) {
         case 'gather':
           res.progress = Math.min(1, score / g.n);
           res.text = `${Math.min(score, g.n)}/${g.n} אנשים`;
           res.done = score >= g.n;
           break;
-        case 'reach': {
-          const t = targets[0];
-          if (!t) return { ...res, done: true };
-          t.active = true;
-          const enough = score >= g.n;
-          res.text = enough ? `עכשיו ל${t.name}` : `${score}/${g.n} אנשים, ואז ל${t.name}`;
-          res.progress = Math.min(1, score / g.n) * 0.5 + (near(me, t, 110) && enough ? 0.5 : 0);
-          if (enough && near(me, t, 110)) {
-            t.done = true;
-            res.done = true;
-          }
-          break;
-        }
         case 'flags': {
           let n = 0;
           for (const t of targets) {
             t.active = !t.done;
-            if (!t.done && near(me, t, 95)) t.done = true;
+            if (!t.done && near(p, t, 95)) t.done = true;
             if (t.done) n++;
           }
           res.text = `${n}/${targets.length} דגלים`;
@@ -3736,7 +4893,7 @@ function startMission(mission, map, rand = Math.random) {
           while (next < targets.length && targets[next].done) next++;
           targets.forEach((t, k) => (t.active = k === next));
           const t = targets[next];
-          if (t && near(me, t, g.names ? 160 : 100)) {
+          if (t && near(p, t, g.names ? 170 : 100)) {
             t.done = true;
             next++;
           }
@@ -3745,55 +4902,111 @@ function startMission(mission, map, rand = Math.random) {
           res.done = next >= targets.length;
           break;
         }
-        case 'rally': {
+        case 'hold': {
           const t = targets[0];
-          if (!t) return { ...res, done: true };
+          if (!t) {
+            res.done = true;
+            break;
+          }
           t.active = true;
-          const there = near(me, t, g.names?.[0] === 'ירושלים' ? 220 : 150);
+          const there = near(p, t, 160);
           if (there && score >= g.n) held += dt;
           else held = Math.max(0, held - dt * 0.5);
           res.progress = Math.min(1, held / g.secs);
-          res.text =
-            score < g.n ? `${score}/${g.n} אנשים, ואז ל${t.name}` : there ? `עצרת! ${Math.ceil(Math.max(0, g.secs - held))} שנ׳` : `ל${t.name}`;
+          res.text = score < g.n ? `${score}/${g.n} אנשים, ואז ל${t.name}` : there ? `מחזיקים! עוד ${Math.ceil(Math.max(0, g.secs - held))} שנ׳` : `ל${t.name}`;
           res.done = held >= g.secs;
           break;
         }
-        case 'race': {
-          const t = targets[0];
-          if (!t) return { ...res, done: true };
-          if (!placedRace && me) {
-            // As far as the map allows from where the chain started, among the kinds asked for.
-            placedRace = true;
-            const pool = pickPlaces(map, { kinds: g.kinds }, 12, rand);
-            let best = t;
-            for (const p of pool) if (Math.hypot(p.x - me.x, p.y - me.y) > Math.hypot(best.x - me.x, best.y - me.y)) best = p;
-            Object.assign(t, best, { done: false });
-            clock = 0;
+        case 'first': {
+          let lead = null;
+          for (const r of rivals) {
+            if (!g.vs.includes(r.party)) continue;
+            const s = world.snakes.get(r.id);
+            const sc = s?.alive ? scoreOf(s.mass) : 0;
+            if (!lead || sc > lead.score) lead = { name: s?.name ?? partyOf(r.party)?.name, score: sc };
           }
-          t.active = true;
-          const left = g.secs - clock;
-          res.text = `${Math.max(0, Math.ceil(left))} שנ׳ עד ${t.name}`;
-          res.progress = Math.min(1, clock / g.secs);
-          if (near(me, t, 110)) {
-            t.done = true;
-            res.done = true;
-          } else if (left <= 0) res.failed = true;
+          res.progress = Math.min(1, score / g.n);
+          res.text = `${Math.min(score, g.n)}/${g.n}${lead ? ` · ${lead.name}: ${Math.min(lead.score, g.n)}` : ''}`;
+          res.done = score >= g.n;
+          if (!res.done && lead && lead.score >= g.n) failed = `${lead.name} הגיעה ראשונה ל־${g.n}`;
           break;
         }
+        case 'rescue': {
+          const n = allies.filter((a) => a.linked).length;
+          const waiting = allies.find((a) => !a.linked);
+          res.text = waiting ? `${n}/${allies.length} · ל${waiting.name}` : '';
+          res.progress = allies.length ? n / allies.length : 1;
+          res.done = n === allies.length;
+          break;
+        }
+        case 'survive': {
+          const left = g.secs - clock;
+          res.left = left;
+          res.progress = Math.min(1, clock / g.secs);
+          res.text = score < g.min ? `⚠️ ${score}/${g.min} אנשים – אספו עוד!` : `שורדים: עוד ${mmss(left)} · ${score} אנשים`;
+          if (left <= 0) {
+            if (score >= g.min) res.done = true;
+            else failed = `נשארו רק ${score} אנשים מתוך ${g.min}`;
+          }
+          break;
+        }
+        case 'cut':
+          res.progress = Math.min(1, cuts / g.n);
+          res.text = `${Math.min(cuts, g.n)}/${g.n} שרשראות נתקלו בכם`;
+          res.done = cuts >= g.n;
+          break;
         default:
           res.done = true;
       }
+      if (!res.done && ch.time && g.type !== 'survive' && clock >= ch.time) failed ||= 'נגמר הזמן';
+      if (res.done && !finished) finished = { stars: starsNow(p), time: clock, score };
+      res.stars = finished ? finished.stars : starsNow(p);
+      if (failed && !res.done) {
+        res.failed = true;
+        res.why = failed;
+      }
       return res;
+    },
+    get cuts() {
+      return cuts;
+    },
+    get clock() {
+      return clock;
     },
   };
 }
 
-return { TO_WIN, MISSIONS, loadProgress, saveProgress, pickPlaces, startMission };
+/**
+ * Free play alone (no server): the rival parties roam the map, and now and then one or two come after you.
+ * Returns the same shape as startChapter (no goal: never done).
+ */
+function startSkirmish(map, world, { playerId, rand = Math.random } = {}) {
+  const pool = RIVALS.filter((p) => p.seats > 0);
+  const chosen = [];
+  while (chosen.length < 5 && pool.length) chosen.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
+  const ch = {
+    goal: { type: 'none' },
+    rivals: chosen.map((p, i) => [p.id, i === 0 ? 'giant' : i < 3 ? 'hunter' : 'raider', 0.35 + rand() * 0.2, i === 0 ? 260 : 40 + rand() * 50]),
+    hunters: 1,
+    surge: { at: 90, add: 1 },
+    grace: 30,
+    locals: 1,
+    obstacles: {},
+    bonus: { type: 'hands' },
+    par: 0,
+  };
+  const run = startChapter(ch, map, world, { playerId, rand });
+  const update = run.update;
+  run.update = (dt) => ({ ...update(dt), done: false, failed: false, text: '' });
+  return run;
+}
+
+return { THRESHOLD, OURS, ALLY_COLOR, RIVALS, OTHERS, UNDECIDED, POLL_NOTE, PERKS, PERK_ROUNDS, BOOKS, BOOK_NAMES, CHAPTERS, EPILOGUE, newCampaign, loadCampaign, saveCampaign, partyOf, fill, knesset, oursShown, biggestRival, openBook, winChapter, choosePerk, perkMods, starTexts, goalText, mmss, makeObstacles, joinLines, startPoint, startChapter, startSkirmish };
 })();
 __m.client = (() => {
 // Ch-ch-chain-ges — the browser client: the maps, the human chains, touch/mouse/keyboard input, the lobby, skins,
-// music, the story, screens and sharing. Online play (net.js) draws the server's room; offline play and the story
-// simulate the world here. There are no bots: alone on a map, you walk its streets until others come.
+// music, the story, screens and sharing. Online play (net.js) draws the server's room: real people only, no bots.
+// Offline play and the story ("נגד כל הסיכויים", campaign.js) simulate the world here, against rival bots.
 const { World, C, COLORS, radiusFor, scoreOf, randomName } = __m.sim;
 const { connectOnline } = __m.net;
 const { loadCity, loadMapIndex, MAP_STYLE } = __m.map;
@@ -3804,12 +5017,13 @@ const { createAudio, TRACKS } = __m.audio;
 const { NAME, SLUG, drawWordmark } = __m.brand;
 const { cleanName } = __m.names;
 const { AVATARS, avatar, allSkins, loadSuppliedSkins } = __m.avatars;
-const { MISSIONS, TO_WIN, loadProgress, saveProgress, startMission } = __m.story;
+const { CHAPTERS, BOOKS, BOOK_NAMES, PERKS, PERK_ROUNDS, RIVALS, OTHERS, EPILOGUE, POLL_NOTE, THRESHOLD, OURS, loadCampaign, saveCampaign, newCampaign, knesset, biggestRival, openBook, winChapter, choosePerk, perkMods, starTexts, goalText, mmss, fill, partyOf, startChapter, startSkirmish, startPoint } = __m.campaign;
 const CFG = Object.assign(
   {
     server: '',
     servers: [],
     brand: 'המשחק של עמך ישראל',
+    party: 'עמך ישראל',
     publisher: '',
     joinUrl: '',
     shareUrl: '',
@@ -3884,7 +5098,8 @@ const game = {
   preview: null,
   here: 0,
   hereSeen: 0,
-  story: null, // { index, run, map, flags }
+  story: null, // a chapter being played: { index, chapter, run, map }
+  skirmish: null, // alone, offline: the rival parties' director
   sat: pref('sat') === '1',
   green: pref('green') === '1',
 };
@@ -3984,6 +5199,8 @@ async function startSolo(reason) {
   game.meId = s.id;
   game.mode = 'solo';
   game.story = null;
+  // Alone on the phone, the rival parties walk the streets too, and now and then one comes after you.
+  game.skirmish = startSkirmish(map, w, { playerId: s.id });
   beginRound(s);
   if (reason) toast(reason, 4200);
 }
@@ -4006,7 +5223,7 @@ function beginRound(s) {
   for (const id of ['start', 'over', 'story', 'maps', 'skins', 'music']) hide(id);
   $('mission').hidden = game.mode !== 'story';
   $('hud').classList.toggle('story', game.mode === 'story');
-  if (game.mode === 'story') $('mission-mandates').textContent = `🗳️ ${loadProgress().mandates} מנדטים מתוך ${TO_WIN}`;
+  if (game.mode !== 'solo') game.skirmish = null;
   $('waiting').hidden = true;
   const map = mapFor(game.world);
   $('green-btn').hidden = !map?.hasGreenLine;
@@ -4062,7 +5279,7 @@ function onDeath(e) {
   game.alive = false;
   const w = game.world;
   const killer = e.killer ? w.snakes.get(e.killer) : null;
-  game.deathInfo = { killer: e.name || (killer ? killer.name : null), edge: !!e.edge || e.killer === 0 };
+  game.deathInfo = { killer: e.name || (killer ? killer.name : null), edge: !e.cause && (!!e.edge || e.killer === 0), cause: e.cause || '' };
   navigator.vibrate?.(120);
   audio.sfx('break');
   audio.setScene('over');
@@ -4085,11 +5302,14 @@ function showOver() {
   const b = game.best;
   const secs = Math.round((performance.now() - b.born) / 1000);
   const story = game.mode === 'story';
+  const blocked = { roadworks: 'נתקעתם בעבודות בכביש', bus: 'האוטובוס חסם את השרשרת', train: 'הרכבת חצתה את השרשרת' };
   $('over-title').textContent = game.deathInfo?.lost
     ? 'החיבור לשרת נותק'
-    : game.deathInfo?.timeout
-      ? 'נגמר הזמן – המשימה לא הושלמה'
-      : game.deathInfo?.edge
+    : game.deathInfo?.why
+      ? `${game.deathInfo.why} – הפרק לא הושלם`
+      : blocked[game.deathInfo?.cause]
+        ? blocked[game.deathInfo.cause]
+        : game.deathInfo?.edge
         ? story
           ? 'יצאתם מהמפה – המשימה לא הושלמה'
           : 'יצאת מהמפה'
@@ -4099,7 +5319,10 @@ function showOver() {
             ? 'השרשרת נקרעה – המשימה לא הושלמה'
             : 'השרשרת נקרעה';
   $('stat-score').textContent = b.maxScore.toLocaleString('he-IL');
-  $('stat-rank').textContent = b.rank < 99 ? `#${b.rank}` : '–';
+  // In the story, the place in a room means nothing: how many rivals ran into you does.
+  $('stat-rank').textContent = story ? String(game.story?.run?.cuts ?? 0) : b.rank < 99 ? `#${b.rank}` : '–';
+  $('stat-rank-label').textContent = story ? 'יריבות נתקלו בכם' : 'המקום הכי גבוה';
+  $('over-net').hidden = story;
   $('stat-hands').textContent = String(b.hands);
   $('stat-time').textContent = secs >= 60 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : `${secs} שנ׳`;
   $('again').textContent = story ? 'עוד ניסיון' : 'עוד סיבוב';
@@ -4119,6 +5342,7 @@ function toMenu() {
   game.world = null; // the start screen shows the chosen map (and its room, when people play there)
   game.meId = 0;
   game.story = null;
+  game.skirmish = null;
   hide('over');
   hide('hud');
   show('start');
@@ -4299,6 +5523,7 @@ function frame(now) {
     }
     handleEvents(w);
     if (game.mode === 'story') updateStory(dt);
+    else if (game.mode === 'solo' && game.skirmish && game.alive) for (const text of game.skirmish.update(dt).warn) toast(text, 2600);
     updateCamera(dt);
     render(now / 1000);
     updateHud();
@@ -4317,8 +5542,14 @@ function frame(now) {
 
 function handleEvents(w) {
   const my = game.meId;
+  const run = game.mode === 'story' ? game.story?.run : game.mode === 'solo' ? game.skirmish : null;
   for (const e of w.events) {
-    if (e.t === 'death' && e.id === my && game.alive) onDeath(e);
+    run?.event(e);
+    if (e.t === 'shield' && e.id === my && game.alive) {
+      toast('🛡️ החוסן הציל אתכם: חלק מהשרשרת נשאר מאחור', 2800);
+      navigator.vibrate?.([80, 40, 80]);
+      audio.sfx('broke');
+    } else if (e.t === 'death' && e.id === my && game.alive) onDeath(e);
     else if (e.t === 'death' && e.killer === my && game.alive) {
       const name = e.name || nameOf(w, e.id);
       if (name) toast(`${name} נתקל בשרשרת שלך`);
@@ -4385,6 +5616,7 @@ function render(t) {
   const sx = (x) => (x - cam.x) * z + W / 2;
   const sy = (y) => (y - cam.y) * z + H / 2;
 
+  drawHazards(w, t, sx, sy);
   if (game.story?.run) drawTargets(game.story.run.targets, t, sx, sy, false);
 
   // People on the street, waiting to join a chain.
@@ -4502,9 +5734,23 @@ function render(t) {
         ctx.fill();
         ctx.drawImage(face, x - size / 2, hy - size / 2, size, size);
       }
+      // A shield (the story's resilience): a soft bubble while it lasts, bright just after it saved the chain.
+      if (isMe && (f.s.shield > 0 || w.time < f.s.safeUntil)) {
+        const fresh = w.time < f.s.safeUntil;
+        ctx.save();
+        ctx.strokeStyle = fresh ? 'rgba(47, 111, 237, 0.9)' : 'rgba(47, 111, 237, 0.35)';
+        ctx.lineWidth = fresh ? 4 : 2;
+        ctx.globalAlpha = fresh ? 0.6 + 0.4 * Math.sin(t * 18) : 1;
+        ctx.beginPath();
+        ctx.arc(x, y - f.hp * 0.45, f.hp * 0.75, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
   }
 
+  drawVehicles(w, sx, sy);
+  drawRain(w, t, sx, sy);
   if (game.story?.run) drawTargets(game.story.run.targets, t, sx, sy, true);
 
   // Names above the other leaders, and hands being offered.
@@ -4516,12 +5762,24 @@ function render(t) {
     const x = sx(s.x);
     const y = sy(s.y) - hp * 1.62; // above the leader's flag
     if (s.id !== game.meId) {
-      ctx.font = '600 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+      // A rival out to get you: its name in red, and a ring that beats like a pulse.
+      const hunting = s.ai?.hunting && (s.ai.target === game.meId || game.story?.run?.allies?.some((a) => a.id === s.ai.target));
+      const label = hunting ? `🎯 ${s.name}` : s.name;
+      ctx.font = `${hunting ? 800 : 600} 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
       ctx.strokeStyle = 'rgba(255,255,255,0.92)';
       ctx.lineWidth = 3;
-      ctx.strokeText(s.name, x, y - 4);
-      ctx.fillStyle = INK;
-      ctx.fillText(s.name, x, y - 4);
+      ctx.strokeText(label, x, y - 4);
+      ctx.fillStyle = hunting ? '#c8252c' : INK;
+      ctx.fillText(label, x, y - 4);
+      if (hunting) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(229, 72, 77, ${0.55 + 0.35 * Math.sin(t * 9)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, sy(s.y) - hp * 0.45, hp * (0.62 + 0.06 * Math.sin(t * 9)), 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     if (s.offer && s.offer.until > w.time && (s.offer.to === game.meId || s.id === game.meId)) {
       const bob = Math.sin(t * 6) * 3;
@@ -4532,8 +5790,206 @@ function render(t) {
   const my = me();
   if (my?.alive && game.alive) drawPointer(my, t);
   drawEdgeWarning(my, w, map);
+  drawOffscreenHunters(w, sx, sy);
   if (game.story?.run) drawOffscreenTargets(game.story.run.targets, sx, sy);
   drawMinimap(w, map);
+}
+
+// ------------------------------------------------------------------------------------------------ obstacles (story)
+let stripes = null;
+function stripePattern() {
+  if (stripes) return stripes;
+  const c = document.createElement('canvas');
+  c.width = c.height = 16;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 16, 16);
+  g.fillStyle = '#f76b15';
+  g.beginPath();
+  g.moveTo(0, 0);
+  g.lineTo(8, 0);
+  g.lineTo(0, 8);
+  g.closePath();
+  g.moveTo(16, 0);
+  g.lineTo(16, 8);
+  g.lineTo(8, 16);
+  g.lineTo(0, 16);
+  g.closePath();
+  g.fill();
+  stripes = ctx.createPattern(c, 'repeat');
+  return stripes;
+}
+/** Storm clouds and roadworks: on the ground, under the chains. */
+function drawHazards(w, t, sx, sy) {
+  if (!w.zones) return; // online rooms have none
+  const z = cam.zoom;
+  for (const zone of w.zones) {
+    const p = w.zoneAt(zone);
+    const x = sx(p.x);
+    const y = sy(p.y);
+    const r = zone.r * z;
+    if (x + r < 0 || x - r > W || y + r < 0 || y - r > H) continue;
+    const g = ctx.createRadialGradient(x, y, r * 0.15, x, y, r);
+    g.addColorStop(0, 'rgba(52, 58, 72, 0.42)');
+    g.addColorStop(0.75, 'rgba(52, 58, 72, 0.26)');
+    g.addColorStop(1, 'rgba(52, 58, 72, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+    ctx.font = `${Math.max(22, Math.min(46, r * 0.22))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(Math.sin(t * 2.3 + zone.ax) > 0.93 ? '🌩️' : '⛈️', x, y);
+    ctx.globalAlpha = 1;
+  }
+  for (const b of w.bars) {
+    const x1 = sx(b.x1);
+    const y1 = sy(b.y1);
+    const x2 = sx(b.x2);
+    const y2 = sy(b.y2);
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    if (mx < -80 || mx > W + 80 || my < -80 || my > H + 80) continue;
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    const thick = Math.max(5, b.w * z);
+    ctx.save();
+    ctx.translate(mx, my);
+    ctx.rotate(Math.atan2(y2 - y1, x2 - x1));
+    ctx.fillStyle = 'rgba(70, 55, 30, 0.18)';
+    ctx.fillRect(-len / 2 + 2, -thick / 2 + 3, len, thick);
+    ctx.fillStyle = stripePattern();
+    ctx.fillRect(-len / 2, -thick / 2, len, thick);
+    ctx.strokeStyle = '#b4470b';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-len / 2, -thick / 2, len, thick);
+    // Traffic cones at both ends.
+    for (const cx of [-len / 2, len / 2]) {
+      const h = Math.max(7, thick * 1.2);
+      ctx.fillStyle = '#f76b15';
+      ctx.beginPath();
+      ctx.moveTo(cx - h * 0.45, h * 0.5);
+      ctx.lineTo(cx, -h * 0.7);
+      ctx.lineTo(cx + h * 0.45, h * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - h * 0.22, -h * 0.12, h * 0.44, h * 0.18);
+    }
+    ctx.restore();
+  }
+}
+/** Buses and trains, over the chains (they cut straight through them). */
+function drawVehicles(w, sx, sy) {
+  if (!w.movers) return;
+  const z = cam.zoom;
+  for (const m of w.movers) {
+    const p = w.moverAt(m);
+    const x = sx(p.x);
+    const y = sy(p.y);
+    const L = Math.max(22, (m.half * 2 + m.r * 2) * z);
+    const Wd = Math.max(9, m.r * 2 * z);
+    if (x < -L || x > W + L || y < -L || y > H + L) continue;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(p.a);
+    ctx.fillStyle = 'rgba(40, 32, 20, 0.22)';
+    ctx.beginPath();
+    roundRect(ctx, -L / 2 + 2, -Wd / 2 + 3, L, Wd, Wd * 0.3);
+    ctx.fill();
+    const train = m.label === 'train';
+    ctx.fillStyle = train ? '#e4e8ee' : '#1f8a4c';
+    ctx.strokeStyle = train ? '#56607a' : '#10582f';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    roundRect(ctx, -L / 2, -Wd / 2, L, Wd, Wd * 0.3);
+    ctx.fill();
+    ctx.stroke();
+    // Windows along both sides, a windscreen in front.
+    ctx.fillStyle = train ? '#2f5bd3' : '#cfe8f5';
+    const n = Math.max(3, Math.round(L / Math.max(10, Wd * 1.1)));
+    for (let i = 0; i < n; i++) {
+      const wx = -L / 2 + (L * (i + 0.5)) / (n + 0.6);
+      ctx.fillRect(wx - L / (n * 3.4), -Wd / 2 + Wd * 0.14, L / (n * 1.7), Wd * 0.18);
+      ctx.fillRect(wx - L / (n * 3.4), Wd / 2 - Wd * 0.32, L / (n * 1.7), Wd * 0.18);
+    }
+    ctx.fillStyle = '#23201b';
+    ctx.fillRect(L / 2 - Wd * 0.28, -Wd * 0.32, Wd * 0.16, Wd * 0.64);
+    if (train) {
+      ctx.fillStyle = '#2f5bd3';
+      ctx.fillRect(-L / 2, -Wd * 0.06, L, Wd * 0.12);
+    }
+    ctx.restore();
+  }
+}
+/** Rain in the storms: short slanted streaks, over everything. */
+function drawRain(w, t, sx, sy) {
+  if (!w.zones?.length) return;
+  const z = cam.zoom;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(60, 80, 110, 0.45)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (const zone of w.zones) {
+    const p = w.zoneAt(zone);
+    const x = sx(p.x);
+    const y = sy(p.y);
+    const r = zone.r * z;
+    if (x + r < 0 || x - r > W || y + r < 0 || y - r > H) continue;
+    for (let i = 0; i < 70; i++) {
+      const a = (i * 2.399) % TAU;
+      const d = r * Math.sqrt(((i * 0.618) % 1) * 0.95);
+      const fall = ((t * 1.6 + i * 0.37) % 1) * 26 - 13;
+      const rx = x + Math.cos(a) * d + fall * 0.4;
+      const ry = y + Math.sin(a) * d + fall;
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 3, ry + 9);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+function roundRect(g, x, y, w, h, r) {
+  if (g.roundRect) g.roundRect(x, y, w, h, r);
+  else g.rect(x, y, w, h);
+}
+/** Red arrows at the screen's edge toward rivals hunting you (from further off with the situation room). */
+function drawOffscreenHunters(w, sx, sy) {
+  const s = me();
+  if (!s?.alive || !game.alive || game.mode === 'online') return;
+  const range = game.mode === 'story' && game.story?.perks?.includes('intel') ? 1700 : 750;
+  for (const o of w.snakes.values()) {
+    if (!o.alive || !o.ai?.hunting || o.ai.target !== game.meId) continue;
+    const d = Math.hypot(o.x - s.x, o.y - s.y);
+    if (d > range) continue;
+    const x = sx(o.x);
+    const y = sy(o.y);
+    if (x > 20 && x < W - 20 && y > 20 && y < H - 20) continue;
+    const a = Math.atan2(y - H / 2, x - W / 2);
+    const m = 30;
+    const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m - 30) / Math.abs(Math.sin(a) || 1e-6));
+    const ex = W / 2 + Math.cos(a) * k;
+    const ey = H / 2 + Math.sin(a) * k;
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.rotate(a);
+    ctx.globalAlpha = 0.55 + 0.45 * (1 - d / range);
+    ctx.fillStyle = '#e5484d';
+    ctx.beginPath();
+    ctx.moveTo(18, 0);
+    ctx.lineTo(-6, 12);
+    ctx.lineTo(-1, 0);
+    ctx.lineTo(-6, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    ctx.font = '800 11px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#c8252c';
+    ctx.fillText(o.name, ex - Math.cos(a) * 26, ey - Math.sin(a) * 22);
+  }
 }
 
 /** The direction arrow, like a compass needle just ahead of your leader (where your finger is steering). */
@@ -4662,16 +6118,26 @@ function drawTargets(targets, t, sx, sy, over) {
 function drawOffscreenTargets(targets, sx, sy) {
   const s = me();
   if (!s) return;
+  const placed = [];
   for (const p of targets) {
     if (!p.active || p.done) continue;
     const x = sx(p.x);
     const y = sy(p.y);
     if (x > 30 && x < W - 30 && y > 30 && y < H - 30) continue;
-    const a = Math.atan2(y - H / 2, x - W / 2);
+    const dir = Math.atan2(y - H / 2, x - W / 2);
+    let a = dir;
     const m = 46;
-    const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m - 40) / Math.abs(Math.sin(a) || 1e-6));
-    const ex = W / 2 + Math.cos(a) * k;
-    const ey = H / 2 + Math.sin(a) * k;
+    const at = (a) => {
+      const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m - 40) / Math.abs(Math.sin(a) || 1e-6));
+      return [W / 2 + Math.cos(a) * k, H / 2 + Math.sin(a) * k];
+    };
+    let [ex, ey] = at(a);
+    // Several places the same way: fan the arrows out along the edge so each can be read.
+    for (let tries = 0; tries < 8 && placed.some(([px, py]) => Math.hypot(px - ex, py - ey) < 58); tries++) {
+      a += (tries % 2 ? -1 : 1) * 0.14 * (tries + 1);
+      [ex, ey] = at(a);
+    }
+    placed.push([ex, ey]);
     ctx.save();
     ctx.translate(ex, ey);
     ctx.beginPath();
@@ -4681,7 +6147,7 @@ function drawOffscreenTargets(targets, sx, sy) {
     ctx.strokeStyle = '#b07c0a';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.rotate(a);
+    ctx.rotate(dir);
     ctx.beginPath();
     ctx.moveTo(14, 0);
     ctx.lineTo(2, 8);
@@ -4795,18 +6261,40 @@ function drawMinimap(w, map) {
   mctx.lineWidth = 1 * DPR;
   mctx.strokeRect(px(cam.x - hw), py(cam.y - hh), hw * 2 * k, hh * 2 * k);
   const my = me();
-  // Everyone: online the server's radar (all the room, every two seconds) plus what is in view, else the world.
+  // Storms, as grey clouds.
+  for (const zone of w.zones || []) {
+    const p = w.zoneAt(zone);
+    mctx.fillStyle = 'rgba(52, 58, 72, 0.28)';
+    mctx.beginPath();
+    mctx.arc(px(p.x), py(p.y), Math.max(3 * DPR, zone.r * k), 0, TAU);
+    mctx.fill();
+  }
+  // Everyone: online the server's radar (all the room, every two seconds) plus what is in view, else the world. In
+  // the story only the chains near you show, unless you have a situation room (then all, hunters ringed in red).
+  const intel = game.mode !== 'story' || game.story?.perks?.includes('intel');
   const dots = new Map();
   if (game.mode === 'online' && w.radar) for (const [id, x, y, color, score, team] of w.radar) dots.set(id, { x: x * 10, y: y * 10, color, score, team });
-  for (const s of w.snakes.values()) if (s.alive) dots.set(s.id, { x: s.x, y: s.y, color: s.color, score: scoreOf(s.mass), team: s.team });
+  for (const s of w.snakes.values()) {
+    if (!s.alive) continue;
+    if (!intel && my && Math.hypot(s.x - my.x, s.y - my.y) > 950) continue;
+    dots.set(s.id, { x: s.x, y: s.y, color: s.color, score: scoreOf(s.mass), team: s.team, hunt: s.ai?.hunting && s.ai.target === game.meId });
+  }
   for (const [id, d] of dots) {
     const isMe = id === game.meId;
     if (isMe) continue;
     const mate = my && my.team && d.team === my.team;
+    const r = (mate ? 2.8 : 2.2) * DPR + Math.min(2.5, d.score / 120) * DPR;
     mctx.fillStyle = mate ? '#b07c0a' : COLORS[d.color % COLORS.length];
     mctx.beginPath();
-    mctx.arc(px(d.x), py(d.y), (mate ? 2.8 : 2.2) * DPR + Math.min(2.5, d.score / 120) * DPR, 0, TAU);
+    mctx.arc(px(d.x), py(d.y), r, 0, TAU);
     mctx.fill();
+    if (d.hunt) {
+      mctx.strokeStyle = '#e5484d';
+      mctx.lineWidth = 1.5 * DPR;
+      mctx.beginPath();
+      mctx.arc(px(d.x), py(d.y), r + 2.5 * DPR, 0, TAU);
+      mctx.stroke();
+    }
   }
   // Mission places.
   for (const p of game.story?.run?.targets || []) {
@@ -4903,7 +6391,7 @@ function updateHud() {
     const rank = game.mode === 'online' ? board?.rank || 0 : alive.indexOf(s) + 1;
     const total = game.mode === 'online' ? board?.total || 0 : alive.length;
     $('score').textContent = score.toLocaleString('he-IL');
-    $('rank').textContent = rank && total > 1 ? `מקום ${rank} מתוך ${total}` : '';
+    $('rank').textContent = rank && total > 1 && game.mode !== 'story' ? `מקום ${rank} מתוך ${total}` : '';
     game.best.maxScore = Math.max(game.best.maxScore, score);
     if (rank && total > 1) game.best.rank = Math.min(game.best.rank, rank);
     game.best.hands = Math.max(game.best.hands, handsOf(s), game.handIds.size);
@@ -4916,7 +6404,7 @@ function updateHud() {
       btn.classList.toggle('pulse', cand.offer?.to === s.id);
       if (game.hintStage < 2) {
         game.hintStage = 2;
-        hint('לחצו 🤝 – ביחד עוברים זה דרך זה ואוספים פי 1.5', 4500);
+        hint('לחצו 🤝 – מחזיקים ידיים, עוברים זה דרך זה ואוספים פי 1.5', 4500);
       }
     } else btn.hidden = true;
     if (game.hintStage === 0 && now - game.best.born > 6000) {
@@ -4944,7 +6432,7 @@ function updateHud() {
   );
   const name = mapName(w.city);
   if (game.mode === 'story') {
-    $('players').textContent = `🗳️ ${loadProgress().mandates} מנדטים מתוך ${TO_WIN}`;
+    $('players').textContent = '';
   } else if (board) {
     const here = board.here ?? 1;
     $('players').textContent = `${name ? `${name} · ` : ''}${here === 1 ? 'רק אתה כאן' : `${here} משחקים כאן`}`;
@@ -4992,98 +6480,433 @@ function trackPerformance(dt) {
   }
 }
 
-// ------------------------------------------------------------------------------------------------ story
-function renderStory() {
-  const p = loadProgress();
-  const done = p.i >= MISSIONS.length || p.mandates >= TO_WIN;
-  $('mandates-bar').style.width = `${Math.min(100, (p.mandates / 80) * 100)}%`;
-  $('mandates-text').textContent = done
-    ? `🎉 ${p.mandates} מנדטים – ניצחתם בבחירות!`
-    : `${p.mandates} מנדטים מתוך ${TO_WIN} · משימה ${p.i + 1} מתוך ${MISSIONS.length}`;
-  if (done) {
-    $('story-chapter').textContent = 'סוף הסיפור';
-    $('story-mission').textContent = 'הקמתם ממשלה';
-    $('story-brief').textContent = `${p.mandates} מנדטים. מתחילים בשרשרת של אדם אחד, ומגיעים לממשלה – כי ביחד אנחנו שרשרת. אפשר לשתף, או להתחיל את הדרך מחדש.`;
-    $('story-go').textContent = 'שתפו את הניצחון';
-  } else {
-    const m = MISSIONS[p.i];
-    const onMap = maps.byId.has(m.map) ? m.map : '';
-    $('story-chapter').textContent = `${m.chapter}${onMap ? '' : ' (על המפה שבחרתם)'} · +${m.mandates} מנדטים`;
-    $('story-mission').textContent = m.title;
-    $('story-brief').textContent = m.brief;
-    $('story-go').textContent = p.i === 0 && p.mandates === 0 ? 'יוצאים לדרך' : 'למשימה';
-  }
-  $('story-reset').hidden = p.i === 0 && p.mandates === 0;
+// ------------------------------------------------------------------------------------------------ the story
+// "נגד כל הסיכויים" (campaign.js): the Knesset, the road across the country, a chapter's briefing, its result, the
+// strategies between the books, and election night.
+const camp = { state: loadCampaign(), view: 'chapter', lost: [], resetArmed: 0 };
+const PARTY = () => CFG.party || 'עמך ישראל';
+const OTHER_GREYS = ['#b9b1a3', '#a59d8f', '#cbc4b6', '#948c7e'];
+const textVars = () => ({ party: PARTY(), seats: camp.state.seats.ours });
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
 }
-function openStory() {
-  renderStory();
+function rowColor(row) {
+  if (row.ours) return COLORS[OURS];
+  if (row.undecided) return '#e4ded2';
+  if (row.other) return OTHER_GREYS[Math.max(0, OTHERS.findIndex((p) => p.id === row.id)) % OTHER_GREYS.length];
+  return COLORS[row.color % COLORS.length];
+}
+/** Under the threshold, our standing is a poll percentage (the seats wait with the undecided). */
+function oursLabel(st) {
+  const n = st.seats.ours;
+  return n >= THRESHOLD ? `${n} מנדטים` : `${['1.2', '1.9', '2.6', '3.1'][n] ?? '3.1'}% · מתחת לאחוז החסימה`;
+}
+/** The Knesset rows as shown: ours first, the rest by size, the undecided last. */
+function knessetRows(st) {
+  const rows = knesset(st, PARTY());
+  const ours = rows.find((r) => r.ours);
+  const rest = rows.filter((r) => !r.ours && !r.undecided);
+  let undecided = rows.find((r) => r.undecided)?.seats ?? 0;
+  if (ours.seats < THRESHOLD) {
+    undecided += ours.seats;
+    ours.seats = 0;
+  }
+  return [ours, ...rest, ...(undecided ? [{ id: 'undecided', name: 'מתלבטים', seats: undecided, undecided: true }] : [])];
+}
+/** The Knesset as a half circle of 120 seats (ours from the right), our number in the middle, and a legend. */
+function knessetBlock(st) {
+  const box = el('div', 'knesset');
+  const c = el('canvas');
+  c.setAttribute('aria-hidden', 'true');
+  box.append(c);
+  const rows = knessetRows(st);
+  const lead = rows.filter((r) => !r.undecided).reduce((a, b) => (b.seats > a.seats ? b : a));
+  const legend = el('div', 'legend');
+  for (const r of rows) {
+    const chip = el('span', r.ours ? 'ours' : '');
+    const dot = el('i');
+    dot.style.background = rowColor(r);
+    chip.append(dot, `${r === lead ? '👑 ' : ''}${r.name} `, el('b', '', r.ours && r.seats === 0 ? oursLabel(st).split(' · ')[0] : String(r.seats)));
+    legend.append(chip);
+  }
+  box.append(legend);
+  box.setAttribute('aria-label', `הכנסת: ${rows.map((r) => `${r.name} ${r.seats}`).join(', ')}`);
+  requestAnimationFrame(() => drawKnesset(c, rows));
+  return box;
+}
+function drawKnesset(c, rows) {
+  const cssW = c.clientWidth || 300;
+  const cssH = Math.round(cssW * 0.52);
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = Math.round(cssW * dpr);
+  c.height = Math.round(cssH * dpr);
+  c.style.height = `${cssH}px`;
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = cssW / 2;
+  const cy = cssH - 4;
+  const R1 = Math.min(cssW / 2 - 6, cssH - 8);
+  const R0 = R1 * 0.4;
+  const nRows = 6;
+  const radii = Array.from({ length: nRows }, (_, i) => R0 + ((R1 - R0) * i) / (nRows - 1));
+  const sum = radii.reduce((a, b) => a + b, 0);
+  const counts = radii.map((r) => Math.round((120 * r) / sum));
+  let diff = 120 - counts.reduce((a, b) => a + b, 0);
+  for (let i = nRows - 1; diff !== 0; i = (i + nRows - 1) % nRows) {
+    counts[i] += Math.sign(diff);
+    diff -= Math.sign(diff);
+  }
+  const seats = [];
+  radii.forEach((r, i) => {
+    for (let j = 0; j < counts[i]; j++) {
+      const a = (Math.PI * (j + 0.5)) / counts[i];
+      seats.push({ x: cx + Math.cos(a) * r, y: cy - Math.sin(a) * r, a });
+    }
+  });
+  seats.sort((p, q) => p.a - q.a);
+  const dot = ((R1 - R0) / (nRows - 1)) * 0.4;
+  let k = 0;
+  for (const row of rows) {
+    g.fillStyle = rowColor(row);
+    for (let n = 0; n < row.seats && k < seats.length; n++, k++) {
+      g.beginPath();
+      g.arc(seats[k].x, seats[k].y, dot, 0, TAU);
+      g.fill();
+    }
+  }
+  const ours = rows[0]?.seats ?? 0;
+  g.textAlign = 'center';
+  g.fillStyle = COLORS[OURS];
+  g.font = `900 ${Math.round(R0 * 0.7)}px system-ui, sans-serif`;
+  g.fillText(String(ours), cx, cy - R0 * 0.3);
+  g.fillStyle = 'rgba(35, 32, 27, 0.62)';
+  g.font = `700 ${Math.max(10, Math.round(R0 * 0.2))}px system-ui, sans-serif`;
+  g.fillText('מנדטים', cx, cy - 2);
+}
+
+// The road across the country: the country map's picture, a dot for every chapter, done ones in our colour.
+let routeImg = null;
+function chapterPoint(ch) {
+  const israel = maps.byId.get('israel');
+  if (!israel?.center) return null;
+  const [lat0, lon0] = israel.center;
+  const phi = (lat0 * Math.PI) / 180;
+  const ky = 111132.954 - 559.822 * Math.cos(2 * phi) + 1.175 * Math.cos(4 * phi);
+  const kx = 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi);
+  const at = (c) => ({ x: ((c[1] - lon0) * kx) / 50, y: (-(c[0] - lat0) * ky) / 50 });
+  const byName = (he) => [...maps.byId.values()].find((m) => m.he === he || m.he?.replace(/[–-]/g, '') === he.replace(/[–-]/g, ''));
+  if (ch.map !== 'israel') {
+    const m = maps.byId.get(ch.map);
+    return m?.center ? at(m.center) : null;
+  }
+  const names = ch.goal.names || ['ירושלים'];
+  const pts = names.map(byName).filter((m) => m?.center).map((m) => at(m.center));
+  if (!pts.length) return null;
+  return { x: pts.reduce((a, p) => a + p.x, 0) / pts.length, y: pts.reduce((a, p) => a + p.y, 0) / pts.length };
+}
+function routeBlock(st) {
+  const box = el('div', 'route');
+  const c = el('canvas');
+  c.setAttribute('aria-hidden', 'true');
+  const list = el('ol', 'route-list');
+  let book = -1;
+  CHAPTERS.forEach((ch, i) => {
+    if (ch.book !== book) {
+      book = ch.book;
+      list.append(el('li', 'book', `${BOOK_NAMES[book]} · ${BOOKS[book].title}`));
+    }
+    const li = el('li', i < st.next ? 'done' : i === st.next ? 'now' : '');
+    li.append(el('span', '', `${i + 1}. ${ch.title}`), el('b', '', i < st.next ? '⭐'.repeat(st.stars[i] || 1) : i === st.next ? '◀' : ''));
+    list.append(li);
+  });
+  box.append(c, list);
+  requestAnimationFrame(() => drawRoute(c, st));
+  return box;
+}
+function drawRoute(c, st) {
+  const E = 4640;
+  const X0 = -1750;
+  const X1 = 1550;
+  const Y0 = -4450;
+  const Y1 = 4450;
+  const cssW = c.clientWidth || 96;
+  const cssH = Math.round((cssW * (Y1 - Y0)) / (X1 - X0));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = Math.round(cssW * dpr);
+  c.height = Math.round(cssH * dpr);
+  c.style.height = `${cssH}px`;
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!routeImg) {
+    routeImg = new Image();
+    routeImg.onload = () => !$('story').hidden && renderCampaign();
+    routeImg.src = `${CFG.maps}israel.jpg`;
+  }
+  if (routeImg.complete && routeImg.naturalWidth) {
+    const s = routeImg.naturalWidth / (2 * E);
+    g.drawImage(routeImg, (X0 + E) * s, (Y0 + E) * s, (X1 - X0) * s, (Y1 - Y0) * s, 0, 0, cssW, cssH);
+  } else {
+    g.fillStyle = '#e9e3d6';
+    g.fillRect(0, 0, cssW, cssH);
+  }
+  const tx = (x) => ((x - X0) / (X1 - X0)) * cssW;
+  const ty = (y) => ((y - Y0) / (Y1 - Y0)) * cssH;
+  const pts = CHAPTERS.map(chapterPoint);
+  // The road so far: from the first chapter to the one ahead.
+  g.strokeStyle = COLORS[OURS];
+  g.lineWidth = 2;
+  g.setLineDash([4, 3]);
+  g.beginPath();
+  let started = false;
+  pts.slice(0, st.next + 1).forEach((p) => {
+    if (!p) return;
+    g[started ? 'lineTo' : 'moveTo'](tx(p.x), ty(p.y));
+    started = true;
+  });
+  g.stroke();
+  g.setLineDash([]);
+  pts.forEach((p, i) => {
+    if (!p) return;
+    const done = i < st.next;
+    const now = i === st.next;
+    g.beginPath();
+    g.arc(tx(p.x), ty(p.y), now ? 6 : 4.2, 0, TAU);
+    g.fillStyle = done ? COLORS[OURS] : now ? '#ffffff' : 'rgba(255,255,255,0.8)';
+    g.fill();
+    g.lineWidth = now ? 3 : 1.4;
+    g.strokeStyle = done ? '#ffffff' : now ? '#e5484d' : 'rgba(35, 32, 27, 0.5)';
+    g.stroke();
+  });
+}
+function perksLine(st) {
+  if (!st.perks.length) return null;
+  const p = el('p', 'perks-line');
+  p.append(el('b', '', 'האסטרטגיות שלכם: '), st.perks.map((id) => PERKS.find((x) => x.id === id)).filter(Boolean).map((x) => `${x.icon} ${x.name}`).join(' · '));
+  return p;
+}
+function gainsText(gains) {
+  const n = gains.reduce((a, g) => a + g.n, 0);
+  const from = gains.map((g) => `${g.n} ${g.from === 'undecided' ? 'מהמתלבטים' : `מ${partyOf(g.from)?.name ?? g.from}`}`).join(', ');
+  return n ? `+${n} ${n === 1 ? 'מנדט' : 'מנדטים'}: ${from}` : '';
+}
+
+function renderCampaign() {
+  const st = camp.state;
+  const body = $('camp-body');
+  body.replaceChildren();
+  const go = $('story-go');
+  go.hidden = false;
+  const view = camp.view === 'result' && st.last ? 'result' : st.pending || 'chapter';
+  const vars = textVars();
+  const kicker = $('camp-kicker');
+  const title = $('story-title');
+  if (view === 'book') {
+    const b = CHAPTERS[st.next]?.book ?? 0;
+    const lost = openBook(st, b);
+    if (lost.length) camp.lost = lost;
+    saveCampaign(st);
+    kicker.textContent = 'נגד כל הסיכויים';
+    title.textContent = `${BOOK_NAMES[b]}: ${BOOKS[b].title}`;
+    body.append(el('p', 'story-text', fill(BOOKS[b].text, vars)));
+    if (b === 2 && camp.lost.length) body.append(el('p', 'loss', `−${camp.lost.reduce((a, x) => a + x.n, 0)} מנדטים: ${camp.lost.map((x) => `${x.n} ל${partyOf(x.to)?.name}`).join(', ')}`));
+    if (b === 0) body.append(el('p', 'note', `הסיפור והדמויות בדיוניים. ${POLL_NOTE}`));
+    body.append(knessetBlock(st));
+    go.textContent = 'המשך';
+  } else if (view === 'result') {
+    const { index, stars, gains } = st.last;
+    const ch = CHAPTERS[index];
+    kicker.textContent = `פרק ${index + 1} מתוך ${CHAPTERS.length} הושלם`;
+    title.textContent = `✅ ${ch.title}`;
+    body.append(el('p', 'stars-big', '⭐'.repeat(stars) + '☆'.repeat(3 - stars)));
+    const gt = gainsText(gains);
+    if (gt) body.append(el('p', 'gain', gt));
+    if (st.seats.ours >= THRESHOLD && st.seats.ours - gains.reduce((a, g) => a + g.n, 0) < THRESHOLD) body.append(el('p', 'gain big', '🎉 עברתם את אחוז החסימה!'));
+    body.append(el('p', 'story-text', fill(ch.outro, vars)));
+    body.append(knessetBlock(st));
+    go.textContent = 'המשך';
+  } else if (view === 'perks') {
+    const round = CHAPTERS[st.next - 1]?.book ?? 0;
+    kicker.textContent = `סוף ${BOOK_NAMES[round]}`;
+    title.textContent = 'בחרו אסטרטגיה';
+    body.append(el('p', 'note', 'היכולת שתבחרו תלווה אתכם עד סוף הדרך.'));
+    const grid = el('div', 'perks');
+    for (const id of PERK_ROUNDS[round] || []) {
+      const p = PERKS.find((x) => x.id === id);
+      const b = el('button', 'perk');
+      b.type = 'button';
+      b.append(el('span', 'icon', p.icon), el('b', '', p.name), el('small', '', p.text));
+      b.addEventListener('click', () => {
+        choosePerk(st, id);
+        saveCampaign(st);
+        camp.view = 'chapter';
+        renderCampaign();
+      });
+      grid.append(b);
+    }
+    body.append(grid);
+    go.hidden = true;
+  } else if (view === 'end') {
+    kicker.textContent = 'ליל הבחירות';
+    title.textContent = 'המפלגה הגדולה ביותר';
+    for (const para of fill(EPILOGUE, vars).split('\n')) body.append(el('p', 'story-text', para));
+    body.append(el('p', 'story-text strong', 'לבד אתה חזק – ביחד אנחנו שרשרת.'));
+    body.append(knessetBlock(st));
+    const total = st.stars.reduce((a, b) => a + (b || 0), 0);
+    body.append(el('p', 'note', `⭐ ${total} כוכבים מתוך ${CHAPTERS.length * 3} · הסיפור והדמויות בדיוניים.`));
+    go.textContent = 'שתפו את הניצחון';
+  } else {
+    const ch = CHAPTERS[st.next];
+    const place = maps.byId.get(ch.map)?.he ?? '';
+    kicker.textContent = `${BOOK_NAMES[ch.book]}: ${BOOKS[ch.book].title} · פרק ${st.next + 1} מתוך ${CHAPTERS.length}`;
+    title.textContent = ch.title;
+    const card = el('div', 'mission-card');
+    card.append(el('small', '', place ? `📍 ${place}` : ''), el('p', 'story-text', fill(ch.intro, vars)));
+    const goal = el('p', 'goal');
+    goal.append(el('b', '', `🎯 ${goalText(ch)}`), ch.time ? ` · ⏱️ ${mmss(ch.time)}` : '');
+    card.append(goal);
+    const stars = el('ul', 'stars');
+    for (const text of starTexts(ch)) stars.append(el('li', '', text));
+    card.append(stars);
+    const chips = el('div', 'chips');
+    for (const [id] of ch.rivals) {
+      const p = partyOf(id);
+      if (!p) continue;
+      const chip = el('span', 'chip');
+      const dot = el('i');
+      dot.style.background = COLORS[p.color % COLORS.length];
+      chip.append(dot, p.name);
+      chips.append(chip);
+    }
+    const o = ch.obstacles || {};
+    if (o.bars) chips.append(el('span', 'chip', '🚧 עבודות בכביש'));
+    if (o.buses) chips.append(el('span', 'chip', '🚌 אוטובוסים'));
+    if (o.trains) chips.append(el('span', 'chip', '🚆 רכבות'));
+    if (o.storms) chips.append(el('span', 'chip', '⛈️ סערות'));
+    card.append(chips);
+    body.append(card);
+    const line = perksLine(st);
+    if (line) body.append(line);
+    body.append(knessetBlock(st));
+    body.append(routeBlock(st));
+    go.textContent = st.next === 0 ? 'יוצאים לדרך' : 'למשימה';
+  }
+  const started = st.next > 0 || st.perks.length > 0;
+  $('story-reset').hidden = !started;
+  $('story-reset').textContent = 'מההתחלה';
+  camp.resetArmed = 0;
+  body.scrollTop = 0;
+}
+function openCampaign() {
+  camp.state = loadCampaign();
+  camp.view = 'chapter';
+  renderCampaign();
   show('story');
 }
+function campaignGo() {
+  const st = camp.state;
+  const view = camp.view === 'result' && st.last ? 'result' : st.pending || 'chapter';
+  if (view === 'book') {
+    st.pending = null;
+    camp.lost = [];
+    saveCampaign(st);
+    renderCampaign();
+  } else if (view === 'result') {
+    camp.view = 'chapter';
+    renderCampaign();
+  } else if (view === 'end') shareVictory();
+  else if (view === 'chapter') startStory();
+}
+function resetCampaign() {
+  const now = performance.now();
+  if (now - camp.resetArmed > 3000) {
+    camp.resetArmed = now;
+    $('story-reset').textContent = 'בטוחים? לחצו שוב';
+    return;
+  }
+  camp.state = newCampaign();
+  saveCampaign(camp.state);
+  camp.view = 'chapter';
+  renderCampaign();
+}
 async function startStory() {
-  const p = loadProgress();
-  if (p.i >= MISSIONS.length || p.mandates >= TO_WIN) {
+  const st = camp.state;
+  if (st.pending === 'end' || st.next >= CHAPTERS.length) {
     shareVictory();
     return;
   }
   audio.unlock();
   commitName();
   game.net?.idle();
-  const mission = MISSIONS[p.i];
-  const id = maps.byId.has(mission.map) ? mission.map : maps.current;
+  const index = st.next;
+  const ch = CHAPTERS[index];
+  const id = maps.byId.has(ch.map) ? ch.map : maps.current;
   $('story-go').disabled = true;
-  const map = await Promise.race([cityMap(id), new Promise((r) => setTimeout(() => r(null), 6000))]);
+  const map = await Promise.race([cityMap(id), new Promise((r) => setTimeout(() => r(null), 8000))]);
   $('story-go').disabled = false;
   const w = newWorld(map);
   for (let i = 0; i < 60; i++) {
     w.step(1 / 30);
     w.events.length = 0;
   }
-  const s = w.addSnake({ name: game.name, skin: game.skin });
+  const pm = perkMods(st.perks);
+  const at = map ? startPoint(ch, map) : null;
+  const s = w.addSnake({
+    name: game.name,
+    skin: game.skin,
+    color: OURS,
+    mass: C.startMass + (ch.mass || 0) + pm.extra,
+    mods: pm.mods,
+    shield: pm.shield,
+    at: at ? { x: at.x + 30, y: at.y + 30 } : null,
+  });
   game.world = w;
   game.meId = s.id;
   game.mode = 'story';
-  game.story = { index: p.i, run: startMission(mission, map), map };
-  $('mission-title').textContent = `${mission.title} · +${mission.mandates}`;
+  game.story = { index, chapter: ch, map, perks: st.perks.slice(), run: startChapter(ch, map, w, { playerId: s.id, perks: st.perks }) };
+  $('mission-title').textContent = `פרק ${index + 1} · ${ch.title}`;
+  $('mission-meta').textContent = '';
   beginRound(s);
-  toast(mission.brief, 5200);
+  toast(`🎯 ${goalText(ch)}`, 4600);
 }
 function updateStory(dt) {
   const st = game.story;
   if (!st?.run || !game.alive) return;
-  const s = me();
-  const res = st.run.update(s?.alive ? s : null, s ? scoreOf(s.mass) : 0, dt);
+  const res = st.run.update(dt);
+  for (const text of res.warn) toast(text, 2600);
   $('mission-text').textContent = res.text;
   $('mission-bar').style.width = `${Math.round(res.progress * 100)}%`;
+  const timed = st.chapter.time || st.chapter.goal.type === 'survive';
+  $('mission-meta').textContent = `${timed ? `⏱️ ${mmss(res.left)}  ` : ''}${'⭐'.repeat(res.stars)}${'☆'.repeat(3 - res.stars)}`;
   if (res.failed) {
     game.alive = false;
-    game.deathInfo = { timeout: true };
+    game.deathInfo = { why: res.why };
+    navigator.vibrate?.(120);
     audio.sfx('break');
     audio.setScene('over');
-    setTimeout(showOver, 600);
+    setTimeout(showOver, 700);
     return;
   }
   if (res.done) {
-    const p = loadProgress();
-    const mission = MISSIONS[st.index];
-    p.mandates += mission.mandates;
-    p.i = st.index + 1;
-    saveProgress(p);
+    winChapter(camp.state, st.index, res.stars);
+    saveCampaign(camp.state);
+    camp.view = 'result';
     game.alive = false;
     game.running = false;
     game.story = null;
     audio.sfx('link');
     navigator.vibrate?.([60, 40, 60, 40, 120]);
     hide('hud');
-    renderStory();
-    $('story-title').textContent = `✅ ${mission.title}: +${mission.mandates} מנדטים`;
-    $('story-intro').hidden = true;
+    renderCampaign();
     show('story');
     audio.setScene('menu');
   }
 }
 function shareVictory() {
-  const p = loadProgress();
-  shareText(`ניצחתי בבחירות ב-${NAME} עם ${p.mandates} מנדטים והקמתי ממשלה 🗳️ ביחד אנחנו שרשרת – נראה אתכם:`, cardCanvas({ mandates: p.mandates }));
+  const n = camp.state.seats.ours;
+  shareText(`הובלתי את ${PARTY()} מ־1.2% ל־${n} מנדטים – המפלגה הגדולה ביותר 🗳️ ביחד אנחנו שרשרת. נראה אתכם:`, cardCanvas({ mandates: n }));
 }
 
 // ------------------------------------------------------------------------------------------------ lobby: maps
@@ -5394,14 +7217,14 @@ function cardCanvas({ mandates = 0 } = {}) {
   }
   g.font = '600 48px system-ui, sans-serif';
   g.fillStyle = INK;
-  g.fillText(mandates ? 'ניצחתי בבחירות עם' : 'הבאתי לשרשרת', 540, 430);
+  g.fillText(mandates ? `הובלתי את ${CFG.party || 'המפלגה'} ל־` : 'הבאתי לשרשרת', 540, 430);
   g.font = '900 190px system-ui, sans-serif';
   g.fillStyle = color;
   g.fillText((mandates || game.best.maxScore).toLocaleString('he-IL'), 540, 610);
   g.font = '700 54px system-ui, sans-serif';
   g.fillStyle = INK;
   const where = mapName(game.world?.city || maps.current);
-  g.fillText(mandates ? 'מנדטים 🗳️' : where ? `אנשים ב${where}` : 'אנשים', 540, 680);
+  g.fillText(mandates ? 'מנדטים – המפלגה הגדולה ביותר 🗳️' : where ? `אנשים ב${where}` : 'אנשים', 540, 680);
   // The chain itself: people holding hands across the card, the leader with a flag and a face.
   const n = 9;
   const hp = 150;
@@ -5509,18 +7332,9 @@ $('again').addEventListener('click', () => (game.mode === 'story' ? (hide('over'
 $('to-menu').addEventListener('click', toMenu);
 $('share').addEventListener('click', share);
 $('share-close').addEventListener('click', () => hide('share-fallback'));
-$('story-btn').addEventListener('click', () => {
-  $('story-title').textContent = 'הדרך לממשלה';
-  $('story-intro').hidden = false;
-  openStory();
-});
-$('story-go').addEventListener('click', () => startStory());
-$('story-reset').addEventListener('click', () => {
-  saveProgress({ i: 0, mandates: 0 });
-  $('story-title').textContent = 'הדרך לממשלה';
-  $('story-intro').hidden = false;
-  renderStory();
-});
+$('story-btn').addEventListener('click', openCampaign);
+$('story-go').addEventListener('click', campaignGo);
+$('story-reset').addEventListener('click', resetCampaign);
 for (const b of document.querySelectorAll('.sheet .close')) {
   b.addEventListener('click', () => {
     const sheet = b.closest('.sheet');
