@@ -1,0 +1,33 @@
+{
+ "v": 1,
+ "attribution": "© OpenStreetMap contributors (ODbL) · גבהים: SRTM / NASA",
+ "cities": [
+  {
+   "id": "tel-aviv",
+   "he": "תל אביב",
+   "R": 3200,
+   "center": [
+    32.0705,
+    34.78
+   ]
+  },
+  {
+   "id": "jerusalem",
+   "he": "ירושלים",
+   "R": 3200,
+   "center": [
+    31.78,
+    35.215
+   ]
+  },
+  {
+   "id": "haifa",
+   "he": "חיפה",
+   "R": 3200,
+   "center": [
+    32.805,
+    34.99
+   ]
+  }
+ ]
+}
