@@ -132,8 +132,15 @@ STAC_URL = 'https://earth-search.aws.element84.com/v1/search'
 SAT_GRID = 10  # Sentinel-2 true colour is 10 m per pixel
 
 
+_T0 = __import__('time').time()
+
+
 def log(*a):
-    print(*a, flush=True)
+    """Prints with the time since the start and this process's peak memory (the build log is how CI is read)."""
+    import resource
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024
+    kids = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss // 1024
+    print(f'[{__import__("time").time() - _T0:7.1f}s {peak}/{kids}MB]', *a, flush=True)
 
 
 # ----------------------------------------------------------------------------------------------- projection
@@ -1021,9 +1028,15 @@ def main(argv):
         e = old.get(aid)
         return not e or e.get('build') != BUILD or not e.get('sat') or not os.path.exists(os.path.join(OUT, aid + '.json'))
 
+    import regions  # the big maps (the whole country, the borders of the promise)
+    old_regions = {}
+    if os.path.exists(index_path):
+        for r in json.load(open(index_path, encoding='utf-8')).get('regions', []):
+            old_regions[r['id']] = r
     todo = [a for a in AUTHORITIES if (a[0] in wanted if wanted else stale(a[0]))]
-    log('to build', [a[0] for a in todo])
-    if not todo:
+    todo_regions = regions.stale(wanted, old_regions)
+    log('to build', [a[0] for a in todo], [r['id'] for r in todo_regions])
+    if not todo and not todo_regions:
         return
     pbf = download(PBF_URL, os.path.join(WORK, 'israel.osm.pbf'))
     bounds, places = admin_index(pbf)
@@ -1035,7 +1048,8 @@ def main(argv):
         else:
             missing.append(auth[0])
     log('resolved', len(cities), 'missing', missing)
-    extract_all(pbf, cities)
+    if cities:
+        extract_all(pbf, cities)
     results = []
     for city in cities:
         try:
@@ -1060,9 +1074,17 @@ def main(argv):
                             'build': BUILD})
         elif aid in old and os.path.exists(os.path.join(OUT, aid + '.json')):
             entries.append(old[aid])
+    built_regions = regions.build_regions(todo_regions, pbf, bounds) if todo_regions else {}
+    region_entries = []
+    for r in regions.REGIONS:
+        if r['id'] in built_regions:
+            region_entries.append(built_regions[r['id']])
+        elif r['id'] in old_regions and os.path.exists(os.path.join(OUT, r['id'] + '.json')):
+            region_entries.append(old_regions[r['id']])
     with open(index_path, 'w', encoding='utf-8') as f:
-        json.dump({'v': 2, 'attribution': ATTRIBUTION, 'cities': entries}, f, ensure_ascii=False, indent=1)
-    log('done', len(entries), 'maps;', json.dumps(results, ensure_ascii=False))
+        json.dump({'v': 2, 'attribution': ATTRIBUTION, 'regions': region_entries, 'cities': entries}, f,
+                  ensure_ascii=False, indent=1)
+    log('done', len(entries), 'maps,', len(region_entries), 'big maps;', json.dumps(results, ensure_ascii=False))
 
 
 if __name__ == '__main__':

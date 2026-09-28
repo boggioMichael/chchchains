@@ -36,20 +36,35 @@ jobs:
           sudo apt-get install -y -qq osmium-tool
           pip install -q numpy scipy scikit-image pillow rasterio
       - name: Check the builder
-        run: python tools/map/test_build.py
+        run: python tools/map/test_build.py && python tools/map/test_regions.py
       - name: Build the maps
         id: build
         env:
           ONLY: ${{ inputs.only }}
         run: |
           set +e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898699+github-actions[bot]@users.noreply.github.com'
+          # A heartbeat: every 15 s the log so far, memory and the biggest processes go to the maps-log branch, so
+          # a run that dies can still be read.
+          (
+            while sleep 15; do
+              { tail -n 200 tools/map/last-build.log; echo; date -u; free -m; df -h . | tail -1; ps -eo rss,etime,args --sort=-rss | head -6; } > /tmp/beat.txt 2>&1
+              tree=$(printf '100644 blob %s\tlog.txt\n' "$(git hash-object -w /tmp/beat.txt)" | git mktree)
+              git push -qf origin "$(echo beat | git commit-tree "$tree"):refs/heads/maps-log" >/dev/null 2>&1
+            done
+          ) &
+          beat=$!
+          ulimit -v 12000000 # 12 GB: running out of memory fails the build instead of the runner
           python -u tools/map/build.py $ONLY > tools/map/last-build.log 2>&1
           code=$?
+          kill $beat
           echo "exit code $code" >> tools/map/last-build.log
           tail -n 60 tools/map/last-build.log
           echo "code=$code" >> "$GITHUB_OUTPUT"
       - name: Commit
         # The log goes in with the maps, so a failed build can be read from the repository.
+        if: always()
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898699+github-actions[bot]@users.noreply.github.com'
