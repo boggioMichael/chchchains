@@ -1,4 +1,4 @@
-// Ch-ch-chains — online play. Connects to the game server, keeps a copy of the room around the player and draws it a
+// Ch-ch-chain-ges — online play. Connects to the game server, keeps a copy of the room around the player and draws it a
 // little in the past, so chains glide smoothly between the server's 15 snapshots a second. Everything a
 // snapshot or message changes is applied at the drawn moment, so sparks vanish when the head reaches them. The delay
 // adapts to the connection: about 90 ms on a steady line, more when snapshots arrive unevenly.

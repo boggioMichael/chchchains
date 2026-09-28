@@ -5,9 +5,10 @@
 // CHAIN_JOIN_URL, CHAIN_SHARE_URL); see README.md.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { NAME } from './src/brand.js';
 
 const ROOT = new URL('.', import.meta.url).pathname;
-const MODULES = ['sim', 'streets', 'protocol', 'net', 'map', 'people', 'audio', 'client']; // dependency order
+const MODULES = ['brand', 'sim', 'streets', 'protocol', 'net', 'map', 'people', 'audio', 'client']; // dependency order
 
 function bundle() {
   const parts = ['(() => {', "'use strict';", 'const __m = {};'];
@@ -76,7 +77,7 @@ const csp = [
   "form-action 'none'",
 ].join('; ');
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-const title = cfg.brand ? `Ch-ch-chains – ${cfg.brand}` : 'Ch-ch-chains';
+const title = cfg.brand ? `${NAME} – ${cfg.brand}` : NAME;
 const description = 'משחק רשת בטלפון ברחובות האמיתיים של תל אביב, ירושלים וחיפה: אוספים אנשים, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.';
 const meta = [
   `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
@@ -84,6 +85,7 @@ const meta = [
   '<link rel="icon" type="image/png" href="icon-192.png">',
   '<link rel="apple-touch-icon" href="apple-touch-icon.png">',
   '<meta name="apple-mobile-web-app-capable" content="yes">',
+  `<meta name="apple-mobile-web-app-title" content="${esc(NAME)}">`,
   '<meta property="og:type" content="website">',
   `<meta property="og:title" content="${esc(title)}">`,
   `<meta property="og:description" content="${esc(description)}">`,
@@ -114,15 +116,15 @@ writeFileSync(
   `${JSON.stringify(
     {
       name: title,
-      short_name: 'Ch-ch-chains',
+      short_name: NAME,
       description,
       lang: 'he',
       dir: 'rtl',
       start_url: './',
       scope: './',
       display: 'fullscreen',
-      background_color: '#080c20',
-      theme_color: '#080c20',
+      background_color: '#f3efe6',
+      theme_color: '#f3efe6',
       icons: [
         { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
         { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },

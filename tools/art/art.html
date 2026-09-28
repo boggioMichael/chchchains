@@ -16,6 +16,7 @@
 import { loadCity, MAP_STYLE } from '../../src/map.js';
 import { figure, drawFlag, FIG } from '../../src/people.js';
 import { COLORS } from '../../src/sim.js';
+import { drawWordmark } from '../../src/brand.js';
 
 const INK = '#23201b';
 const BLUE = '#0038b8';
@@ -83,16 +84,8 @@ function people(g, spots, hp) {
   g.restore();
   chain(g, a, COLORS[0], 70, -1, 0.3);
   chain(g, b, COLORS[1], 60, -1, 1.4);
+  drawWordmark(g, 1150, 176, 96, { align: 'right', maxWidth: 620, ink: INK });
   g.textAlign = 'right';
-  g.direction = 'ltr';
-  g.font = '900 104px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
-  g.fillStyle = 'rgba(35,32,27,0.3)';
-  const full = 'Ch-ch-chains';
-  const tail = 'chains';
-  const wTail = g.measureText(tail).width;
-  g.fillText('Ch-ch-', 1150 - wTail, 180);
-  g.fillStyle = INK;
-  g.fillText(tail, 1150, 180);
   g.direction = 'rtl';
   g.font = '800 44px system-ui, sans-serif';
   g.fillStyle = BLUE;
@@ -112,7 +105,6 @@ function people(g, spots, hp) {
   g.font = '12px system-ui, sans-serif';
   g.fillStyle = 'rgba(35,32,27,0.55)';
   g.fillText('© OpenStreetMap contributors', 10, 620);
-  void full;
 }
 
 // ------------------------------------------------------------------ app icon, 512 × 512 (safe for round masks)

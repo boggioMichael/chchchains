@@ -1,4 +1,4 @@
-// Ch-ch-chains — where people turn up: random spots on a city's streets (on the pavement, a few metres to either
+// Ch-ch-chain-ges — where people turn up: random spots on a city's streets (on the pavement, a few metres to either
 // side of the road's centre line). The same code places people on the server and in offline play.
 
 const WEIGHT = [1.5, 1.25, 1]; // main roads are a little busier

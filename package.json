@@ -1,8 +1,8 @@
 {
-  "name": "chchchains",
+  "name": "chchchain-ges",
   "version": "1.0.0",
   "private": true,
-  "description": "Ch-ch-chains – המשחק של עמך ישראל: משחק רשת לטלפון. אוספים ניצוצות, נותנים יד ומתארכים. בלי הרשמה.",
+  "description": "Ch-ch-chain-ges – המשחק של עמך ישראל: משחק רשת לטלפון ברחובות האמיתיים של ערי ישראל. אוספים אנשים, נותנים יד ומתארכים. בלי הרשמה.",
   "type": "module",
   "engines": {
     "node": ">=22"

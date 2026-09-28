@@ -1,4 +1,4 @@
-// Ch-ch-chains — city maps. Loads docs/maps/<city>.json (streets, water, parks, contours, labels in metres around
+// Ch-ch-chain-ges — city maps. Loads docs/maps/<city>.json (streets, water, parks, contours, labels in metres around
 // the city centre) and its terrain image, and draws them under the game: the static layers are painted once into
 // tiles and reused while the camera moves; labels are drawn on top every frame so they never get cut at a tile edge.
 

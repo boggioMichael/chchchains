@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-gXo9IGk5DQuIUWkCK1TQOzU6sBa2VK0J6Tuko5iafT8=' 'sha256-EyDt0LgAwW2uLV1K6Ow3YCGZG14NwkR8Gm2hkx9rYh0='; style-src 'sha256-2iqD5HBGyh5BhZ8GjtUzlzDFaZbPYmEJP5Hqg7jX/10='; img-src 'self' data: blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-gXo9IGk5DQuIUWkCK1TQOzU6sBa2VK0J6Tuko5iafT8=' 'sha256-kNn73hwyxQKmkUeCfPsLInlQ0G63PiE5IZD+LsUKLHY='; style-src 'sha256-lXMDbO2sjd+O7F+REwfgMmorVIAN/Q2I0IKf2Ub++qM='; img-src 'self' data: blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ch-ch-chain-ges">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Ch-ch-chains – המשחק של עמך ישראל">
+<meta property="og:title" content="Ch-ch-chain-ges – המשחק של עמך ישראל">
 <meta property="og:description" content="משחק רשת בטלפון ברחובות האמיתיים של תל אביב, ירושלים וחיפה: אוספים אנשים, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.">
 <meta property="og:url" content="https://chchchains.onrender.com/">
 <meta property="og:image" content="https://chchchains.onrender.com/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<title>Ch-ch-chains – המשחק של עמך ישראל</title>
+<title>Ch-ch-chain-ges – המשחק של עמך ישראל</title>
 <meta name="description" content="משחק רשת בטלפון: אוספים אנשים ברחובות, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.">
 <meta name="theme-color" content="#f3efe6">
 <style>
@@ -99,7 +100,7 @@ a { color: inherit; }
 .card { width: min(400px, 100%); text-align: center; display: grid; gap: 13px; padding: 20px 18px;
   background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); box-sizing: border-box; }
 #mark { width: 230px; height: 70px; justify-self: center; margin-bottom: -8px; }
-.logo { font-size: clamp(38px, 12vw, 62px); font-weight: 900; line-height: 1.05; margin: 0; letter-spacing: -1.5px;
+.logo { font-size: clamp(27px, 9.2vw, 54px); font-weight: 900; line-height: 1.05; margin: 0; letter-spacing: -1.5px;
   direction: ltr; white-space: nowrap; color: var(--ink); }
 .logo .st { color: rgba(35, 32, 27, 0.3); }
 .brand { margin: -8px 0 0; font-size: 17px; font-weight: 800; color: var(--blue); }
@@ -158,7 +159,7 @@ a { color: inherit; }
 <section id="start" class="screen" aria-labelledby="logo">
   <div class="card">
     <canvas id="mark" aria-hidden="true"></canvas>
-    <h1 id="logo" class="logo"><span class="st">Ch-ch-</span>chains</h1>
+    <h1 id="logo" class="logo"><span class="st">Ch-ch-</span>chain<span class="st">-ges</span></h1>
     <p id="brand" class="brand">המשחק של עמך ישראל</p>
     <p id="city"></p>
     <p class="tag">אוספים אנשים ברחובות, נותנים יד ומתארכים.<br><strong>לבד אתה חזק – ביחד אנחנו שרשרת.</strong></p>
@@ -209,8 +210,48 @@ a { color: inherit; }
 (() => {
 'use strict';
 const __m = {};
+__m.brand = (() => {
+// Ch-ch-chain-ges — the name and the wordmark. The name stutters like Bowie's "Ch-ch-changes", with chains inside.
+const NAME = 'Ch-ch-chain-ges';
+const SLUG = 'chchchain-ges';
+/** The wordmark in parts: the stutter and the ending are faint, "chain" is solid. */
+const WORDMARK = [
+  ['Ch-ch-', 0.3],
+  ['chain', 1],
+  ['-ges', 0.3],
+];
+
+/**
+ * Draws the wordmark on a 2D canvas with its baseline at y. align: where x is ('left' | 'center' | 'right').
+ * The type shrinks to fit maxWidth. Returns the font size used.
+ */
+function drawWordmark(g, x, y, size, { align = 'center', maxWidth = Infinity, ink = '#23201b', weight = 900 } = {}) {
+  const font = (px) => `${weight} ${px}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
+  g.save();
+  g.direction = 'ltr';
+  g.textAlign = 'left';
+  g.font = font(size);
+  let width = g.measureText(NAME).width;
+  if (width > maxWidth) {
+    size = Math.floor((size * maxWidth) / width);
+    g.font = font(size);
+    width = g.measureText(NAME).width;
+  }
+  let at = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+  g.fillStyle = ink;
+  for (const [part, alpha] of WORDMARK) {
+    g.globalAlpha = alpha;
+    g.fillText(part, at, y);
+    at += g.measureText(part).width;
+  }
+  g.restore();
+  return size;
+}
+
+return { NAME, SLUG, WORDMARK, drawWordmark };
+})();
 __m.sim = (() => {
-// Ch-ch-chains — the world simulation. Pure logic with no DOM, so the same code runs in the browser (solo play with
+// Ch-ch-chain-ges — the world simulation. Pure logic with no DOM, so the same code runs in the browser (solo play with
 // labelled bots) and on the server (authoritative multiplayer rooms).
 
 const C = {
@@ -882,7 +923,7 @@ function botName() {
 return { C, COLORS, SPARK_COLORS, NOUNS, ADJS, PLACES, randomName, lengthFor, radiusFor, scoreOf, angleDiff, World, botName };
 })();
 __m.streets = (() => {
-// Ch-ch-chains — where people turn up: random spots on a city's streets (on the pavement, a few metres to either
+// Ch-ch-chain-ges — where people turn up: random spots on a city's streets (on the pavement, a few metres to either
 // side of the road's centre line). The same code places people on the server and in offline play.
 
 const WEIGHT = [1.5, 1.25, 1]; // main roads are a little busier
@@ -1094,7 +1135,7 @@ function clamp16(x) {
 return { FLAG_BOOST, FLAG_BOT, FLAG_OFFERS_ME, FLAG_I_OFFERED, FLAG_FULL, FLAG_CANDIDATE, encodeSnapshot, decodeSnapshot };
 })();
 __m.net = (() => {
-// Ch-ch-chains — online play. Connects to the game server, keeps a copy of the room around the player and draws it a
+// Ch-ch-chain-ges — online play. Connects to the game server, keeps a copy of the room around the player and draws it a
 // little in the past, so chains glide smoothly between the server's 15 snapshots a second. Everything a
 // snapshot or message changes is applied at the drawn moment, so sparks vanish when the head reaches them. The delay
 // adapts to the connection: about 90 ms on a steady line, more when snapshots arrive unevenly.
@@ -1603,7 +1644,7 @@ function connectOnline(url, hooks = {}) {
 return { RemoteWorld, connectOnline };
 })();
 __m.map = (() => {
-// Ch-ch-chains — city maps. Loads docs/maps/<city>.json (streets, water, parks, contours, labels in metres around
+// Ch-ch-chain-ges — city maps. Loads docs/maps/<city>.json (streets, water, parks, contours, labels in metres around
 // the city centre) and its terrain image, and draws them under the game: the static layers are painted once into
 // tiles and reused while the camera moves; labels are drawn on top every frame so they never get cut at a tile edge.
 
@@ -1925,7 +1966,7 @@ function ringPath(g, a) {
 return { MAP_STYLE, loadCity, loadCityIndex, CityMap };
 })();
 __m.people = (() => {
-// Ch-ch-chains — the people. Flat paper-doll figures with a white cut-out edge: in a chain they reach out to hold
+// Ch-ch-chain-ges — the people. Flat paper-doll figures with a white cut-out edge: in a chain they reach out to hold
 // hands; on the street they stand with their arms down. Each colour and pose is drawn once and reused.
 
 const FIG = {
@@ -2040,7 +2081,7 @@ function drawFlag(g, x, y, hp, color, dir, t, outline = false) {
 return { FIG, figure, drawFlag };
 })();
 __m.audio = (() => {
-// Ch-ch-chains — music and sound, synthesised with Web Audio (no audio files). An original bouncy synth-pop
+// Ch-ch-chain-ges — music and sound, synthesised with Web Audio (no audio files). An original bouncy synth-pop
 // loop in D minor at 116 BPM whose layers follow the game: calm in the menus; drums and arpeggios while you play;
 // the lead melody once your chain grows; extra hi-hats while you run; bells when you hold hands.
 // Browsers only allow sound after a tap, so nothing plays until unlock() is called from one.
@@ -2402,7 +2443,7 @@ function createAudio({ muted = false, context = null } = {}) {
 return { createAudio };
 })();
 __m.client = (() => {
-// Ch-ch-chains — the browser client: the city map, the human chains, touch/mouse/keyboard input, screens and
+// Ch-ch-chain-ges — the browser client: the city map, the human chains, touch/mouse/keyboard input, screens and
 // sharing. Offline play simulates the world here with labelled bots; online play (net.js) draws the server's room.
 const { World, C, COLORS, radiusFor, scoreOf, randomName, botName } = __m.sim;
 const { connectOnline } = __m.net;
@@ -2410,6 +2451,7 @@ const { loadCity, loadCityIndex, MAP_STYLE } = __m.map;
 const { streetSpawner } = __m.streets;
 const { figure, drawFlag, FIG } = __m.people;
 const { createAudio } = __m.audio;
+const { NAME, SLUG, drawWordmark } = __m.brand;
 const CFG = Object.assign(
   { server: '', brand: 'המשחק של עמך ישראל', publisher: '', joinUrl: '', shareUrl: '', maps: 'maps/' },
   globalThis.CHAIN_CONFIG || {},
@@ -3323,8 +3365,7 @@ function cardCanvas() {
   g.textAlign = 'center';
   g.direction = 'ltr';
   g.fillStyle = INK;
-  g.font = '900 124px system-ui, sans-serif';
-  g.fillText('Ch-ch-chains', 540, 210);
+  drawWordmark(g, 540, 210, 124, { maxWidth: 980, ink: INK });
   g.direction = 'rtl';
   if (CFG.brand) {
     g.font = '800 46px system-ui, sans-serif';
@@ -3374,13 +3415,13 @@ function cardCanvas() {
 }
 if (statsEl) globalThis.__chainCard = () => cardCanvas().toDataURL('image/png'); // for checking the card while tuning
 async function share() {
-  const text = `הבאתי ${game.best.maxScore.toLocaleString('he-IL')} אנשים לשרשרת ב-Ch-ch-chains${
+  const text = `הבאתי ${game.best.maxScore.toLocaleString('he-IL')} אנשים לשרשרת ב-${NAME}${
     game.best.hands ? ` והחזקתי ידיים עם ${game.best.hands}` : ''
   } 🔗 ביחד אנחנו שרשרת – נראה אתכם:`;
   const url = shareUrl();
   try {
     const blob = await new Promise((res) => cardCanvas().toBlob(res, 'image/png'));
-    const file = blob ? new File([blob], 'chchchains.png', { type: 'image/png' }) : null;
+    const file = blob ? new File([blob], `${SLUG}.png`, { type: 'image/png' }) : null;
     if (file && navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], text: `${text} ${url}` });
       return;

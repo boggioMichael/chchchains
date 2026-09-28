@@ -1,4 +1,4 @@
-# Ch-ch-chains 🔗 המשחק של עמך ישראל
+# Ch-ch-chain-ges 🔗 המשחק של עמך ישראל
 
 משחק רשת לטלפון: שרשראות אנושיות ברחובות האמיתיים של תל אביב, ירושלים וחיפה. אוספים אנשים, נותנים יד ומתארכים.
 **לבד אתה חזק – ביחד אנחנו שרשרת.**
@@ -102,6 +102,6 @@ node server.mjs     # http://localhost:3000
 
 ---
 
-השם הוא מחווה לגמגום המפורסם בשיר ״Changes״ של דייוויד בואי.
+השם: הגמגום המפורסם ״Ch-ch-changes״ מהשיר של דייוויד בואי, עם שרשרת (chain) באמצע.
 
 English: a free, open-source (MIT) multiplayer phone game. Human chains walk the real streets of Tel Aviv, Jerusalem and Haifa (OpenStreetMap, SRTM contours): pick up people, give a hand to link chains, grow together. Zero-dependency Node server with a hand-written WebSocket layer, delta-compressed snapshots and client-side interpolation; the same simulation runs in the browser for offline play with labelled bots.

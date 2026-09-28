@@ -1,4 +1,4 @@
-// Ch-ch-chains — music and sound, synthesised with Web Audio (no audio files). An original bouncy synth-pop
+// Ch-ch-chain-ges — music and sound, synthesised with Web Audio (no audio files). An original bouncy synth-pop
 // loop in D minor at 116 BPM whose layers follow the game: calm in the menus; drums and arpeggios while you play;
 // the lead melody once your chain grows; extra hi-hats while you run; bells when you hold hands.
 // Browsers only allow sound after a tap, so nothing plays until unlock() is called from one.

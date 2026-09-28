@@ -1,4 +1,4 @@
-# Render Blueprint: one click creates both parts of Ch-ch-chains on free plans.
+# Render Blueprint: one click creates both parts of Ch-ch-chain-ges on free plans.
 #   chchchains          the game page — a static site on Render's CDN: loads instantly and never sleeps
 #   chchchains-server   the multiplayer server — a free web service that sleeps after 15 quiet minutes; meanwhile
 #                       the page lets people play with bots and wakes it (about a minute)

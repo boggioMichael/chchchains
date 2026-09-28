@@ -1,14 +1,14 @@
 {
-  "name": "Ch-ch-chains – המשחק של עמך ישראל",
-  "short_name": "Ch-ch-chains",
+  "name": "Ch-ch-chain-ges – המשחק של עמך ישראל",
+  "short_name": "Ch-ch-chain-ges",
   "description": "משחק רשת בטלפון ברחובות האמיתיים של תל אביב, ירושלים וחיפה: אוספים אנשים, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.",
   "lang": "he",
   "dir": "rtl",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "background_color": "#080c20",
-  "theme_color": "#080c20",
+  "background_color": "#f3efe6",
+  "theme_color": "#f3efe6",
   "icons": [
     {
       "src": "icon-192.png",

@@ -1,4 +1,4 @@
-// Ch-ch-chains — the people. Flat paper-doll figures with a white cut-out edge: in a chain they reach out to hold
+// Ch-ch-chain-ges — the people. Flat paper-doll figures with a white cut-out edge: in a chain they reach out to hold
 // hands; on the street they stand with their arms down. Each colour and pose is drawn once and reused.
 
 export const FIG = {

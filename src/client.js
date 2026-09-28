@@ -1,4 +1,4 @@
-// Ch-ch-chains — the browser client: the city map, the human chains, touch/mouse/keyboard input, screens and
+// Ch-ch-chain-ges — the browser client: the city map, the human chains, touch/mouse/keyboard input, screens and
 // sharing. Offline play simulates the world here with labelled bots; online play (net.js) draws the server's room.
 import { World, C, COLORS, radiusFor, scoreOf, randomName, botName } from './sim.js';
 import { connectOnline } from './net.js';
@@ -6,6 +6,7 @@ import { loadCity, loadCityIndex, MAP_STYLE } from './map.js';
 import { streetSpawner } from './streets.js';
 import { figure, drawFlag, FIG } from './people.js';
 import { createAudio } from './audio.js';
+import { NAME, SLUG, drawWordmark } from './brand.js';
 
 const CFG = Object.assign(
   { server: '', brand: 'המשחק של עמך ישראל', publisher: '', joinUrl: '', shareUrl: '', maps: 'maps/' },
@@ -920,8 +921,7 @@ function cardCanvas() {
   g.textAlign = 'center';
   g.direction = 'ltr';
   g.fillStyle = INK;
-  g.font = '900 124px system-ui, sans-serif';
-  g.fillText('Ch-ch-chains', 540, 210);
+  drawWordmark(g, 540, 210, 124, { maxWidth: 980, ink: INK });
   g.direction = 'rtl';
   if (CFG.brand) {
     g.font = '800 46px system-ui, sans-serif';
@@ -971,13 +971,13 @@ function cardCanvas() {
 }
 if (statsEl) globalThis.__chainCard = () => cardCanvas().toDataURL('image/png'); // for checking the card while tuning
 async function share() {
-  const text = `הבאתי ${game.best.maxScore.toLocaleString('he-IL')} אנשים לשרשרת ב-Ch-ch-chains${
+  const text = `הבאתי ${game.best.maxScore.toLocaleString('he-IL')} אנשים לשרשרת ב-${NAME}${
     game.best.hands ? ` והחזקתי ידיים עם ${game.best.hands}` : ''
   } 🔗 ביחד אנחנו שרשרת – נראה אתכם:`;
   const url = shareUrl();
   try {
     const blob = await new Promise((res) => cardCanvas().toBlob(res, 'image/png'));
-    const file = blob ? new File([blob], 'chchchains.png', { type: 'image/png' }) : null;
+    const file = blob ? new File([blob], `${SLUG}.png`, { type: 'image/png' }) : null;
     if (file && navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], text: `${text} ${url}` });
       return;

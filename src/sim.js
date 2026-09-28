@@ -1,4 +1,4 @@
-// Ch-ch-chains — the world simulation. Pure logic with no DOM, so the same code runs in the browser (solo play with
+// Ch-ch-chain-ges — the world simulation. Pure logic with no DOM, so the same code runs in the browser (solo play with
 // labelled bots) and on the server (authoritative multiplayer rooms).
 
 export const C = {

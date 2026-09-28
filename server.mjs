@@ -1,4 +1,4 @@
-// Ch-ch-chains — multiplayer game server. Zero dependencies: Node's http + a small RFC 6455 WebSocket implementation.
+// Ch-ch-chain-ges — multiplayer game server. Zero dependencies: Node's http + a small RFC 6455 WebSocket implementation.
 // Serves the game page and runs authoritative rooms (the same simulation as the browser), each topped up with
 // labelled bots while few people are playing. No accounts, cookies or stored personal data: IP addresses are used
 // only in memory for connection limits and are never logged.
