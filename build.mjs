@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const ROOT = new URL('.', import.meta.url).pathname;
-const MODULES = ['sim', 'protocol', 'net', 'client']; // dependency order
+const MODULES = ['sim', 'streets', 'protocol', 'net', 'map', 'people', 'client']; // dependency order
 
 function bundle() {
   const parts = ['(() => {', "'use strict';", 'const __m = {};'];

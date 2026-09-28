@@ -1,14 +1,18 @@
-// Ch-ch-chains — the browser client: rendering, touch/mouse/keyboard input, screens and sharing.
-// Solo mode simulates the world locally with labelled bots; online mode (net.js) swaps in the server's world.
-import { World, C, COLORS, radiusFor, scoreOf, randomName, botName, angleDiff } from './sim.js';
+// Ch-ch-chains — the browser client: the city map, the human chains, touch/mouse/keyboard input, screens and
+// sharing. Offline play simulates the world here with labelled bots; online play (net.js) draws the server's room.
+import { World, C, COLORS, radiusFor, scoreOf, randomName, botName } from './sim.js';
 import { connectOnline } from './net.js';
+import { loadCity, loadCityIndex, MAP_STYLE } from './map.js';
+import { streetSpawner } from './streets.js';
+import { figure, drawFlag, FIG } from './people.js';
 
 const CFG = Object.assign(
-  { server: '', brand: 'המשחק של עמך ישראל', publisher: '', joinUrl: '', shareUrl: '' },
+  { server: '', brand: 'המשחק של עמך ישראל', publisher: '', joinUrl: '', shareUrl: '', maps: 'maps/' },
   globalThis.CHAIN_CONFIG || {},
 );
 const BOTS = 20;
 const TAU = Math.PI * 2;
+const INK = '#23201b';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('game');
@@ -35,59 +39,6 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
-// ------------------------------------------------------------------------------------------------ sprites
-const sprites = new Map();
-function hexToRgb(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-/** A glowing bead (kind 'bead' | 'bead2' | 'spark' | 'halo') pre-rendered once per colour. */
-function sprite(color, kind) {
-  const key = color + kind;
-  let s = sprites.get(key);
-  if (s) return s;
-  const size = 96;
-  s = document.createElement('canvas');
-  s.width = s.height = size;
-  const g = s.getContext('2d');
-  const [r, gg, b] = hexToRgb(color);
-  const c = size / 2;
-  if (kind === 'halo') {
-    const grad = g.createRadialGradient(c, c, 0, c, c, c);
-    grad.addColorStop(0, `rgba(${r},${gg},${b},0.55)`);
-    grad.addColorStop(0.45, `rgba(${r},${gg},${b},0.18)`);
-    grad.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-    g.fillStyle = grad;
-    g.fillRect(0, 0, size, size);
-  } else if (kind === 'spark') {
-    const grad = g.createRadialGradient(c, c, 0, c, c, c);
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.18, `rgba(${r},${gg},${b},1)`);
-    grad.addColorStop(0.4, `rgba(${r},${gg},${b},0.35)`);
-    grad.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-    g.fillStyle = grad;
-    g.fillRect(0, 0, size, size);
-  } else {
-    // Bead: soft glow, solid body, bright highlight. bead2 is a touch lighter so the chain reads as links.
-    const glow = g.createRadialGradient(c, c, c * 0.3, c, c, c);
-    glow.addColorStop(0, `rgba(${r},${gg},${b},0.5)`);
-    glow.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-    g.fillStyle = glow;
-    g.fillRect(0, 0, size, size);
-    const lift = kind === 'bead2' ? 40 : 0;
-    const body = g.createRadialGradient(c - c * 0.18, c - c * 0.2, c * 0.05, c, c, c * 0.52);
-    body.addColorStop(0, `rgb(${Math.min(255, r + 90)},${Math.min(255, gg + 90)},${Math.min(255, b + 90)})`);
-    body.addColorStop(0.55, `rgb(${Math.min(255, r + lift)},${Math.min(255, gg + lift)},${Math.min(255, b + lift)})`);
-    body.addColorStop(1, `rgb(${Math.round(r * 0.55)},${Math.round(gg * 0.55)},${Math.round(b * 0.55)})`);
-    g.fillStyle = body;
-    g.beginPath();
-    g.arc(c, c, c * 0.5, 0, TAU);
-    g.fill();
-  }
-  sprites.set(key, s);
-  return s;
-}
-
 // ------------------------------------------------------------------------------------------------ state
 const game = {
   mode: 'solo', // 'solo' | 'online'
@@ -98,7 +49,6 @@ const game = {
   name: loadName(),
   best: { rank: 99, maxScore: 0, hands: 0, born: 0 },
   net: null,
-  online: { players: 0, bots: 0, collectedToday: 0 },
   deathInfo: null,
   hintStage: 0,
   refusedAt: new Map(),
@@ -107,6 +57,7 @@ const game = {
   joinTimer: 0,
   idleWorld: null,
   toldOnline: false,
+  preview: null,
 };
 const cam = { x: 0, y: 0, zoom: 1 };
 const input = { angle: 0, boost: false, pointerId: null, touches: 0 };
@@ -133,9 +84,46 @@ function me() {
   return game.world?.snakes.get(game.meId) || null;
 }
 
+// ------------------------------------------------------------------------------------------------ city maps
+const maps = { cities: [], loaded: new Map(), soloCity: '' };
+/** Resolves to the CityMap for `id` (loading it once), or null when it cannot be loaded. */
+function cityMap(id) {
+  if (!id) return Promise.resolve(null);
+  if (!maps.loaded.has(id)) {
+    maps.loaded.set(
+      id,
+      loadCity(id, CFG.maps).then(
+        (m) => ((maps.loaded.get(id).value = m), m),
+        () => null,
+      ),
+    );
+  }
+  return maps.loaded.get(id);
+}
+/** The map for a world, if it has finished loading. */
+function mapFor(w) {
+  const p = w && maps.loaded.get(w.city);
+  return p?.value ?? null;
+}
+const cityName = (id) => maps.cities.find((c) => c.id === id)?.he ?? '';
+/** Offline play and the start screen use the city of the hour. */
+function hourCity() {
+  if (!maps.cities.length) return '';
+  return maps.cities[Math.floor(Date.now() / 3_600_000) % maps.cities.length].id;
+}
+function newWorld(map, opts = {}) {
+  const w = map
+    ? new World({ arenaRadius: map.R, sparkTarget: opts.sparkTarget ?? 900, spawnPoint: streetSpawner(map.data.roads, map.R) })
+    : new World({ sparkTarget: opts.sparkTarget });
+  w.city = map?.id ?? '';
+  return w;
+}
+
 // ------------------------------------------------------------------------------------------------ flow
-function startSolo() {
-  const w = new World();
+async function startSolo() {
+  // The map is usually loaded by now; wait a moment if not, then play either way.
+  const map = await Promise.race([cityMap(maps.soloCity || hourCity()), new Promise((r) => setTimeout(() => r(null), 2500))]);
+  const w = newWorld(map);
   for (let i = 0; i < BOTS; i++) w.addSnake({ bot: true, name: botName(), mass: 12 + Math.random() * 60 });
   // Let the bots settle so the world is alive when the player arrives.
   for (let i = 0; i < 90; i++) {
@@ -157,11 +145,14 @@ function beginRound(s) {
   game.deathInfo = null;
   game.handIds = new Set();
   game.refusedAt.clear();
+  game.lastColor = s.color;
   cam.x = s.x;
   cam.y = s.y;
   show('hud');
   hide('start');
   hide('over');
+  const city = cityName(game.world.city);
+  if (city) toast(`${city} · אוספים אנשים ברחובות`, 2600);
   if (game.hintStage === 0) hint('גררו את האצבע לכיוון שרוצים ללכת', 5000);
 }
 
@@ -263,7 +254,6 @@ canvas.addEventListener('pointerdown', (e) => {
   input.pointerId = e.pointerId;
   setAngleFromPoint(e.clientX, e.clientY);
   canvas.setPointerCapture?.(e.pointerId);
-  if (e.pointerType === 'mouse' && e.button === 0 && e.detail > 0) input.mouseBoost = false;
 });
 canvas.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'mouse' || e.pointerId === input.pointerId) setAngleFromPoint(e.clientX, e.clientY);
@@ -356,11 +346,15 @@ function nameOf(w, id) {
   const n = w.names?.get(id);
   return n ? (n.bot ? `🤖 ${n.name}` : n.name) : '';
 }
+/** How much of the city fits across the screen, in metres, for a chain of radius r. */
+function viewSpan(r) {
+  return Math.min(1400, 420 + r * 18);
+}
 /** Half the visible width and height in world units (the server sends what falls inside, plus a margin). */
 function viewExtents() {
   const s = me();
   const r = s ? radiusFor(s.mass) : 14;
-  const target = Math.min(W, H) / Math.min(1400, 520 + r * 18);
+  const target = Math.min(W, H) / viewSpan(r);
   const zoom = Math.max(0.05, Math.min(cam.zoom || target, target));
   return { hw: W / 2 / zoom, hh: H / 2 / zoom };
 }
@@ -457,8 +451,7 @@ function updateCamera(dt) {
     cam.y += (target.y - cam.y) * k;
   }
   const r = s ? radiusFor(s.mass) : 14;
-  const view = Math.min(1400, 520 + r * 18);
-  const zoom = Math.min(W, H) / view;
+  const zoom = Math.min(W, H) / viewSpan(r);
   cam.zoom += (zoom - cam.zoom) * (1 - Math.exp(-dt * 2));
 }
 
@@ -467,31 +460,41 @@ function render(t) {
   const w = game.world;
   const z = cam.zoom;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  drawBackground(t, w.R);
-  const vx0 = cam.x - W / 2 / z - 60;
-  const vx1 = cam.x + W / 2 / z + 60;
-  const vy0 = cam.y - H / 2 / z - 60;
-  const vy1 = cam.y + H / 2 / z + 60;
+  const map = mapFor(w);
+  if (map) map.draw(ctx, cam.x, cam.y, z, W, H, DPR);
+  else drawPlainGround();
+  drawArena(w.R);
+  if (map) map.drawLabels(ctx, cam.x, cam.y, z, W, H, DPR);
+  const vx0 = cam.x - W / 2 / z - 80;
+  const vx1 = cam.x + W / 2 / z + 80;
+  const vy0 = cam.y - H / 2 / z - 80;
+  const vy1 = cam.y + H / 2 / z + 140;
   const sx = (x) => (x - cam.x) * z + W / 2;
   const sy = (y) => (y - cam.y) * z + H / 2;
 
-  // Sparks
+  // People on the street, waiting to join a chain.
   for (const sp of w.sparks.values()) {
     if (sp.x < vx0 || sp.x > vx1 || sp.y < vy0 || sp.y > vy1) continue;
-    const pulse = 1 + 0.18 * Math.sin(t * 3 + sp.id);
-    const size = sp.r * 2 * 2.6 * pulse * z;
+    const hp = sp.r * (sp.ttl ? 4.4 : 4.2) * z;
     let alpha = 1;
     if (sp.ttl) {
       const left = sp.ttl - (w.time - sp.born);
       if (left < 5) alpha = Math.max(0, left / 5);
     }
-    ctx.globalAlpha = alpha;
-    ctx.drawImage(sprite(sp.color, 'spark'), sx(sp.x) - size / 2, sy(sp.y) - size / 2, size, size);
+    if (hp < 5) {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = sp.color;
+      ctx.fillRect(sx(sp.x) - 1.2, sy(sp.y) - 2.5, 2.4, 5);
+      continue;
+    }
+    const img = figure(sp.color, 'idle', 0);
+    const k = hp / FIG.h;
+    ctx.globalAlpha = sp.ttl ? alpha * 0.9 : alpha;
+    ctx.drawImage(img, sx(sp.x) - (FIG.w * k) / 2, sy(sp.y) - FIG.feet * k, FIG.w * k, FIG.h * k);
   }
   ctx.globalAlpha = 1;
 
-  // Team threads under the chains
-  const my = me();
+  // Teammates: a dashed line between leaders.
   for (const team of w.teams.values()) {
     const heads = [...team.members].map((id) => w.snakes.get(id)).filter((s) => s?.alive);
     for (let i = 0; i < heads.length; i++) {
@@ -500,157 +503,155 @@ function render(t) {
         const b = heads[j];
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (d > C.teamBonusRange * 1.6) continue;
-        const close = d < C.teamBonusRange;
         ctx.save();
-        ctx.lineWidth = Math.max(1.5, 3 * z);
-        ctx.strokeStyle = close ? 'rgba(255,214,107,0.85)' : 'rgba(255,214,107,0.3)';
-        ctx.setLineDash([10 * z, 8 * z]);
-        ctx.lineDashOffset = -t * 40;
+        ctx.lineWidth = Math.max(1.5, 2.2 * z);
+        ctx.strokeStyle = d < C.teamBonusRange ? 'rgba(176, 124, 10, 0.85)' : 'rgba(176, 124, 10, 0.3)';
+        ctx.setLineDash([7, 6]);
+        ctx.lineDashOffset = -t * 30;
         ctx.beginPath();
-        const mx = (a.x + b.x) / 2 + (b.y - a.y) * 0.15;
-        const myy = (a.y + b.y) / 2 - (b.x - a.x) * 0.15;
         ctx.moveTo(sx(a.x), sy(a.y));
-        ctx.quadraticCurveTo(sx(mx), sy(myy), sx(b.x), sy(b.y));
+        ctx.quadraticCurveTo(sx((a.x + b.x) / 2 + (b.y - a.y) * 0.15), sy((a.y + b.y) / 2 - (b.x - a.x) * 0.15), sx(b.x), sy(b.y));
         ctx.stroke();
         ctx.restore();
       }
     }
   }
 
-  // Chains: smaller first, the player on top.
-  const list = [...w.snakes.values()].filter((s) => s.alive);
-  list.sort((a, b) => (a.id === game.meId ? 1 : b.id === game.meId ? -1 : a.mass - b.mass));
-  for (const s of list) drawSnake(s, t, sx, sy, z, vx0, vx1, vy0, vy1);
+  // Chains: hands lines first, then every person of every chain from back to front.
+  const figs = [];
+  const chains = [];
+  for (const s of w.snakes.values()) {
+    if (!s.alive) continue;
+    const r = radiusFor(s.mass);
+    const h = r * 3.2; // a person's height in metres
+    const k = Math.max(2, Math.round(r * 0.22)); // path points between people
+    const color = COLORS[s.color % COLORS.length];
+    const pts = [s.x, s.y];
+    for (let i = k; i < s.px.length; i += k) pts.push(s.px[i], s.py[i]);
+    let visible = false;
+    for (let i = 0; i < pts.length && !visible; i += 2) {
+      visible = pts[i] > vx0 && pts[i] < vx1 && pts[i + 1] > vy0 && pts[i + 1] < vy1;
+    }
+    if (!visible) continue;
+    chains.push({ s, h, pts, color });
+    const hp = h * z;
+    const rate = s.boost && s.mass > C.minBoostMass ? 9 : 5; // steps per second
+    for (let i = 0; i < pts.length; i += 2) {
+      const x = pts[i];
+      const y = pts[i + 1];
+      if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
+      const phase = t * rate + i * 0.25;
+      figs.push({ x, y, hp, color, step: Math.floor(phase) % 2, bob: Math.abs(Math.sin(phase * Math.PI)), lead: i === 0, s });
+    }
+  }
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const { h, pts, color } of chains) {
+    const hp = h * z;
+    const drop = ((FIG.hand - FIG.feet) / FIG.h) * hp; // hands are this far above the feet
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(2.5, hp * 0.1);
+    ctx.beginPath();
+    for (let i = 0; i < pts.length; i += 2) ctx[i ? 'lineTo' : 'moveTo'](sx(pts[i]), sy(pts[i + 1]) + drop);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.5, hp * 0.065);
+    ctx.stroke();
+  }
+  // Shadows, then people sorted by how far down the screen they stand.
+  ctx.fillStyle = 'rgba(70, 55, 30, 0.14)';
+  for (const f of figs) {
+    ctx.beginPath();
+    ctx.ellipse(sx(f.x), sy(f.y), f.hp * 0.2, f.hp * 0.06, 0, 0, TAU);
+    ctx.fill();
+  }
+  figs.sort((a, b) => a.y - b.y);
+  for (const f of figs) {
+    const k = f.hp / FIG.h;
+    const x = sx(f.x);
+    const y = sy(f.y) - f.bob * f.hp * 0.035;
+    ctx.drawImage(figure(f.color, 'chain', f.step), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k);
+    if (f.lead) {
+      const dir = Math.cos(f.s.a) >= 0 ? 1 : -1;
+      const hand = y - ((FIG.feet - FIG.hand) / FIG.h) * f.hp;
+      const isMe = f.s.id === game.meId;
+      drawFlag(ctx, x + dir * f.hp * 0.26, hand, f.hp * 1.05, f.color, dir, t + f.s.id, isMe);
+    }
+  }
 
-  // Name tags and hand offers
+  // Names above the other leaders, and hands being offered.
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  for (const s of list) {
-    if (s.x < vx0 || s.x > vx1 || s.y < vy0 || s.y > vy1) continue;
-    const r = radiusFor(s.mass) * z;
+  ctx.textBaseline = 'bottom';
+  ctx.lineJoin = 'round';
+  for (const { s, h } of chains) {
+    const hp = h * z;
     const x = sx(s.x);
-    const y = sy(s.y);
+    const y = sy(s.y) - hp * 1.62; // above the leader's flag
     if (s.id !== game.meId) {
-      ctx.font = `600 ${Math.max(11, Math.min(15, 12 * z + 3))}px system-ui, sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.78)';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 4;
-      ctx.fillText(displayName(s), x, y + r + 6);
-      ctx.shadowBlur = 0;
+      ctx.font = '600 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+      ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(displayName(s), x, y - 4);
+      ctx.fillStyle = INK;
+      ctx.fillText(displayName(s), x, y - 4);
     }
     if (s.offer && s.offer.until > w.time && (s.offer.to === game.meId || s.id === game.meId)) {
       const bob = Math.sin(t * 6) * 3;
-      ctx.font = `${Math.round(22 + r * 0.3)}px system-ui, sans-serif`;
-      ctx.textBaseline = 'bottom';
-      ctx.fillText('🤝', x, y - r - 6 + bob);
-      ctx.textBaseline = 'top';
+      ctx.font = '24px system-ui, sans-serif';
+      ctx.fillText('🤝', x, y - 20 + bob);
     }
   }
-  drawEdgeWarning(my, w.R);
+  drawEdgeWarning(me(), w.R);
   drawMinimap(w);
 }
 
-function drawBackground(t, R) {
+function drawPlainGround() {
+  ctx.fillStyle = MAP_STYLE.land;
+  ctx.fillRect(0, 0, W, H);
   const z = cam.zoom;
-  ctx.fillStyle = '#080c20';
-  ctx.fillRect(0, 0, W, H);
-  // Soft vignette glow following the camera
-  const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.75);
-  g.addColorStop(0, 'rgba(40,52,120,0.35)');
-  g.addColorStop(1, 'rgba(8,12,32,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-  // Dot grid (parallax-free, world anchored)
-  const step = 56;
-  const x0 = Math.floor((cam.x - W / 2 / z) / step) * step;
-  const y0 = Math.floor((cam.y - H / 2 / z) / step) * step;
-  ctx.fillStyle = 'rgba(150,170,255,0.13)';
-  const dot = Math.max(1, 1.6 * z);
-  for (let x = x0; x < cam.x + W / 2 / z + step; x += step) {
-    for (let y = y0; y < cam.y + H / 2 / z + step; y += step) {
-      if (x * x + y * y > R * R) continue;
-      ctx.fillRect((x - cam.x) * z + W / 2 - dot / 2, (y - cam.y) * z + H / 2 - dot / 2, dot, dot);
-    }
+  const step = 100;
+  ctx.strokeStyle = 'rgba(140, 120, 90, 0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = Math.floor((cam.x - W / 2 / z) / step) * step; x < cam.x + W / 2 / z; x += step) {
+    ctx.moveTo((x - cam.x) * z + W / 2, 0);
+    ctx.lineTo((x - cam.x) * z + W / 2, H);
   }
-  // Outside the arena: dim red haze; the border glows.
+  for (let y = Math.floor((cam.y - H / 2 / z) / step) * step; y < cam.y + H / 2 / z; y += step) {
+    ctx.moveTo(0, (y - cam.y) * z + H / 2);
+    ctx.lineTo(W, (y - cam.y) * z + H / 2);
+  }
+  ctx.stroke();
+}
+
+function drawArena(R) {
+  const z = cam.zoom;
   const cx = (0 - cam.x) * z + W / 2;
   const cy = (0 - cam.y) * z + H / 2;
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, W, H);
   ctx.arc(cx, cy, R * z, 0, TAU, true);
-  ctx.fillStyle = 'rgba(70,10,30,0.55)';
+  ctx.fillStyle = 'rgba(243, 239, 230, 0.78)';
   ctx.fill('evenodd');
-  ctx.restore();
-  ctx.lineWidth = Math.max(2, 5 * z);
-  ctx.strokeStyle = `rgba(255,80,120,${0.45 + 0.15 * Math.sin(t * 2)})`;
+  ctx.setLineDash([9, 7]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(110, 96, 74, 0.55)';
   ctx.beginPath();
   ctx.arc(cx, cy, R * z, 0, TAU);
   ctx.stroke();
-}
-
-function drawSnake(s, t, sx, sy, z, vx0, vx1, vy0, vy1) {
-  const r = radiusFor(s.mass);
-  const color = COLORS[s.color];
-  const a = sprite(color, 'bead');
-  const b = sprite(color, 'bead2');
-  const size = r * 2 * 1.9 * z;
-  const step = Math.max(1, Math.round((r * 0.42) / C.spacing));
-  const boosting = s.boost && s.mass > C.minBoostMass;
-  if (boosting) {
-    const halo = sprite(color, 'halo');
-    const hs = size * 1.8;
-    for (let i = s.px.length - 1; i >= 0; i -= step * 3) {
-      const x = s.px[i];
-      const y = s.py[i];
-      if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
-      ctx.drawImage(halo, sx(x) - hs / 2, sy(y) - hs / 2, hs, hs);
-    }
-  }
-  const n = s.px.length;
-  for (let i = n - 1; i >= 0; i -= step) {
-    const x = s.px[i];
-    const y = s.py[i];
-    if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
-    const taper = i > n - 8 ? 0.75 + 0.25 * ((n - i) / 8) : 1;
-    const sz = size * taper;
-    ctx.drawImage(Math.floor(i / (step * 3)) % 2 ? b : a, sx(x) - sz / 2, sy(y) - sz / 2, sz, sz);
-  }
-  // Head with eyes
-  const hx = sx(s.x);
-  const hy = sy(s.y);
-  const hsz = size * 1.12;
-  ctx.drawImage(a, hx - hsz / 2, hy - hsz / 2, hsz, hsz);
-  if (s.team) {
-    ctx.lineWidth = Math.max(1.5, 2.5 * z);
-    ctx.strokeStyle = 'rgba(255,214,107,0.9)';
-    ctx.beginPath();
-    ctx.arc(hx, hy, r * z * 1.25, 0, TAU);
-    ctx.stroke();
-  }
-  const eyeOff = r * 0.45 * z;
-  const eyeR = Math.max(2, r * 0.3 * z);
-  const look = s.id === game.meId ? input.angle : s.ta ?? s.a;
-  for (const side of [-1, 1]) {
-    const ex = hx + Math.cos(s.a) * eyeOff * 0.55 + Math.cos(s.a + (side * Math.PI) / 2) * eyeOff;
-    const ey = hy + Math.sin(s.a) * eyeOff * 0.55 + Math.sin(s.a + (side * Math.PI) / 2) * eyeOff;
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(ex, ey, eyeR, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = '#10142c';
-    ctx.beginPath();
-    ctx.arc(ex + Math.cos(look) * eyeR * 0.4, ey + Math.sin(look) * eyeR * 0.4, eyeR * 0.55, 0, TAU);
-    ctx.fill();
-  }
+  ctx.restore();
 }
 
 function drawEdgeWarning(s, R) {
   if (!s || !s.alive) return;
   const d = Math.hypot(s.x, s.y);
-  const near = (d - (R - 500)) / 500;
+  const near = (d - (R - 450)) / 450;
   if (near <= 0) return;
-  ctx.fillStyle = `rgba(255,40,90,${Math.min(0.28, near * 0.28)})`;
+  const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.7);
+  g.addColorStop(0, 'rgba(229, 72, 77, 0)');
+  g.addColorStop(1, `rgba(229, 72, 77, ${Math.min(0.35, near * 0.35)})`);
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 }
 
@@ -661,19 +662,19 @@ function drawMinimap(w) {
   mctx.clearRect(0, 0, m, m);
   const c = m / 2;
   const k = (m / 2 - 3) / w.R;
-  mctx.fillStyle = 'rgba(12,18,48,0.72)';
+  mctx.fillStyle = 'rgba(255, 255, 255, 0.86)';
   mctx.beginPath();
   mctx.arc(c, c, m / 2 - 1, 0, TAU);
   mctx.fill();
-  mctx.strokeStyle = 'rgba(255,80,120,0.6)';
-  mctx.lineWidth = 1.5 * DPR;
+  mctx.strokeStyle = 'rgba(110, 96, 74, 0.45)';
+  mctx.lineWidth = 1.2 * DPR;
   mctx.stroke();
   const my = me();
   for (const s of w.snakes.values()) {
     if (!s.alive) continue;
     const isMe = s.id === game.meId;
     const mate = my && my.team && s.team === my.team && !isMe;
-    mctx.fillStyle = isMe ? '#fff' : mate ? '#ffd66b' : s.bot ? 'rgba(180,190,230,0.45)' : COLORS[s.color];
+    mctx.fillStyle = isMe ? INK : mate ? '#b07c0a' : s.bot ? 'rgba(120, 110, 95, 0.4)' : COLORS[s.color % COLORS.length];
     const rr = (isMe ? 3.2 : mate ? 2.6 : 1.8) * DPR + Math.min(3, s.mass / 150) * DPR;
     mctx.beginPath();
     mctx.arc(c + s.x * k, c + s.y * k, rr, 0, TAU);
@@ -688,56 +689,45 @@ function handsOf(s) {
 function renderIdle(t, dt) {
   // Behind the start screen: the live room when connected (following its leader), else a local preview.
   const remote = game.net?.world;
+  let w = remote;
   if (remote) {
     game.net.tick(dt, input, viewExtents());
     remote.events.length = 0;
-    let lead = remote.snakes.get(remote.focus);
-    if (!lead) for (const s of remote.snakes.values()) if (!lead || s.mass > lead.mass) lead = s;
-    if (game.idleWorld !== remote && lead) {
-      game.idleWorld = remote;
-      cam.x = lead.x;
-      cam.y = lead.y;
+  } else {
+    const map = mapFor({ city: maps.soloCity || hourCity() });
+    if (!game.preview || (map && game.preview.city !== map.id)) {
+      game.preview = newWorld(map, { sparkTarget: 700 });
+      for (let i = 0; i < 12; i++) game.preview.addSnake({ bot: true, name: botName(), mass: 20 + Math.random() * 120 });
     }
-    if (lead) {
-      const k = 1 - Math.exp(-dt * 3);
-      cam.x += (lead.x - cam.x) * k;
-      cam.y += (lead.y - cam.y) * k;
+    w = game.preview;
+    w.step(1 / 60);
+    w.events.length = 0;
+    for (const s of [...w.snakes.values()]) {
+      if (s.alive) continue;
+      w.removeSnake(s.id);
+      w.addSnake({ bot: true, name: botName() });
     }
-    cam.zoom = Math.min(W, H) / 900;
-    const saved = game.world;
-    const savedMe = game.meId;
-    game.world = remote;
-    game.meId = -1;
-    render(t);
-    game.world = saved;
-    game.meId = savedMe;
-    return;
   }
-  if (game.idleWorld !== game.preview) game.idleWorld = null;
-  if (!game.preview) {
-    game.preview = new World({ sparkTarget: 500 });
-    for (let i = 0; i < 12; i++) game.preview.addSnake({ bot: true, name: botName(), mass: 20 + Math.random() * 120 });
+  let lead = w.snakes.get(w.focus);
+  if (!lead) for (const s of w.snakes.values()) if (s.alive && (!lead || s.mass > lead.mass)) lead = s;
+  if (game.idleWorld !== w && lead) {
+    game.idleWorld = w;
+    cam.x = lead.x;
+    cam.y = lead.y;
   }
-  const w = game.preview;
-  w.step(1 / 60);
-  w.events.length = 0;
-  const lead = [...w.snakes.values()].find((s) => s.alive);
   if (lead) {
-    cam.x += (lead.x - cam.x) * 0.02;
-    cam.y += (lead.y - cam.y) * 0.02;
+    const k = 1 - Math.exp(-dt * 2);
+    cam.x += (lead.x - cam.x) * k;
+    cam.y += (lead.y - cam.y) * k;
   }
-  cam.zoom = Math.min(W, H) / 900;
+  cam.zoom = Math.min(W, H) / 820;
   const saved = game.world;
-  game.world = w;
   const savedMe = game.meId;
+  game.world = w;
   game.meId = -1;
   render(t);
   game.world = saved;
   game.meId = savedMe;
-  for (const s of [...w.snakes.values()]) if (!s.alive) {
-    w.removeSnake(s.id);
-    w.addSnake({ bot: true, name: botName() });
-  }
 }
 
 // ------------------------------------------------------------------------------------------------ HUD
@@ -774,7 +764,7 @@ function updateHud() {
     } else btn.hidden = true;
     if (game.hintStage === 0 && now - game.best.born > 6000) {
       game.hintStage = 1;
-      hint('החזיקו ⚡ כדי להאיץ – זה עולה קצת אורך', 4500);
+      hint('החזיקו ⚡ כדי לרוץ – זה עולה קצת אנשים', 4500);
     }
   }
   const lb = $('leaderboard');
@@ -795,11 +785,12 @@ function updateHud() {
       return li;
     }),
   );
+  const city = cityName(w.city);
   if (board) {
-    $('players').textContent = `${people(board.people)} · ${bots(board.bots)}`;
+    $('players').textContent = `${city ? `${city} · ` : ''}${people(board.people)} · ${bots(board.bots)}`;
   } else {
     const n = alive.filter((o) => o.bot).length;
-    $('players').textContent = game.mode === 'online' ? bots(n) : `משחק מקומי · ${bots(n)}`;
+    $('players').textContent = `${city ? `${city} · ` : ''}${game.mode === 'online' ? bots(n) : `מקומי · ${bots(n)}`}`;
   }
 }
 function people(n) {
@@ -817,8 +808,8 @@ let frameCount = 0;
 if (statsEl) {
   statsEl.id = 'stats';
   statsEl.style.cssText =
-    'position:fixed;left:8px;bottom:8px;z-index:9;font:11px/1.35 ui-monospace,monospace;color:#9dff4f;' +
-    'background:rgba(0,0,0,.55);padding:4px 6px;border-radius:6px;pointer-events:none;direction:ltr;white-space:pre';
+    'position:fixed;left:8px;bottom:8px;z-index:9;font:11px/1.35 ui-monospace,monospace;color:#1f5f1f;' +
+    'background:rgba(255,255,255,.8);padding:4px 6px;border-radius:6px;pointer-events:none;direction:ltr;white-space:pre';
   document.body.append(statsEl);
 }
 function updateStats(now) {
@@ -860,62 +851,80 @@ function cardCanvas() {
   c.width = 1080;
   c.height = 1350;
   const g = c.getContext('2d');
-  const bg = g.createLinearGradient(0, 0, 0, 1350);
-  bg.addColorStop(0, '#0b1030');
-  bg.addColorStop(1, '#1b1150');
-  g.fillStyle = bg;
+  g.fillStyle = MAP_STYLE.land;
   g.fillRect(0, 0, 1080, 1350);
-  for (let i = 0; i < 140; i++) {
-    g.fillStyle = `rgba(255,255,255,${Math.random() * 0.5})`;
-    g.fillRect(Math.random() * 1080, Math.random() * 1350, 2, 2);
+  // A faint street grid, like a city map.
+  g.strokeStyle = 'rgba(255,255,255,0.9)';
+  g.lineWidth = 10;
+  for (let i = -2; i < 12; i++) {
+    g.beginPath();
+    g.moveTo(i * 130 - 120, 0);
+    g.lineTo(i * 130 + 260, 1350);
+    g.stroke();
   }
-  const color = COLORS[me()?.color ?? 0];
-  // A chain of beads across the card
-  const bead = sprite(color, 'bead');
-  const bead2 = sprite(color, 'bead2');
-  for (let i = 0; i < 46; i++) {
-    const x = 1000 - i * 21;
-    const y = 700 + Math.sin(i * 0.32) * 110;
-    g.drawImage(i % 6 < 3 ? bead : bead2, x - 44, y - 44, 88, 88);
+  g.lineWidth = 6;
+  for (let j = 0; j < 12; j++) {
+    g.beginPath();
+    g.moveTo(0, j * 125 + 40);
+    g.lineTo(1080, j * 125 - 60);
+    g.stroke();
   }
+  const color = COLORS[me()?.color ?? game.lastColor ?? 0];
   g.textAlign = 'center';
   g.direction = 'ltr';
-  const title = g.createLinearGradient(140, 0, 940, 0);
-  title.addColorStop(0, '#7af0ff');
-  title.addColorStop(0.55, '#ff8fd0');
-  title.addColorStop(1, '#ffd66b');
-  g.fillStyle = title;
-  g.font = '900 118px system-ui, sans-serif';
-  g.fillText('Ch-ch-chains', 540, 200);
+  g.fillStyle = INK;
+  g.font = '900 124px system-ui, sans-serif';
+  g.fillText('Ch-ch-chains', 540, 210);
   g.direction = 'rtl';
   if (CFG.brand) {
-    g.font = '800 44px system-ui, sans-serif';
-    g.fillStyle = '#ffd66b';
-    g.fillText(CFG.brand, 540, 272);
+    g.font = '800 46px system-ui, sans-serif';
+    g.fillStyle = '#0038b8';
+    g.fillText(CFG.brand, 540, 285);
   }
-  g.font = '600 46px system-ui, sans-serif';
-  g.fillStyle = 'rgba(255,255,255,0.8)';
-  g.fillText('הגעתי לאורך', 540, 400);
-  g.font = '900 170px system-ui, sans-serif';
-  g.fillStyle = '#ffd66b';
-  g.fillText(game.best.maxScore.toLocaleString('he-IL'), 540, 560);
   g.font = '600 48px system-ui, sans-serif';
-  g.fillStyle = '#ffffff';
-  const line = game.best.hands > 0 ? `והחזקתי ידיים עם ${game.best.hands} 🤝` : 'נראה אתכם עוברים אותי';
-  g.fillText(line, 540, 960);
-  g.font = '500 38px system-ui, sans-serif';
-  g.fillStyle = 'rgba(255,255,255,0.7)';
-  g.fillText('לבד אתה חזק – ביחד אנחנו שרשרת', 540, 1150);
-  const url = shareUrl().replace(/^https?:\/\//, '');
+  g.fillStyle = INK;
+  g.fillText('הבאתי לשרשרת', 540, 430);
+  g.font = '900 190px system-ui, sans-serif';
+  g.fillStyle = color;
+  g.fillText(game.best.maxScore.toLocaleString('he-IL'), 540, 610);
+  g.font = '700 54px system-ui, sans-serif';
+  g.fillStyle = INK;
+  g.fillText('אנשים', 540, 680);
+  // The chain itself: people holding hands across the card, the leader with a flag.
+  const n = 9;
+  const hp = 150;
+  const k = hp / FIG.h;
+  const pts = [];
+  for (let i = 0; i < n; i++) pts.push([930 - i * 100, 900 + Math.sin(i * 0.7) * 26]);
+  g.lineCap = 'round';
+  g.strokeStyle = color;
+  g.lineWidth = 9;
+  g.beginPath();
+  pts.forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](x, y - ((FIG.feet - FIG.hand) / FIG.h) * hp));
+  g.stroke();
+  pts
+    .slice()
+    .sort((a, b) => a[1] - b[1])
+    .forEach(([x, y]) => g.drawImage(figure(color, 'chain', 0), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k));
+  drawFlag(g, pts[0][0] + hp * 0.26, pts[0][1] - ((FIG.feet - FIG.hand) / FIG.h) * hp, hp * 0.95, color, 1, 0.4);
+  g.font = '600 46px system-ui, sans-serif';
+  g.fillStyle = INK;
+  g.fillText(game.best.hands > 0 ? `והחזקתי ידיים עם ${game.best.hands} 🤝` : 'נראה אתכם עוברים אותי', 540, 1080);
+  g.font = '700 40px system-ui, sans-serif';
+  g.fillStyle = '#0038b8';
+  g.fillText('לבד אתה חזק – ביחד אנחנו שרשרת', 540, 1170);
+  const url = shareUrl().replace(/^https?:\/\//, '').replace(/\/$/, '');
   if (url) {
-    g.font = '700 40px system-ui, sans-serif';
-    g.fillStyle = '#8fe9ff';
-    g.fillText(url, 540, 1230);
+    g.direction = 'ltr';
+    g.font = '700 38px system-ui, sans-serif';
+    g.fillStyle = 'rgba(35,32,27,0.7)';
+    g.fillText(url, 540, 1260);
   }
   return c;
 }
+if (statsEl) globalThis.__chainCard = () => cardCanvas().toDataURL('image/png'); // for checking the card while tuning
 async function share() {
-  const text = `הגעתי לאורך ${game.best.maxScore.toLocaleString('he-IL')} ב-Ch-ch-chains${
+  const text = `הבאתי ${game.best.maxScore.toLocaleString('he-IL')} אנשים לשרשרת ב-Ch-ch-chains${
     game.best.hands ? ` והחזקתי ידיים עם ${game.best.hands}` : ''
   } 🔗 ביחד אנחנו שרשרת – נראה אתכם:`;
   const url = shareUrl();
@@ -944,6 +953,29 @@ async function share() {
 }
 
 // ------------------------------------------------------------------------------------------------ boot
+/** The small human chain above the logo: five people of different colours holding hands. */
+function drawMark() {
+  const c = $('mark');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = Math.round(230 * dpr);
+  c.height = Math.round(70 * dpr);
+  const g = c.getContext('2d');
+  g.scale(dpr, dpr);
+  const hp = 50;
+  const k = hp / FIG.h;
+  const pts = [0, 1, 2, 3, 4].map((i) => [52 + i * 36, 64 - Math.sin((i / 4) * Math.PI) * 5]);
+  const hand = ((FIG.feet - FIG.hand) / FIG.h) * hp;
+  g.lineCap = 'round';
+  g.strokeStyle = INK;
+  g.lineWidth = 2.5;
+  g.beginPath();
+  pts.forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](x, y - hand));
+  g.stroke();
+  pts.forEach(([x, y], i) =>
+    g.drawImage(figure(COLORS[[9, 1, 2, 3, 0][i]], 'chain', i % 2), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k),
+  );
+  drawFlag(g, pts[0][0] - hp * 0.26, pts[0][1] - hand, hp * 0.95, COLORS[9], -1, 0.6);
+}
 function renderName() {
   $('name').textContent = game.name;
 }
@@ -967,10 +999,28 @@ document.addEventListener('visibilitychange', () => {
 });
 renderName();
 resize();
+drawMark();
 requestAnimationFrame((t) => {
   last = t;
   requestAnimationFrame(frame);
 });
+
+// The cities, and this hour's city for offline play and the start screen.
+loadCityIndex(CFG.maps)
+  .then((cities) => {
+    maps.cities = cities;
+    maps.soloCity ||= hourCity();
+    cityMap(maps.soloCity);
+    updateCityLine();
+  })
+  .catch(() => {
+    /* no maps: plain ground */
+  });
+function updateCityLine() {
+  const id = game.net?.world?.city || maps.soloCity;
+  const name = cityName(id);
+  $('city').textContent = name ? `📍 משחקים עכשיו ב${name}` : '';
+}
 
 // Online play when a server is configured (or when this page is served by the game server itself).
 const serverUrl =
@@ -994,6 +1044,14 @@ if (serverUrl) {
         game.toldOnline = true;
         toast('השרת מחובר – מהסיבוב הבא משחקים עם אנשים אמיתיים', 3500);
       }
+    },
+    onWorld(world) {
+      // The room's city: offline rounds follow it too, so everyone sees the same streets.
+      if (world.city) {
+        maps.soloCity = world.city;
+        cityMap(world.city);
+      }
+      updateCityLine();
     },
     onJoined,
     onLost,

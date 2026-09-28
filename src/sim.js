@@ -20,12 +20,13 @@ export const C = {
   sparkCell: 128,
 };
 
-// 12 neon colours that stay distinct on the night background.
+// 12 flat colours for the chains, distinct from each other and from the paper-coloured map.
 export const COLORS = [
-  '#3de0ff', '#ff4fd8', '#9dff4f', '#ffc23d', '#ff6b5e', '#a07bff',
-  '#3dffb5', '#5ea8ff', '#ff8fb1', '#f2ff6b', '#ff9f43', '#7af0ff',
+  '#2f6fed', '#e5484d', '#12a594', '#f59e0b', '#8e4ec6', '#e93d82',
+  '#0891b2', '#46a758', '#f76b15', '#3e63dd', '#ab4aba', '#a18072',
 ];
-export const SPARK_COLORS = ['#ffd66b', '#ffb36b', '#ff8fd0', '#8fe9ff', '#b8ff8f', '#fff2b0'];
+// People standing in the streets, waiting to join a chain: quiet greys.
+export const SPARK_COLORS = ['#8b8478', '#968f83', '#7f786d', '#a09a8e', '#8e8a82', '#9a9184'];
 
 export const NOUNS = ['ניצוץ', 'כוכב', 'זיק', 'שביט', 'פנס', 'נר', 'ברק', 'מגדלור', 'גל', 'לפיד', 'זוהר', 'אור'];
 export const ADJS = ['זריז', 'עקשן', 'אמיץ', 'סקרן', 'נחוש', 'עליז', 'חולמני', 'ערני', 'נדיב', 'שקט', 'מחייך', 'חצוף', 'צנוע', 'שובב'];
@@ -48,9 +49,9 @@ export function radiusFor(mass) {
   return Math.min(34, 9 + 1.7 * Math.sqrt(mass));
 }
 
-/** The number shown to players: grows by 10 per ordinary spark. */
+/** The number shown to players: how many people are in the chain (one per person picked up). */
 export function scoreOf(mass) {
-  return Math.round(mass * 10);
+  return Math.round(mass);
 }
 
 export function angleDiff(from, to) {
@@ -122,6 +123,8 @@ export class World {
   constructor(opts = {}) {
     this.R = opts.arenaRadius ?? C.arenaRadius;
     this.sparkTarget = opts.sparkTarget ?? C.sparkTarget;
+    // Where people turn up (e.g. along a city's streets); without it, anywhere in the arena.
+    this.spawnPoint = opts.spawnPoint ?? null;
     this.snakes = new Map();
     this.sparks = new Map();
     this.teams = new Map();
@@ -158,23 +161,34 @@ export class World {
     this.sparkGrid.remove(s.x, s.y, s);
     this.sparkLog?.removed.push(s.id);
   }
-  spawnNaturalSpark() {
-    const rr = this.R * 0.97 * Math.sqrt(Math.random());
+  /** A random place for people: on the streets when the world has a map, else anywhere inside the arena. */
+  somewhere(reach = 0.97) {
+    if (this.spawnPoint) {
+      for (let k = 0; k < 4; k++) {
+        const p = this.spawnPoint();
+        if (Math.hypot(p.x, p.y) < this.R * reach) return p;
+      }
+    }
+    const rr = this.R * reach * Math.sqrt(Math.random());
     const a = Math.random() * TAU;
+    return { x: Math.cos(a) * rr, y: Math.sin(a) * rr };
+  }
+
+  spawnNaturalSpark() {
     if (Math.random() < 0.08) {
-      // A small constellation: a cluster worth chasing.
-      const cx = Math.cos(a) * rr * 0.9;
-      const cy = Math.sin(a) * rr * 0.9;
+      // A small crowd: worth chasing.
+      const { x: cx, y: cy } = this.somewhere(0.88);
       const n = 6 + Math.floor(Math.random() * 8);
       const color = pick(SPARK_COLORS);
       for (let i = 0; i < n; i++) {
         const ra = Math.random() * TAU;
-        const rd = 12 + Math.random() * 60;
+        const rd = 12 + Math.random() * 50;
         this.addSpark(cx + Math.cos(ra) * rd, cy + Math.sin(ra) * rd, 1, 4.5 + Math.random() * 2, color);
       }
       return;
     }
-    this.addSpark(Math.cos(a) * rr, Math.sin(a) * rr, 1, 4 + Math.random() * 2.5, pick(SPARK_COLORS));
+    const { x, y } = this.somewhere();
+    this.addSpark(x, y, 1, 4 + Math.random() * 2.5, pick(SPARK_COLORS));
   }
 
   // --------------------------------------------------------------------------------------------- snakes
@@ -182,10 +196,7 @@ export class World {
     let best = { x: 0, y: 0 };
     let bestD = -1;
     for (let tries = 0; tries < 14; tries++) {
-      const rr = this.R * 0.72 * Math.sqrt(Math.random());
-      const a = Math.random() * TAU;
-      const x = Math.cos(a) * rr;
-      const y = Math.sin(a) * rr;
+      const { x, y } = this.somewhere(0.72);
       let near = Infinity;
       for (const o of this.snakes.values()) {
         if (!o.alive) continue;
@@ -569,10 +580,9 @@ export class World {
         chasing = bestScore;
       } else {
         if (ai.wx === undefined || this.time > ai.wUntil) {
-          const rr = this.R * 0.6 * Math.sqrt(Math.random());
-          const a = Math.random() * TAU;
-          ai.wx = Math.cos(a) * rr;
-          ai.wy = Math.sin(a) * rr;
+          const p = this.somewhere(0.6);
+          ai.wx = p.x;
+          ai.wy = p.y;
           ai.wUntil = this.time + 3 + Math.random() * 3;
         }
         tx = ai.wx;

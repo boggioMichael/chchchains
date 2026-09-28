@@ -1,16 +1,17 @@
 # Ch-ch-chains 🔗 המשחק של עמך ישראל
 
-משחק רשת לטלפון בסגנון slither.io: אוספים ניצוצות, נותנים יד ומתארכים.
+משחק רשת לטלפון: שרשראות אנושיות ברחובות האמיתיים של תל אביב, ירושלים וחיפה. אוספים אנשים, נותנים יד ומתארכים.
 **לבד אתה חזק – ביחד אנחנו שרשרת.**
 
 ▶️ **לשחק:** https://chchchains.onrender.com
 
 ## איך משחקים
 
-- 👆 גוררים אצבע לכיוון שרוצים ללכת
-- ⚡ מחזיקים כדי להאיץ (זה עולה קצת אורך)
+- 👆 גוררים אצבע לכיוון שרוצים ללכת. השרשרת שלך היא אנשים שמחזיקים ידיים, ובראשם מובילה עם דגל.
+- 🧍 אנשים מסתובבים ברחובות העיר. עוברים לידם והם מצטרפים לשרשרת.
+- ⚡ מחזיקים כדי לרוץ (זה עולה קצת אנשים)
 - 🤝 נותנים יד למי שקרוב: חברים באותה שרשרת עוברים זה דרך זה, ואוספים פי 1.5 כשהם קרובים (עד 4 בשרשרת)
-- נתקלים בשרשרת של מישהו אחר או יוצאים מהמפה? השרשרת נקרעת לניצוצות שכולם יכולים לאסוף
+- נתקלים בשרשרת של מישהו אחר או יוצאים מהמפה? השרשרת נקרעת והאנשים מתפזרים, וכל אחד יכול לאסוף אותם
 
 ## עקרונות
 
@@ -23,11 +24,19 @@
 
 | קובץ | מה יש בו |
 | --- | --- |
-| `src/sim.js` | הסימולציה: תנועה, התנגשויות, ניצוצות, ידיים, בוטים. אותו קוד רץ בדפדפן (משחק עם בוטים) ובשרת |
-| `src/client.js` | ציור, מגע, מסכים, לוח מובילים ושיתוף |
+| `src/sim.js` | הסימולציה: תנועה, התנגשויות, אנשים ברחוב, ידיים, בוטים. אותו קוד רץ בדפדפן (משחק עם בוטים) ובשרת |
+| `src/client.js` | ציור השרשראות, מגע, מסכים, לוח מובילים ושיתוף |
+| `src/map.js`, `src/streets.js` | המפה: רחובות, ים, פארקים, קווי גובה ושמות, מצוירים באריחים; ואיפה אנשים מופיעים (לאורך הרחובות) |
+| `src/people.js` | בובות הנייר: אנשים בשרשרת, אנשים ברחוב, והדגל של המובילה |
+| `tools/map/build.py` | בונה את מפות הערים ב־`docs/maps` מ־OpenStreetMap ומנתוני גובה (רץ ב־GitHub Actions) |
+| `tools/art/` | מצייר את תמונת השיתוף והאייקונים מתוך המפה והדמויות האמיתיות |
 | `src/net.js`, `src/protocol.js` | משחק רשת: השרת שולח 15 תמונות מצב בשנייה; גוף של שרשרת נשלח פעם אחת ואחר כך רק הנקודות החדשות, כך ששחקן מקבל כ־4KB לשנייה. הדפדפן מצייר כעשירית שנייה ״באיחור״ כדי שהתנועה תהיה חלקה |
 | `server.mjs` | שרת Node בלי תלויות: דף המשחק ו־WebSocket, חדרים של עד 40 איש |
 | `build.mjs` | בונה את הכול לקובץ HTML אחד ב־`docs/` |
+
+## ערים
+
+כל חדר משחק הוא עיר: **תל אביב, ירושלים, חיפה**. חדר חדש נפתח בעיר של השעה, ואותה עיר מופיעה גם במשחק עם בוטים. כדי להוסיף עיר: מוסיפים שורה ל־`CITIES` ב־`tools/map/build.py` (מרכז ורדיוס), וה־workflow ‏`maps` בונה את המפה ושומר אותה ב־`docs/maps`.
 
 ## הרצה מקומית
 
@@ -84,8 +93,14 @@ node server.mjs     # http://localhost:3000
 
 אם המשחק מתפרסם רשמית מטעם התנועה, צריך אישור שלה ושורת מפרסם ברורה (`CHAIN_PUBLISHER`), כמו כל חומר תעמולה. כדאי לבדוק את הנוסח עם היועץ המשפטי של הקמפיין.
 
+## רישיונות
+
+- הקוד: MIT (`LICENSE`).
+- מפות הערים ב־`docs/maps`: © OpenStreetMap contributors, ברישיון [ODbL](https://opendatacommons.org/licenses/odbl/). הקרדיט מופיע במשחק עצמו.
+- גבהים וקווי גובה: SRTM (NASA), דרך AWS Terrain Tiles.
+
 ---
 
 השם הוא מחווה לגמגום המפורסם בשיר ״Changes״ של דייוויד בואי.
 
-English: a free, open-source (MIT) multiplayer phone game in the spirit of slither.io. Collect sparks, give a hand to form a chain, grow together. Zero-dependency Node server with a hand-written WebSocket layer, delta-compressed snapshots and client-side interpolation; the same simulation runs in the browser for offline play with labelled bots.
+English: a free, open-source (MIT) multiplayer phone game. Human chains walk the real streets of Tel Aviv, Jerusalem and Haifa (OpenStreetMap, SRTM contours): pick up people, give a hand to link chains, grow together. Zero-dependency Node server with a hand-written WebSocket layer, delta-compressed snapshots and client-side interpolation; the same simulation runs in the browser for offline play with labelled bots.

@@ -1,0 +1,157 @@
+<!doctype html>
+<!-- Draws the link-preview image and the app icons from the real game code and map data.
+     Serve the repository root (python3 -m http.server) and open tools/art/art.html; tools/art/make.mjs screenshots it. -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; background: #ccc; font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; }
+  canvas { display: block; margin: 0 0 20px; }
+</style>
+</head>
+<body>
+<canvas id="og" width="1200" height="630"></canvas>
+<canvas id="icon" width="512" height="512"></canvas>
+<script type="module">
+import { loadCity, MAP_STYLE } from '../../src/map.js';
+import { figure, drawFlag, FIG } from '../../src/people.js';
+import { COLORS } from '../../src/sim.js';
+
+const INK = '#23201b';
+const BLUE = '#0038b8';
+const params = new URLSearchParams(location.search);
+const city = await loadCity(params.get('city') || 'jerusalem', '../../docs/maps/');
+
+function chain(g, pts, color, hp, dir = -1, t = 0.5) {
+  const hand = ((FIG.feet - FIG.hand) / FIG.h) * hp;
+  const k = hp / FIG.h;
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.strokeStyle = '#fff';
+  g.lineWidth = hp * 0.1;
+  g.beginPath();
+  pts.forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](x, y - hand));
+  g.stroke();
+  g.strokeStyle = color;
+  g.lineWidth = hp * 0.065;
+  g.stroke();
+  g.fillStyle = 'rgba(70, 55, 30, 0.14)';
+  for (const [x, y] of pts) {
+    g.beginPath();
+    g.ellipse(x, y, hp * 0.2, hp * 0.06, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  pts
+    .map((p, i) => [...p, i])
+    .sort((a, b) => a[1] - b[1])
+    .forEach(([x, y, i]) => g.drawImage(figure(color, 'chain', i % 2), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k));
+  drawFlag(g, pts[0][0] + dir * hp * 0.26, pts[0][1] - hand, hp * 1.05, color, dir, t);
+}
+function people(g, spots, hp) {
+  const k = hp / FIG.h;
+  for (const [x, y] of spots) g.drawImage(figure('#8b8478', 'idle', 0), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k);
+}
+
+// ------------------------------------------------------------------ link preview, 1200 × 630
+{
+  const c = document.getElementById('og');
+  const g = c.getContext('2d');
+  // Real streets around the centre of the city, a little zoomed in.
+  const zoom = 0.9;
+  city.draw(g, Number(params.get('x') || -250), Number(params.get('y') || 60), zoom, 1200, 630, 1, 999);
+  city.drawLabels(g, Number(params.get('x') || -250), Number(params.get('y') || 60), zoom, 1200, 630, 1);
+  // A soft paper fade on the right, where the title goes.
+  const fade = g.createLinearGradient(420, 0, 760, 0);
+  fade.addColorStop(0, 'rgba(243,239,230,0)');
+  fade.addColorStop(1, 'rgba(243,239,230,0.94)');
+  g.fillStyle = fade;
+  g.fillRect(0, 0, 1200, 630);
+  // Two chains about to hold hands, and people waiting in the street.
+  const a = [];
+  for (let i = 0; i < 8; i++) a.push([120 + i * 44, 300 + Math.sin(i * 0.55) * 26]);
+  const b = [];
+  for (let i = 0; i < 6; i++) b.push([150 + i * 40, 470 + Math.cos(i * 0.6) * 18]);
+  people(g, [[560, 230], [600, 250], [470, 560], [80, 520], [330, 150], [60, 180]], 40);
+  g.save();
+  g.setLineDash([10, 8]);
+  g.strokeStyle = 'rgba(176, 124, 10, 0.85)';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(a[0][0], a[0][1] - 20);
+  g.quadraticCurveTo(a[0][0] - 60, (a[0][1] + b[0][1]) / 2, b[0][0], b[0][1] - 20);
+  g.stroke();
+  g.restore();
+  chain(g, a, COLORS[0], 70, -1, 0.3);
+  chain(g, b, COLORS[1], 60, -1, 1.4);
+  g.textAlign = 'right';
+  g.direction = 'ltr';
+  g.font = '900 104px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+  g.fillStyle = 'rgba(35,32,27,0.3)';
+  const full = 'Ch-ch-chains';
+  const tail = 'chains';
+  const wTail = g.measureText(tail).width;
+  g.fillText('Ch-ch-', 1150 - wTail, 180);
+  g.fillStyle = INK;
+  g.fillText(tail, 1150, 180);
+  g.direction = 'rtl';
+  g.font = '800 44px system-ui, sans-serif';
+  g.fillStyle = BLUE;
+  g.fillText('המשחק של עמך ישראל', 1150, 250);
+  g.font = '600 36px system-ui, sans-serif';
+  g.fillStyle = INK;
+  g.fillText('אוספים אנשים ברחובות', 1150, 330);
+  g.fillText('ונותנים יד', 1150, 378);
+  g.font = '800 36px system-ui, sans-serif';
+  g.fillText('לבד אתה חזק –', 1150, 446);
+  g.fillText('ביחד אנחנו שרשרת', 1150, 494);
+  g.font = '500 26px system-ui, sans-serif';
+  g.fillStyle = 'rgba(35,32,27,0.62)';
+  g.fillText('בלי הרשמה · משחקים באצבע אחת', 1150, 566);
+  g.direction = 'ltr';
+  g.textAlign = 'left';
+  g.font = '12px system-ui, sans-serif';
+  g.fillStyle = 'rgba(35,32,27,0.55)';
+  g.fillText('© OpenStreetMap contributors', 10, 620);
+  void full;
+}
+
+// ------------------------------------------------------------------ app icon, 512 × 512 (safe for round masks)
+{
+  const c = document.getElementById('icon');
+  const g = c.getContext('2d');
+  g.fillStyle = MAP_STYLE.land;
+  g.fillRect(0, 0, 512, 512);
+  g.strokeStyle = '#ffffff';
+  g.lineCap = 'round';
+  g.lineWidth = 26;
+  g.beginPath();
+  g.moveTo(-20, 150);
+  g.lineTo(540, 60);
+  g.moveTo(-20, 470);
+  g.lineTo(540, 380);
+  g.stroke();
+  g.lineWidth = 16;
+  g.beginPath();
+  g.moveTo(150, -20);
+  g.lineTo(210, 540);
+  g.moveTo(390, -20);
+  g.lineTo(430, 540);
+  g.stroke();
+  const pts = [[350, 350], [256, 362], [162, 350]];
+  const hp = 150;
+  const hand = ((FIG.feet - FIG.hand) / FIG.h) * hp;
+  const k = hp / FIG.h;
+  g.strokeStyle = INK;
+  g.lineWidth = 12;
+  g.beginPath();
+  pts.forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](x, y - hand));
+  g.stroke();
+  [COLORS[9], COLORS[1], COLORS[2]].forEach((col, i) =>
+    g.drawImage(figure(col, 'chain', i % 2), pts[i][0] - (FIG.w * k) / 2, pts[i][1] - FIG.feet * k, FIG.w * k, FIG.h * k),
+  );
+  drawFlag(g, pts[0][0] + hp * 0.26, pts[0][1] - hand, hp * 0.95, COLORS[9], 1, 0.5);
+}
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

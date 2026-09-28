@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { World, C, COLORS, SPARK_COLORS, NOUNS, ADJS, PLACES, scoreOf, botName } from './src/sim.js';
+import { streetSpawner } from './src/streets.js';
 import {
   encodeSnapshot,
   FLAG_BOOST,
@@ -93,6 +94,32 @@ function sha256(text) {
 }
 let page = loadPage();
 
+// ------------------------------------------------------------------------------------------------ cities
+// Each room plays in a city (docs/maps, built by tools/map/build.py): people turn up along its real streets.
+// A new room takes the city of the hour, the same one offline players see.
+function loadCities() {
+  try {
+    const index = JSON.parse(readFileSync(new URL('maps/index.json', DOCS), 'utf8'));
+    return index.cities
+      .map((c) => {
+        try {
+          const data = JSON.parse(readFileSync(new URL(`maps/${c.id}.json`, DOCS), 'utf8'));
+          const spawn = streetSpawner(data.roads, data.R);
+          return spawn ? { id: c.id, R: data.R, spawn } : null;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return []; // no maps: rooms are plain circles
+  }
+}
+const CITIES = env.CITIES === 'off' ? [] : loadCities();
+function hourCity() {
+  return CITIES.length ? CITIES[Math.floor(Date.now() / 3_600_000) % CITIES.length] : null;
+}
+
 // ------------------------------------------------------------------------------------------------ names
 const VALID_NAMES = new Set();
 for (const n of NOUNS) {
@@ -122,7 +149,10 @@ function onlineCount() {
 class Room {
   constructor() {
     this.id = randomBytes(3).toString('hex');
-    this.world = new World({ arenaRadius: ARENA, sparkTarget: SPARKS });
+    this.city = hourCity();
+    this.world = this.city
+      ? new World({ arenaRadius: this.city.R, sparkTarget: num(env.SPARK_TARGET, 900), spawnPoint: this.city.spawn })
+      : new World({ arenaRadius: ARENA, sparkTarget: SPARKS });
     this.clients = new Set();
     this.bySnake = new Map(); // snake id → client
     this.emptySince = Date.now();
@@ -141,7 +171,7 @@ class Room {
     this.next = performance.now();
     this.timer = setTimeout(() => this.loop(), 0);
     rooms.add(this);
-    log('room.open', { room: this.id, rooms: rooms.size });
+    log('room.open', { room: this.id, city: this.city?.id ?? '', rooms: rooms.size });
   }
   /** People here right now: playing, between rounds or watching. */
   players() {
@@ -518,7 +548,7 @@ class Client {
     this.sparks.clear();
     this.names.clear();
     this.needFull = true;
-    this.send({ t: 'room', R: this.room.world.R });
+    this.send({ t: 'room', R: this.room.world.R, city: this.room.city?.id ?? '' });
   }
   join(name) {
     if (this.snakeId && this.room?.world.snakes.get(this.snakeId)?.alive) return;
@@ -786,10 +816,12 @@ const server = createServer((req, res) => {
     return;
   }
   const file = path.slice(1);
-  if (Object.hasOwn(STATIC, file)) {
+  const mapFile = /^maps\/[a-z0-9-]+\.(json|jpg)$/.exec(file);
+  if (Object.hasOwn(STATIC, file) || mapFile) {
     const src = new URL(file, DOCS);
     if (existsSync(src)) {
-      res.writeHead(200, { ...COMMON, 'content-type': STATIC[file], 'cache-control': 'public, max-age=3600' });
+      const type = mapFile ? (mapFile[1] === 'json' ? 'application/json' : 'image/jpeg') : STATIC[file];
+      res.writeHead(200, { ...COMMON, 'content-type': type, 'cache-control': 'public, max-age=3600' });
       res.end(req.method === 'HEAD' ? undefined : readFileSync(src));
       return;
     }
@@ -821,7 +853,7 @@ export function reloadPage() {
   page = loadPage();
 }
 /** For tests only. */
-export const _internals = { rooms, clients, metrics, pickRoom, Room, Client, cleanName, VALID_NAMES };
+export const _internals = { rooms, clients, metrics, pickRoom, Room, Client, cleanName, VALID_NAMES, CITIES };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   await start();

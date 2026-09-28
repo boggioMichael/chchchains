@@ -20,6 +20,7 @@ const EXTRAPOLATE = 150; // ms a chain keeps gliding on its own when snapshots a
 export class RemoteWorld {
   constructor(R) {
     this.R = R;
+    this.city = ''; // which city map this room plays on
     this.time = 0; // seconds on the room clock, at the drawn moment
     this.snakes = new Map();
     this.sparks = new Map();
@@ -369,6 +370,7 @@ export function connectOnline(url, hooks = {}) {
         break;
       case 'room':
         net.world = new RemoteWorld(m.R);
+        net.world.city = typeof m.city === 'string' ? m.city : '';
         hooks.onWorld?.(net.world);
         break;
       case 'joined':

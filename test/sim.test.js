@@ -95,7 +95,7 @@ test('teams never grow past four', () => {
 });
 
 test('scores, sizes and generated names', () => {
-  assert.equal(scoreOf(C.startMass), 120);
+  assert.equal(scoreOf(C.startMass), 12);
   assert.ok(radiusFor(10_000) <= 34);
   for (let i = 0; i < 50; i++) {
     const [noun, rest] = randomName().split(' ');
