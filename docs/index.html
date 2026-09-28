@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wlElr0v5dBU30TNQSYkTqmw/i5KtZNzrJGktI/+7aBQ=' 'sha256-5zUgUwz9FwH4uUYoqY7MX7EaY+YUFkPWc2rAMmgmAT0='; style-src 'sha256-vLmOaMk5TmHp0fj2cf3HHOmW6JbUnQBuBeH3+z9ANTE='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wlElr0v5dBU30TNQSYkTqmw/i5KtZNzrJGktI/+7aBQ=' 'sha256-rmm96XNV4gHVGsGlV9iXjKk6vk3qKu4a7cYaIJAlpHc='; style-src 'sha256-vLmOaMk5TmHp0fj2cf3HHOmW6JbUnQBuBeH3+z9ANTE='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -3631,6 +3631,10 @@ function saveProgress(p) {
   }
 }
 
+// Places a game should never send a campaign to hang flags or hold a rally: memorials, cemeteries, holy sites, and
+// places of mourning and protest for the hostages and the fallen.
+const SENSITIVE = /חטופ|נופלים|הנופל|זיכרון|זכרון|יזכור|הנצחה|אנדרטה|מצבה|שכול|קברות|קבר |יד ושם|הר הרצל|שואה|טבח|הכותל|הר הבית|מסגד|כנסיי|בית כנסת|כנסיית/;
+
 /**
  * Chooses the mission's places on the map: named ones first, then by kind, spread apart, inside the arena. Falls
  * back to neighbourhood names, then to any street corner. Returns [{ x, y, name }].
@@ -3638,7 +3642,9 @@ function saveProgress(p) {
 function pickPlaces(map, goal, count, rand = Math.random) {
   const data = map?.data || {};
   const inside = map?.arena?.inside || (() => true);
-  const pois = (data.pois || []).filter(([x, y]) => inside(x, y)).map(([x, y, kind, name]) => ({ x, y, kind, name }));
+  const pois = (data.pois || [])
+    .filter(([x, y, , name]) => inside(x, y) && !SENSITIVE.test(name))
+    .map(([x, y, kind, name]) => ({ x, y, kind, name }));
   const out = [];
   const far = (p) => out.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > 350);
   const take = (p, unique = true) => {

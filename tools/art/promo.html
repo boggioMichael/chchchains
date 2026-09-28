@@ -1,0 +1,294 @@
+<!doctype html>
+<!-- The social posts, drawn from the real game code and maps: an Instagram/Facebook feed post (1080 × 1350), a square
+     post (1080 × 1080) and a story (1080 × 1920). Serve the repository root and open tools/art/promo.html;
+     tools/art/promo.mjs saves them as PNG files. ?publisher=… fills the publisher line. -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; background: #999; font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; }
+  canvas { display: block; margin: 0 0 20px; }
+</style>
+</head>
+<body>
+<canvas id="feed" width="1080" height="1350"></canvas>
+<canvas id="square" width="1080" height="1080"></canvas>
+<canvas id="story" width="1080" height="1920"></canvas>
+<script type="module">
+import { loadCity, MAP_STYLE } from '../../src/map.js';
+import { figure, drawFlag, FIG } from '../../src/people.js';
+import { COLORS } from '../../src/sim.js';
+import { drawWordmark } from '../../src/brand.js';
+import { avatar } from '../../src/avatars.js';
+
+const INK = '#23201b';
+const BLUE = '#0038b8';
+const GOLD = '#b07c0a';
+const params = new URLSearchParams(location.search);
+const URL_TEXT = 'chchchains.onrender.com';
+const PUBLISHER = params.get('publisher') || 'פורסם על ידי: __________';
+const FONT = 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+
+const [ta, jlm, israel] = await Promise.all([loadCity('tel-aviv', '../../docs/maps/'), loadCity('jerusalem', '../../docs/maps/'), loadCity('israel', '../../docs/maps/')]);
+
+/** The real map under a scene: centred on (x, y) in map units, `zoom` pixels per unit. */
+function mapUnder(g, city, x, y, zoom, W, H, labels = true) {
+  city.draw(g, x, y, zoom, W, H, 1, 9999);
+  if (labels) city.drawLabels(g, x, y, zoom, W, H, 1);
+}
+/** A chain of people holding hands (feet at pts, leader first), a flag and the leader's face. */
+function chain(g, pts, color, hp, dir, t, skin) {
+  const hand = ((FIG.feet - FIG.hand) / FIG.h) * hp;
+  const k = hp / FIG.h;
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.strokeStyle = '#fff';
+  g.lineWidth = hp * 0.1;
+  g.beginPath();
+  pts.forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](x, y - hand));
+  g.stroke();
+  g.strokeStyle = color;
+  g.lineWidth = hp * 0.065;
+  g.stroke();
+  g.fillStyle = 'rgba(70, 55, 30, 0.16)';
+  for (const [x, y] of pts) {
+    g.beginPath();
+    g.ellipse(x, y, hp * 0.2, hp * 0.06, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  pts
+    .map((p, i) => [...p, i])
+    .sort((a, b) => a[1] - b[1])
+    .forEach(([x, y, i]) => g.drawImage(figure(color, 'chain', i % 2), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k));
+  const [lx, ly] = pts[0];
+  drawFlag(g, lx + dir * hp * 0.26, ly - hand, hp * 1.05, color, dir, t, true);
+  const face = avatar(skin);
+  if (face) {
+    const size = hp * 0.8;
+    const hy = ly - (FIG.feet - 22) * k - size * 0.12;
+    g.beginPath();
+    g.arc(lx, hy, size * 0.47, 0, Math.PI * 2);
+    g.fillStyle = color;
+    g.fill();
+    g.drawImage(face, lx - size / 2, hy - size / 2, size, size);
+  }
+}
+function crowd(g, spots, hp) {
+  const k = hp / FIG.h;
+  for (const [x, y] of spots) g.drawImage(figure('#8b8478', 'idle', 0), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k);
+}
+/** A path of n people from (x0, y0) heading at angle a, gently curving. */
+function path(x0, y0, a, n, gap, bend = 0.08) {
+  const pts = [];
+  let x = x0;
+  let y = y0;
+  let ang = a;
+  for (let i = 0; i < n; i++) {
+    pts.push([x, y]);
+    x -= Math.cos(ang) * gap;
+    y -= Math.sin(ang) * gap * 0.62;
+    ang += bend;
+  }
+  return pts;
+}
+function handLine(g, a, b) {
+  g.save();
+  g.setLineDash([12, 9]);
+  g.strokeStyle = 'rgba(176, 124, 10, 0.9)';
+  g.lineWidth = 4;
+  g.beginPath();
+  g.moveTo(a[0], a[1] - 40);
+  g.quadraticCurveTo((a[0] + b[0]) / 2 + 60, (a[1] + b[1]) / 2 - 90, b[0], b[1] - 40);
+  g.stroke();
+  g.restore();
+}
+function text(g, str, x, y, size, color = INK, weight = 800, align = 'center') {
+  g.direction = 'rtl';
+  g.textAlign = align;
+  g.font = `${weight} ${size}px ${FONT}`;
+  g.fillStyle = color;
+  g.fillText(str, x, y);
+}
+function paper(g, x, y, w, h, r = 36, alpha = 0.94) {
+  g.save();
+  g.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+  g.shadowColor = 'rgba(35, 32, 27, 0.18)';
+  g.shadowBlur = 30;
+  g.shadowOffsetY = 8;
+  g.beginPath();
+  g.roundRect(x, y, w, h, r);
+  g.fill();
+  g.restore();
+}
+function button(g, label, x, y, w, h) {
+  g.save();
+  g.fillStyle = BLUE;
+  g.shadowColor = 'rgba(0, 56, 184, 0.35)';
+  g.shadowBlur = 26;
+  g.shadowOffsetY = 10;
+  g.beginPath();
+  g.roundRect(x, y, w, h, h / 2);
+  g.fill();
+  g.restore();
+  text(g, label, x + w / 2, y + h * 0.66, h * 0.42, '#fff', 900);
+}
+function footer(g, W, y) {
+  g.direction = 'ltr';
+  g.textAlign = 'center';
+  g.font = `800 40px ${FONT}`;
+  g.fillStyle = INK;
+  g.fillText(URL_TEXT, W / 2, y);
+  text(g, 'בחינם · בטלפון · בלי הרשמה', W / 2, y + 48, 30, 'rgba(35,32,27,0.62)', 600);
+  text(g, PUBLISHER, W / 2, y + 92, 24, 'rgba(35,32,27,0.55)', 600);
+  g.direction = 'ltr';
+  g.textAlign = 'left';
+  g.font = `16px ${FONT}`;
+  g.fillStyle = 'rgba(35,32,27,0.5)';
+  g.fillText('Map © OpenStreetMap contributors', 18, g.canvas.height - 14);
+}
+function fade(g, y0, y1, W, from, to) {
+  const f = g.createLinearGradient(0, y0, 0, y1);
+  f.addColorStop(0, from);
+  f.addColorStop(1, to);
+  g.fillStyle = f;
+  g.fillRect(0, Math.min(y0, y1), W, Math.abs(y1 - y0));
+}
+
+// ------------------------------------------------------------------ feed post, 1080 × 1350
+{
+  const c = document.getElementById('feed');
+  const g = c.getContext('2d');
+  const W = c.width;
+  const H = c.height;
+  // Around Rabin Square and Dizengoff, Tel Aviv.
+  mapUnder(g, ta, -380, 600, 1.35, W, H);
+  fade(g, 0, 600, W, 'rgba(243,239,230,0.97)', 'rgba(243,239,230,0)');
+  fade(g, H - 470, H, W, 'rgba(243,239,230,0)', 'rgba(243,239,230,0.98)');
+  crowd(g, [[180, 700], [230, 730], [880, 680], [930, 710], [110, 930], [520, 700], [470, 660], [990, 960], [640, 910]], 56);
+  const a = path(760, 930, Math.PI - 0.15, 9, 58, -0.05);
+  const b = path(320, 860, 0.25, 7, 56, 0.06);
+  handLine(g, a[0], b[0]);
+  chain(g, b, COLORS[1], 92, 1, 1.2, 'a2');
+  chain(g, a, COLORS[0], 100, -1, 0.3, 'a9');
+  drawWordmark(g, W / 2, 170, 128, { maxWidth: 960, ink: INK });
+  text(g, 'המשחק של עמך ישראל', W / 2, 250, 50, BLUE, 900);
+  text(g, 'אוספים אנשים ברחובות האמיתיים', W / 2, 350, 56, INK, 900);
+  text(g, 'של 55 ערים – ונותנים יד', W / 2, 420, 56, INK, 900);
+  text(g, 'לבד אתה חזק – ביחד אנחנו שרשרת', W / 2, H - 330, 50, BLUE, 900);
+  button(g, 'שחקו עכשיו ›', W / 2 - 250, H - 290, 500, 104);
+  footer(g, W, H - 120);
+}
+
+// ------------------------------------------------------------------ square post, 1080 × 1080
+{
+  const c = document.getElementById('square');
+  const g = c.getContext('2d');
+  const W = c.width;
+  const H = c.height;
+  // The whole country on the left half.
+  const zoom = 0.106;
+  g.fillStyle = MAP_STYLE.land;
+  g.fillRect(0, 0, W, H);
+  const mx = 300; // the map's centre (map units) sits at screen x = 270
+  const my = -90;
+  g.save();
+  g.translate(270 - W / 2, 0);
+  mapUnder(g, israel, mx, my, zoom, W, H, false);
+  g.restore();
+  fade(g, 0, 90, W, 'rgba(243,239,230,1)', 'rgba(243,239,230,0)');
+  fade(g, H - 70, H, W, 'rgba(243,239,230,0)', 'rgba(243,239,230,1)');
+  const fadeX = g.createLinearGradient(420, 0, 600, 0);
+  fadeX.addColorStop(0, 'rgba(243,239,230,0)');
+  fadeX.addColorStop(1, 'rgba(243,239,230,0.97)');
+  g.fillStyle = fadeX;
+  g.fillRect(0, 0, W, H);
+  // Little chains in the big cities.
+  const at = (name) => israel.places.find((p) => p.text.replace(/[–—]/g, '-') === name);
+  const toScreen = (p) => [(p.x - mx) * zoom + 270, (p.y - my) * zoom + H / 2];
+  const spots = [['ירושלים', 1, 'a3'], ['תל אביב-יפו', 0, 'a0'], ['חיפה', 2, 'a7'], ['באר שבע', 3, 'a10'], ['אילת', 4, 'a5']];
+  for (const [name, color, skin] of spots) {
+    const p = at(name);
+    if (!p) continue;
+    const [x, y] = toScreen(p);
+    chain(g, path(x + 20, y + 22, Math.PI, 3, 22, 0), COLORS[color], 40, -1, color, skin);
+    text(g, name, x + 34, y - 36, 26, INK, 800, 'right');
+  }
+  drawWordmark(g, W - 60, 150, 84, { align: 'right', maxWidth: 470, ink: INK });
+  text(g, 'המשחק של עמך ישראל', W - 60, 215, 40, BLUE, 900, 'right');
+  const lines = [
+    ['🗺️ 57 מפות אמיתיות', 330],
+    ['55 ערים, כל הארץ', 385],
+    ['וגבולות ההבטחה', 435],
+    ['🤝 חדר לכל עיר – בלי בוטים', 525],
+    ['🗳️ הדרך לממשלה:', 615],
+    ['12 משימות, 61 מנדטים', 670],
+  ];
+  for (const [t, y] of lines) text(g, t, W - 60, y, t.startsWith('55') || t.startsWith('וג') || t.startsWith('12') ? 38 : 42, INK, t.startsWith('55') || t.startsWith('וג') || t.startsWith('12') ? 600 : 900, 'right');
+  button(g, 'שחקו עכשיו ›', W - 520, 740, 460, 96);
+  g.direction = 'ltr';
+  g.textAlign = 'right';
+  g.font = `800 36px ${FONT}`;
+  g.fillStyle = INK;
+  g.fillText(URL_TEXT, W - 60, 900);
+  text(g, 'בחינם · בטלפון · בלי הרשמה', W - 60, 948, 28, 'rgba(35,32,27,0.62)', 600, 'right');
+  text(g, PUBLISHER, W - 60, 1000, 24, 'rgba(35,32,27,0.55)', 600, 'right');
+  g.direction = 'ltr';
+  g.textAlign = 'left';
+  g.font = `16px ${FONT}`;
+  g.fillStyle = 'rgba(35,32,27,0.5)';
+  g.fillText('© OpenStreetMap contributors · Natural Earth', 18, H - 14);
+}
+
+// ------------------------------------------------------------------ story, 1080 × 1920
+{
+  const c = document.getElementById('story');
+  const g = c.getContext('2d');
+  const W = c.width;
+  const H = c.height;
+  // Jerusalem, the way to the Knesset.
+  const knesset = (jlm.data.pois || []).find((p) => p[3] === 'משכן הכנסת') || [-1930, 264];
+  const cx = knesset[0] + 183;
+  const cy = knesset[1] + 87;
+  const zoom = 1.15;
+  mapUnder(g, jlm, cx, cy, zoom, W, H);
+  fade(g, 0, 700, W, 'rgba(243,239,230,0.98)', 'rgba(243,239,230,0)');
+  fade(g, H - 760, H, W, 'rgba(243,239,230,0)', 'rgba(243,239,230,0.98)');
+  // The mission target: a pulsing ring at the Knesset.
+  const kx = (knesset[0] - cx) * zoom + W / 2;
+  const ky = (knesset[1] - cy) * zoom + H / 2;
+  g.save();
+  g.fillStyle = 'rgba(245, 158, 11, 0.18)';
+  g.strokeStyle = 'rgba(176, 124, 10, 0.95)';
+  g.lineWidth = 6;
+  g.setLineDash([18, 12]);
+  g.beginPath();
+  g.arc(kx, ky, 120, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.restore();
+  g.save();
+  g.lineWidth = 10;
+  g.lineJoin = 'round';
+  g.strokeStyle = 'rgba(255,255,255,0.95)';
+  g.direction = 'rtl';
+  g.textAlign = 'center';
+  g.font = `900 42px ${FONT}`;
+  g.strokeText('⭐ משכן הכנסת', kx, ky - 140);
+  g.restore();
+  text(g, '⭐ משכן הכנסת', kx, ky - 140, 42, '#8a5a00', 900);
+  crowd(g, [[kx + 330, ky + 120], [kx + 370, ky + 150], [kx - 160, ky + 300], [kx + 560, ky + 330], [kx + 600, ky + 360]], 60);
+  chain(g, path(kx + 150, ky + 250, -2.3, 9, 60, 0.06), COLORS[9], 104, -1, 0.8, 'a14');
+  drawWordmark(g, W / 2, 190, 128, { maxWidth: 960, ink: INK });
+  text(g, 'המשחק של עמך ישראל', W / 2, 270, 52, BLUE, 900);
+  paper(g, 90, 330, W - 180, 250, 34);
+  text(g, 'חדש: הדרך לממשלה 🗳️', W / 2, 425, 64, INK, 900);
+  text(g, 'אוספים אנשים, תולים דגלים, מגיעים לכנסת', W / 2, 495, 38, 'rgba(35,32,27,0.75)', 700);
+  text(g, '12 משימות · 61 מנדטים לניצחון', W / 2, 548, 38, BLUE, 900);
+  text(g, 'לבד אתה חזק – ביחד אנחנו שרשרת', W / 2, H - 440, 54, BLUE, 900);
+  button(g, 'שחקו עכשיו ›', W / 2 - 290, H - 395, 580, 120);
+  footer(g, W, H - 210);
+}
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

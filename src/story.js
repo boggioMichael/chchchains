@@ -129,6 +129,10 @@ export function saveProgress(p) {
   }
 }
 
+// Places a game should never send a campaign to hang flags or hold a rally: memorials, cemeteries, holy sites, and
+// places of mourning and protest for the hostages and the fallen.
+const SENSITIVE = /חטופ|נופלים|הנופל|זיכרון|זכרון|יזכור|הנצחה|אנדרטה|מצבה|שכול|קברות|קבר |יד ושם|הר הרצל|שואה|טבח|הכותל|הר הבית|מסגד|כנסיי|בית כנסת|כנסיית/;
+
 /**
  * Chooses the mission's places on the map: named ones first, then by kind, spread apart, inside the arena. Falls
  * back to neighbourhood names, then to any street corner. Returns [{ x, y, name }].
@@ -136,7 +140,9 @@ export function saveProgress(p) {
 export function pickPlaces(map, goal, count, rand = Math.random) {
   const data = map?.data || {};
   const inside = map?.arena?.inside || (() => true);
-  const pois = (data.pois || []).filter(([x, y]) => inside(x, y)).map(([x, y, kind, name]) => ({ x, y, kind, name }));
+  const pois = (data.pois || [])
+    .filter(([x, y, , name]) => inside(x, y) && !SENSITIVE.test(name))
+    .map(([x, y, kind, name]) => ({ x, y, kind, name }));
   const out = [];
   const far = (p) => out.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > 350);
   const take = (p, unique = true) => {
