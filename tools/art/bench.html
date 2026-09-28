@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<script type="module">
+import { loadCity } from '../../src/map.js';
+const out = {};
+for (const id of ['tel-aviv', 'jerusalem', 'haifa']) {
+  const t0 = performance.now();
+  const city = await loadCity(id, '../../docs/maps/');
+  const load = performance.now() - t0;
+  const times = [];
+  for (let i = 0; i < 24; i++) {
+    const tx = (i % 6) - 3, ty = Math.floor(i / 6) - 2;
+    const a = performance.now();
+    city.paintTile(tx, ty, 512 / 1.1, 1.1);
+    times.push(performance.now() - a);
+  }
+  times.sort((a, b) => a - b);
+  out[id] = { loadMs: Math.round(load), tileMedianMs: +times[12].toFixed(1), tileMaxMs: +times[23].toFixed(1), features: city.features.length };
+}
+document.body.dataset.result = JSON.stringify(out);
+</script>

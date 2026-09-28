@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-gXo9IGk5DQuIUWkCK1TQOzU6sBa2VK0J6Tuko5iafT8=' 'sha256-zgrqGG+mQWEkUWAdg4MYrsW9r4DgEt2CCYnxlW60FHU='; style-src 'sha256-DV7w5gIHsfrv/r2LOr0E029GlvkxIdC4VicGTsFV/iY='; img-src 'self' data: blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-gXo9IGk5DQuIUWkCK1TQOzU6sBa2VK0J6Tuko5iafT8=' 'sha256-jauU7Tvf5ZsvhfHfL4XZv4Ei0d4qghFbe5jz8f013so='; style-src 'sha256-DV7w5gIHsfrv/r2LOr0E029GlvkxIdC4VicGTsFV/iY='; img-src 'self' data: blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1601,7 +1601,7 @@ __m.map = (() => {
 
 const TILE_PX = 512; // tile size in device pixels
 const CELL = 256; // spatial index cell, metres
-const MAX_TILES = 48;
+const MAX_TILES = 40;
 
 const MAP_STYLE = {
   land: '#f3efe6',
@@ -1734,9 +1734,10 @@ class CityMap {
   // --------------------------------------------------------------------------------------------- tiles
   /**
    * Draws the map for a camera centred on (cx, cy) at `zoom` CSS pixels per metre into a canvas that already has
-   * the DPR transform. `budget` limits how many new tiles are painted this frame (the rest come next frames).
+   * the DPR transform. New tiles are painted nearest-first for at most `budgetMs` per frame (always at least one);
+   * the rest show the terrain alone until a later frame paints them.
    */
-  draw(ctx, cx, cy, zoom, W, H, dpr, budget = 3) {
+  draw(ctx, cx, cy, zoom, W, H, dpr, budgetMs = 7) {
     const scale = Math.min(2, dpr);
     const devZoom = zoom * scale;
     const level = Math.round(Math.log2(devZoom) * 2) / 2; // half-octave steps; tiles are stretched in between
@@ -1749,26 +1750,32 @@ class CityMap {
     const size = tw * zoom;
     ctx.fillStyle = MAP_STYLE.land;
     ctx.fillRect(0, 0, W, H);
+    const want = [];
     for (let ty = Math.floor(vy0 / tw); ty <= Math.floor(vy1 / tw); ty++) {
       for (let tx = Math.floor(vx0 / tw); tx <= Math.floor(vx1 / tw); tx++) {
-        const key = `${level}:${tx}:${ty}`;
-        let tile = this.tiles.get(key);
-        if (!tile && budget > 0) {
-          budget--;
-          tile = this.paintTile(tx, ty, tw, tz);
-          this.tiles.set(key, tile);
-        }
-        const sx = (tx * tw - cx) * zoom + W / 2;
-        const sy = (ty * tw - cy) * zoom + H / 2;
-        if (tile) {
-          this.tiles.delete(key); // most recently used last
-          this.tiles.set(key, tile);
-          ctx.drawImage(tile, sx, sy, size + 0.5, size + 0.5);
-        } else if (this.terrain) {
-          // Not painted yet: the terrain alone for a frame or two.
-          const k = this.terrain.naturalWidth / (2 * this.E);
-          ctx.drawImage(this.terrain, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
-        }
+        want.push({ tx, ty, d: Math.hypot((tx + 0.5) * tw - cx, (ty + 0.5) * tw - cy) });
+      }
+    }
+    want.sort((a, b) => a.d - b.d);
+    const start = performance.now();
+    let painted = 0;
+    for (const { tx, ty } of want) {
+      const key = `${level}:${tx}:${ty}`;
+      let tile = this.tiles.get(key);
+      if (!tile && (painted === 0 || performance.now() - start < budgetMs)) {
+        tile = this.paintTile(tx, ty, tw, tz);
+        painted++;
+      }
+      const sx = (tx * tw - cx) * zoom + W / 2;
+      const sy = (ty * tw - cy) * zoom + H / 2;
+      if (tile) {
+        this.tiles.delete(key); // most recently used last
+        this.tiles.set(key, tile);
+        ctx.drawImage(tile, sx, sy, size + 0.5, size + 0.5);
+      } else if (this.terrain) {
+        // Not painted yet: the terrain alone for a frame or two.
+        const k = this.terrain.naturalWidth / (2 * this.E);
+        ctx.drawImage(this.terrain, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
       }
     }
     while (this.tiles.size > MAX_TILES) this.tiles.delete(this.tiles.keys().next().value);

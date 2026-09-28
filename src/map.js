@@ -4,7 +4,7 @@
 
 const TILE_PX = 512; // tile size in device pixels
 const CELL = 256; // spatial index cell, metres
-const MAX_TILES = 48;
+const MAX_TILES = 40;
 
 export const MAP_STYLE = {
   land: '#f3efe6',
@@ -137,9 +137,10 @@ export class CityMap {
   // --------------------------------------------------------------------------------------------- tiles
   /**
    * Draws the map for a camera centred on (cx, cy) at `zoom` CSS pixels per metre into a canvas that already has
-   * the DPR transform. `budget` limits how many new tiles are painted this frame (the rest come next frames).
+   * the DPR transform. New tiles are painted nearest-first for at most `budgetMs` per frame (always at least one);
+   * the rest show the terrain alone until a later frame paints them.
    */
-  draw(ctx, cx, cy, zoom, W, H, dpr, budget = 3) {
+  draw(ctx, cx, cy, zoom, W, H, dpr, budgetMs = 7) {
     const scale = Math.min(2, dpr);
     const devZoom = zoom * scale;
     const level = Math.round(Math.log2(devZoom) * 2) / 2; // half-octave steps; tiles are stretched in between
@@ -152,26 +153,32 @@ export class CityMap {
     const size = tw * zoom;
     ctx.fillStyle = MAP_STYLE.land;
     ctx.fillRect(0, 0, W, H);
+    const want = [];
     for (let ty = Math.floor(vy0 / tw); ty <= Math.floor(vy1 / tw); ty++) {
       for (let tx = Math.floor(vx0 / tw); tx <= Math.floor(vx1 / tw); tx++) {
-        const key = `${level}:${tx}:${ty}`;
-        let tile = this.tiles.get(key);
-        if (!tile && budget > 0) {
-          budget--;
-          tile = this.paintTile(tx, ty, tw, tz);
-          this.tiles.set(key, tile);
-        }
-        const sx = (tx * tw - cx) * zoom + W / 2;
-        const sy = (ty * tw - cy) * zoom + H / 2;
-        if (tile) {
-          this.tiles.delete(key); // most recently used last
-          this.tiles.set(key, tile);
-          ctx.drawImage(tile, sx, sy, size + 0.5, size + 0.5);
-        } else if (this.terrain) {
-          // Not painted yet: the terrain alone for a frame or two.
-          const k = this.terrain.naturalWidth / (2 * this.E);
-          ctx.drawImage(this.terrain, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
-        }
+        want.push({ tx, ty, d: Math.hypot((tx + 0.5) * tw - cx, (ty + 0.5) * tw - cy) });
+      }
+    }
+    want.sort((a, b) => a.d - b.d);
+    const start = performance.now();
+    let painted = 0;
+    for (const { tx, ty } of want) {
+      const key = `${level}:${tx}:${ty}`;
+      let tile = this.tiles.get(key);
+      if (!tile && (painted === 0 || performance.now() - start < budgetMs)) {
+        tile = this.paintTile(tx, ty, tw, tz);
+        painted++;
+      }
+      const sx = (tx * tw - cx) * zoom + W / 2;
+      const sy = (ty * tw - cy) * zoom + H / 2;
+      if (tile) {
+        this.tiles.delete(key); // most recently used last
+        this.tiles.set(key, tile);
+        ctx.drawImage(tile, sx, sy, size + 0.5, size + 0.5);
+      } else if (this.terrain) {
+        // Not painted yet: the terrain alone for a frame or two.
+        const k = this.terrain.naturalWidth / (2 * this.E);
+        ctx.drawImage(this.terrain, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
       }
     }
     while (this.tiles.size > MAX_TILES) this.tiles.delete(this.tiles.keys().next().value);
