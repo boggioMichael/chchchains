@@ -44,6 +44,10 @@ def main():
                          'properties': {'highway': 'primary', 'name': 'דרך בדיקה'}})
     features.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': [ll(0, -3000), ll(0, 3000)]},
                      'properties': {'railway': 'light_rail'}})
+    # The coastline runs north to south along x = -1500 with a small bump; walking it, land is on the left (east).
+    coast = [ll(-1500 + (200 if -300 < y < 300 else 0), y) for y in range(-3700, 3701, 100)]
+    features.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': coast},
+                     'properties': {'natural': 'coastline'}})
     park = [ll(500 + 300 * math.cos(a / 10), 900 + 200 * math.sin(a / 10)) for a in range(63)]
     features.append({'type': 'Feature', 'geometry': {'type': 'Polygon', 'coordinates': [park + [park[0]]]},
                      'properties': {'leisure': 'park', 'name': 'גן'}})

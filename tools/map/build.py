@@ -50,6 +50,7 @@ GREEN = {('leisure', 'park'), ('leisure', 'garden'), ('leisure', 'nature_reserve
          ('landuse', 'recreation_ground'), ('landuse', 'forest'), ('landuse', 'meadow'), ('landuse', 'village_green'),
          ('natural', 'wood'), ('natural', 'scrub'), ('landuse', 'cemetery')}
 PLACE_RANK = {'suburb': 0, 'quarter': 1, 'neighbourhood': 2}
+SKIP_PLACES = {'מזרח ירושלים', 'מערב ירושלים'}  # whole regions, not neighbourhoods
 HEBREW = range(0x0590, 0x0600)
 
 
@@ -229,7 +230,7 @@ def osm_features(city, proj):
     run(['osmium', 'extract', '-O', '-b', f'{lon0},{lat0},{lon1},{lat1}', pbf, '-o', base + '.osm.pbf'])
     run([
         'osmium', 'tags-filter', '-O', base + '.osm.pbf',
-        'w/highway', 'w/railway', 'w/waterway', 'nwr/natural=water,beach,wood,scrub', 'nwr/water',
+        'w/highway', 'w/railway', 'w/waterway', 'w/natural=coastline', 'nwr/natural=water,beach,wood,scrub', 'nwr/water',
         'nwr/leisure=park,garden,nature_reserve', 'nwr/landuse=grass,recreation_ground,forest,meadow,village_green,cemetery',
         'n/place=suburb,quarter,neighbourhood',
         '-o', base + '.filtered.osm.pbf',
@@ -286,36 +287,76 @@ def hgt_tile(alat, alon):
 
 
 # ----------------------------------------------------------------------------------------------- city
+def sea_from_coastline(coast, E, cell):
+    """Sea mask on a `cell`-metre grid over [-E, E]² from OSM coastline lines (land on their left, water on their
+    right): the lines become a wall, and the regions on their water side are the sea."""
+    n = int(round(2 * E / cell)) + 1
+    wall = np.zeros((n, n), bool)
+    probes = []
+    for pts in coast:
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            steps = max(1, int(math.hypot(x1 - x0, y1 - y0) / (cell * 0.5)))
+            for k in range(steps + 1):
+                t = k / steps
+                c = int(round((x0 + (x1 - x0) * t + E) / cell))
+                r = int(round((y0 + (y1 - y0) * t + E) / cell))
+                if 0 <= r < n and 0 <= c < n:
+                    wall[r, c] = True
+            L = math.hypot(x1 - x0, y1 - y0)
+            if L > 0:  # points just to the right (water) and left (land); y points south, so right is (-dy, dx)
+                mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+                ox, oy = -(y1 - y0) / L * cell * 2.5, (x1 - x0) / L * cell * 2.5
+                probes.append((mx + ox, my + oy, 1))
+                probes.append((mx - ox, my - oy, -1))
+    wall = ndimage.binary_dilation(wall)
+    regions, count = ndimage.label(~wall)
+    votes = np.zeros(count + 1)
+    for x, y, v in probes:
+        c = int(round((x + E) / cell))
+        r = int(round((y + E) / cell))
+        if 0 <= r < n and 0 <= c < n:
+            votes[regions[r, c]] += v
+    sea = np.isin(regions, np.nonzero(votes > 0)[0]) & (regions > 0)
+    return ndimage.binary_closing(sea | (wall & ndimage.binary_dilation(sea)), iterations=1)
+
+
 def build_city(city, features, elev):
     proj = Projection(city['lat'], city['lon'])
     R = city['R']
     grid, E = elev
     n = grid.shape[0]
     to_world = lambda r, c: (-E + c * GRID, -E + r * GRID)  # noqa: E731  (grid row/col → metres)
+    features = list(features)
 
-    # Sea: low cells connected to the edge of the grid, smoothed, as polygons (drawn with the even-odd rule).
-    low = grid <= 0.5
-    labels, _ = ndimage.label(low)
-    edge = set(np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))) - {0}
-    sea = np.isin(labels, list(edge)) if edge else np.zeros_like(low)
-    sea = ndimage.binary_opening(sea, iterations=2)
-    sea = ndimage.binary_fill_holes(sea) if sea.any() else sea
-    sea_fraction = float(sea.mean())
+    # Sea: from the OSM coastline when the city has one (SRTM is coarse over the water), as smooth polygons drawn
+    # with the even-odd rule; the land mask for contours and the terrain image follows it.
+    coast = []
+    for f in features:
+        if (f.get('properties') or {}).get('natural') == 'coastline':
+            g = f.get('geometry') or {}
+            lines = [g['coordinates']] if g.get('type') == 'LineString' else g.get('coordinates', []) if g.get('type') == 'MultiLineString' else []
+            coast += [[proj.xy(lon, lat) for lon, lat in line] for line in lines]
+    FINE = 5
     sea_rings = []
-    if sea.any():
-        soft = ndimage.gaussian_filter(sea.astype(np.float32), 1.2)
-        padded = np.pad(soft, 1, constant_values=0)
-        for cnt in measure.find_contours(padded, 0.5):
-            pts = [to_world(r - 1, c - 1) for r, c in cnt]
-            pts = simplify(pts, 2.5)
-            if len(pts) >= 4 and ring_area(pts) > 5000:
+    if coast:
+        fine = sea_from_coastline(coast, E, FINE)
+        soft = ndimage.gaussian_filter(fine.astype(np.float32), 0.8)
+        for cnt in measure.find_contours(np.pad(soft, 1, constant_values=0), 0.5):
+            pts = simplify([(-E + (c - 1) * FINE, -E + (r - 1) * FINE) for r, c in cnt], 1.5)
+            if len(pts) >= 4 and ring_area(pts) > 3000:
                 sea_rings.append(flat(pts))
+        sea = ndimage.zoom(fine.astype(np.float32), (n / fine.shape[0], n / fine.shape[1]), order=1)[:n, :n] > 0.5
+    else:
+        sea = np.zeros_like(grid, dtype=bool)
+    sea_fraction = float(sea.mean())
     land = ~sea
 
     # Contours on land, every `step` metres (a "nice" step for the city's relief), from a smoothed surface
     # (SRTM measures roofs and treetops too, so fine detail is noise).
-    smooth = ndimage.gaussian_filter(grid, 2.2)
     rr, cc = np.mgrid[0:n, 0:n]
+    rough = grid[land] if land.any() else grid.ravel()
+    flat_city = float(np.percentile(rough, 99) - np.percentile(rough, 1)) < 120
+    smooth = ndimage.gaussian_filter(grid, 4.0 if flat_city else 2.2)  # flat cities: roofs dominate the noise
     in_arena = np.hypot(-E + cc * GRID, -E + rr * GRID) <= R
     vals = smooth[land & in_arena]
     lo, hi = (float(np.percentile(vals, 1)), float(np.percentile(vals, 99))) if vals.size else (0.0, 1.0)
@@ -325,7 +366,8 @@ def build_city(city, features, elev):
     for h in np.arange(math.ceil(max(lo, 1) / step) * step, hi + step, step):
         for cnt in measure.find_contours(smooth, float(h), mask=land):
             pts = simplify([to_world(r, c) for r, c in cnt], 3.0)
-            if length(pts) >= 120:
+            closed = len(pts) > 2 and math.hypot(pts[0][0] - pts[-1][0], pts[0][1] - pts[-1][1]) < GRID * 2
+            if length(pts) >= (320 if closed else 150):  # drop the little rings SRTM noise makes
                 contours.append([int(round(h)), flat(pts)])
 
     # Terrain image: a gentle elevation tint with hill shading (light from the north-west); the sea is painted
@@ -388,7 +430,7 @@ def build_city(city, features, elev):
         if gtype == 'Point':
             if tags.get('place') in PLACE_RANK:
                 name = tags.get('name:he') or tags.get('name')
-                if hebrew(name):
+                if hebrew(name) and name not in SKIP_PLACES:
                     x, y = proj.xy(*geom['coordinates'])
                     if math.hypot(x, y) <= R + 150:
                         places.append([int(round(x)), int(round(y)), PLACE_RANK[tags['place']], name])
