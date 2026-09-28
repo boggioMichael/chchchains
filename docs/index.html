@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-Vhv+5ggZMH5fejIaKQ9wEaxu2uaT4ci9At5qx/lEgik='; style-src 'sha256-R2isNwkw67sSOuqzWSA1EMCjdoZqhd9Qhy0XF/kE9IU='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-sSA8urXfsMaR0EymLLZSd3Jrv23J+sDxUUghP9FHGhg='; style-src 'sha256-R2isNwkw67sSOuqzWSA1EMCjdoZqhd9Qhy0XF/kE9IU='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -2340,7 +2340,9 @@ __m.map = (() => {
 // the map's centre, plus the playing area's outline) and its terrain picture, and draws them under the game: the
 // static layers are painted once into tiles and reused while the camera moves; labels are drawn on top every frame
 // so they never get cut at a tile edge. A satellite view swaps the terrain for a picture (the map's own, or tiles
-// from a provider set in the config) with the roads and names over it.
+// from a provider set in the config) with the roads and names over it. A city's detail file (buildings, land use,
+// paths, named places with icons: docs/maps/<id>-detail.json) comes a moment after the map and makes it look like
+// a street map.
 const { arenaOf } = __m.arena;
 const TILE_PX = 512; // tile size in device pixels
 const CELL = 256; // spatial index cell, map units
@@ -2355,9 +2357,14 @@ const MAP_STYLE = {
   contour: 'rgba(140, 108, 66, 0.2)',
   contourIndex: 'rgba(140, 108, 66, 0.36)',
   casing: '#e1d9c8',
-  casingMajor: '#d5c9b1',
+  casingMajor: '#e0bf6a',
   road: '#ffffff',
-  roadMajor: '#fffaf0',
+  roadMajor: '#fde9a6',
+  motorway: '#f7c465',
+  casingMotorway: '#dc9a33',
+  building: '#ddd5c6',
+  buildingEdge: '#cbc1ae',
+  path: 'rgba(160, 146, 120, 0.75)',
   rail: '#8d8579',
   label: '#7f7768',
   place: 'rgba(110, 100, 84, 0.62)',
@@ -2368,6 +2375,52 @@ const MAP_STYLE = {
   greenLine: 'rgba(22, 130, 60, 0.75)',
   region: 'rgba(95, 84, 68, 0.3)',
 };
+
+/** Land use in the detail layer, drawn first (under water and parks) in this order. */
+const AREA_STYLE = {
+  residential: '#eee8dc',
+  farmland: '#eef0da',
+  commercial: '#f4e5de',
+  industrial: '#e8e5ec',
+  cemetery: '#dbe5d3',
+  hospital: '#f7dfe0',
+  school: '#f5ecd6',
+  parking: '#ebe8e2',
+  sport: '#cfe6c8',
+  forest: '#cbdfbd',
+  sand: '#f3e8c6',
+};
+/** Named places: the colour of the icon and the sign on it. */
+const POI_STYLE = {
+  transit: ['#1967d2', '🚌'],
+  health: ['#d93025', '✚'],
+  gov: ['#5f6368', '🏛'],
+  edu: ['#8d6e63', '🎓'],
+  culture: ['#9334e6', '🎭'],
+  park: ['#188038', '🌳'],
+  sport: ['#188038', '⚽'],
+  hotel: ['#e52592', '🛏'],
+  worship: ['#7b5e57', '🛐'],
+  food: ['#e8710a', '🍴'],
+  shop: ['#1a73e8', '🛍'],
+  fuel: ['#5f6368', '⛽'],
+  bank: ['#0d652d', '🏦'],
+};
+const POI_RANK = Object.fromEntries(Object.keys(POI_STYLE).map((k, i) => [k, i]));
+
+/** [x0, y0, dx1, dy1, …] (whole metres, steps from the point before) → flat [x0, y0, x1, y1, …]. */
+function undelta(a, from = 0) {
+  const out = new Array(a.length - from);
+  let x = 0;
+  let y = 0;
+  for (let i = from; i < a.length; i += 2) {
+    x = i === from ? a[i] : x + a[i];
+    y = i === from ? a[i + 1] : y + a[i + 1];
+    out[i - from] = x;
+    out[i - from + 1] = y;
+  }
+  return out;
+}
 
 /** Loads a map by id from `base` (a folder URL ending in '/'). Resolves to a CityMap. */
 async function loadCity(id, base = 'maps/') {
@@ -2417,7 +2470,45 @@ class CityMap {
     this.tiles = new Map();
     this.labelCache = new Map();
     this.stamp = 0;
+    this.pois = [];
+    this.poiCells = new Map();
+    this.detail = false;
     this.index();
+  }
+
+  /** The detail layer (buildings, land use, paths, named places), fetched once; the map is fine without it. */
+  async loadDetail() {
+    if (this.detailLoading) return this.detailLoading;
+    this.detailLoading = (async () => {
+      try {
+        const res = await fetch(`${this.base}${encodeURIComponent(this.id)}-detail.json`);
+        if (!res.ok) return false;
+        const d = await res.json();
+        const add = this.adder;
+        for (const cls of Object.keys(AREA_STYLE)) {
+          for (const poly of d.a?.[cls] || []) add(`area:${cls}`, poly.map((r) => undelta(r)), true);
+        }
+        for (const b of d.b || []) add('building', [undelta(b)], true);
+        for (const m of d.m || []) add(m[0] === 1 ? 'path' : 'lane', undelta(m, 1), false);
+        for (const f of d.f || []) add('motorway', undelta(f), false);
+        this.pois = (d.p || [])
+          .filter((p) => POI_STYLE[p[2]])
+          .map(([x, y, cat, name]) => ({ x, y, cat, name, rank: POI_RANK[cat] }))
+          .sort((a, b) => a.rank - b.rank);
+        for (const p of this.pois) {
+          const k = this.cell(p.y) * this.n + this.cell(p.x);
+          let list = this.poiCells.get(k);
+          if (!list) this.poiCells.set(k, (list = []));
+          list.push(p);
+        }
+        this.detail = true;
+        this.tiles.clear();
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+    return this.detailLoading;
   }
 
   /** { sat, green, xyz }: the satellite view, the Green Line layer (big maps), a tile provider for the satellite. */
@@ -2454,7 +2545,7 @@ class CityMap {
     this.features = [];
     this.n = Math.ceil((2 * this.E) / CELL) + 1;
     this.cells = new Map();
-    const add = (layer, geom, rings, extra = 0) => {
+    const add = (this.adder = (layer, geom, rings, extra = 0) => {
       let x0 = Infinity;
       let y0 = Infinity;
       let x1 = -Infinity;
@@ -2482,7 +2573,7 @@ class CityMap {
           list.push(f);
         }
       }
-    };
+    });
     for (const ring of d.sea || []) add('sea', [ring], true);
     for (const poly of d.water || []) add('water', poly, true);
     for (const poly of d.beach || []) add('beach', poly, true);
@@ -2622,8 +2713,11 @@ class CityMap {
       stroke(roads[2], '#ffffff', Math.max(1.1 * px, widths[2] * 0.3));
       stroke(roads[1], '#fff7dd', Math.max(1.4 * px, widths[1] * 0.35));
       stroke(roads[0], '#ffe9a8', Math.max(1.8 * px, widths[0] * 0.4));
+      stroke(by('motorway'), '#ffc766', Math.max(2 * px, widths[0] * 0.45));
       g.globalAlpha = 1;
     } else {
+      // Land use first, so water, beaches and parks lie over it.
+      if (this.detail) for (const cls in AREA_STYLE) fill(`area:${cls}`, AREA_STYLE[cls]);
       fill('sea', MAP_STYLE.sea);
       fill('water', MAP_STYLE.water);
       fill('beach', MAP_STYLE.beach);
@@ -2634,12 +2728,43 @@ class CityMap {
       const rivers = by('river');
       stroke(rivers.filter((f) => f.extra === 1), MAP_STYLE.water, Math.max(2.2 * px, 9));
       stroke(rivers.filter((f) => f.extra !== 1), MAP_STYLE.water, Math.max(1.4 * px, 3));
+      if (this.detail && tz >= 0.25) {
+        // Buildings, with a hairline edge once they are big enough to have one.
+        const blds = by('building');
+        if (blds.length) {
+          g.fillStyle = MAP_STYLE.building;
+          g.beginPath();
+          for (const f of blds) ringPath(g, f.geom[0]);
+          g.fill();
+          if (tz >= 0.6) {
+            g.strokeStyle = MAP_STYLE.buildingEdge;
+            g.lineWidth = px;
+            g.stroke();
+          }
+        }
+        // Lanes and service roads (white, a thin edge) and footpaths (dashed).
+        const lanes = by('lane');
+        stroke(lanes, MAP_STYLE.casing, Math.max(1.8 * px, 4.5));
+        stroke(lanes, MAP_STYLE.road, Math.max(1.1 * px, 3.2));
+        const paths = by('path');
+        if (paths.length && tz >= 0.4) {
+          g.setLineDash([3 * px, 2.5 * px]);
+          g.lineCap = 'butt';
+          stroke(paths, MAP_STYLE.path, Math.max(1 * px, 1.4));
+          g.setLineDash([]);
+          g.lineCap = 'round';
+        }
+      }
       stroke(roads[2], MAP_STYLE.casing, widths[2] + 2 * px);
       stroke(roads[1], MAP_STYLE.casing, widths[1] + 2 * px);
       stroke(roads[0], MAP_STYLE.casingMajor, widths[0] + 2.4 * px);
       stroke(roads[2], MAP_STYLE.road, widths[2]);
       stroke(roads[1], MAP_STYLE.road, widths[1]);
       stroke(roads[0], MAP_STYLE.roadMajor, widths[0]);
+      // Motorways over the main roads, in orange, like a street map.
+      const fast = by('motorway');
+      stroke(fast, MAP_STYLE.casingMotorway, widths[0] + 2.4 * px);
+      stroke(fast, MAP_STYLE.motorway, widths[0]);
       const rail = by('rail');
       if (rail.length) {
         g.setLineDash([6 * px, 5 * px]);
@@ -2763,13 +2888,78 @@ class CityMap {
       if (p.rank > placeRank || p.x < vx0 || p.x > vx1 || p.y < vy0 || p.y > vy1) continue;
       put(this.label(p.text, p.rank === 0 ? 'place0' : 'place', dpr), p.x, p.y);
     }
+    // Named places, like a street map: an icon (and its name, closer in), at most one per patch of the screen, the
+    // most useful kinds first.
+    if (this.pois.length && zoom >= 0.36) {
+      const vis = [];
+      for (let r = this.cell(vy0); r <= this.cell(vy1); r++) {
+        for (let c = this.cell(vx0); c <= this.cell(vx1); c++) {
+          const list = this.poiCells.get(r * this.n + c);
+          if (list) for (const p of list) if (p.x >= vx0 && p.x <= vx1 && p.y >= vy0 && p.y <= vy1) vis.push(p);
+        }
+      }
+      vis.sort((a, b) => a.rank - b.rank);
+      const boxes = []; // what is already drawn, in screen pixels: [x0, y0, x1, y1]
+      const free = (b) => boxes.every((o) => b[2] < o[0] || b[0] > o[2] || b[3] < o[1] || b[1] > o[3]);
+      const named = zoom >= 0.52;
+      let shown = 0;
+      for (const p of vis) {
+        const x = (p.x - cx) * zoom + W / 2;
+        const y = (p.y - cy) * zoom + H / 2;
+        const iconBox = [x - 12, y - 12, x + 12, y + 12];
+        if (!free(iconBox)) continue;
+        const icon = this.poiIcon(p.cat, dpr);
+        ctx.drawImage(icon, x - icon.width / dpr / 2, y - icon.height / dpr / 2, icon.width / dpr, icon.height / dpr);
+        boxes.push(iconBox);
+        if (named) {
+          const img = this.label(p.name, `poi:${p.cat}`, dpr);
+          const w = img.width / dpr;
+          const h = img.height / dpr;
+          const nameBox = [x - w / 2, y + 7, x + w / 2, y + 7 + h];
+          if (free(nameBox)) {
+            ctx.drawImage(img, nameBox[0], nameBox[1], w, h);
+            boxes.push(nameBox);
+          }
+        }
+        if (++shown >= 60) break;
+      }
+    }
+  }
+
+  /** A named place's icon: a coloured disc with its sign. */
+  poiIcon(cat, dpr) {
+    const key = `icon|${cat}|${dpr}`;
+    let c = this.labelCache.get(key);
+    if (c) return c;
+    const [color, sign] = POI_STYLE[cat] || ['#5f6368', '•'];
+    const size = 17;
+    c = document.createElement('canvas');
+    c.width = c.height = Math.ceil(size * dpr);
+    const g = c.getContext('2d');
+    g.scale(dpr, dpr);
+    g.fillStyle = '#ffffff';
+    g.beginPath();
+    g.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = color;
+    g.beginPath();
+    g.arc(size / 2, size / 2, size / 2 - 1.5, 0, Math.PI * 2);
+    g.fill();
+    g.font = `${sign === '✚' ? 800 : 400} ${sign === '✚' ? 11 : 9.5}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#ffffff';
+    g.fillText(sign, size / 2, size / 2 + 0.5);
+    this.labelCache.set(key, c);
+    return c;
   }
 
   label(text, kind, dpr) {
     const key = `${kind}|${dpr}|${text}`;
     let c = this.labelCache.get(key);
     if (c) return c;
-    const size = { road: 11, place: 13, place0: 15, region0: 22, region1: 17 }[kind] ?? 13;
+    const poi = kind.startsWith('poi:') ? POI_STYLE[kind.slice(4)] : null;
+    const size = poi ? 10.5 : { road: 11, place: 13, place0: 15, region0: 22, region1: 17 }[kind] ?? 13;
     const weight = kind === 'road' ? 600 : kind.startsWith('region') ? 800 : 700;
     const font = `${weight} ${size}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
     c = document.createElement('canvas');
@@ -2788,9 +2978,9 @@ class CityMap {
     g.strokeStyle = MAP_STYLE.halo;
     g.lineWidth = kind.startsWith('region') ? 4 : 3;
     g.strokeText(text, w / 2, h / 2 + 0.5);
-    g.fillStyle = kind === 'road' ? MAP_STYLE.label : kind.startsWith('region') ? MAP_STYLE.region : MAP_STYLE.place;
+    g.fillStyle = poi ? poi[0] : kind === 'road' ? MAP_STYLE.label : kind.startsWith('region') ? MAP_STYLE.region : MAP_STYLE.place;
     g.fillText(text, w / 2, h / 2 + 0.5);
-    if (this.labelCache.size > 400) this.labelCache.clear();
+    if (this.labelCache.size > 900) this.labelCache.clear();
     this.labelCache.set(key, c);
     return c;
   }
@@ -2806,7 +2996,7 @@ function ringPath(g, a) {
   g.closePath();
 }
 
-return { MAP_STYLE, loadCity, loadMapIndex, CityMap };
+return { MAP_STYLE, AREA_STYLE, POI_STYLE, undelta, loadCity, loadMapIndex, CityMap };
 })();
 __m.people = (() => {
 // Ch-ch-chain-ges — the people. Flat paper-doll figures with a white cut-out edge: in a chain they reach out to hold
@@ -5141,6 +5331,8 @@ function cityMap(id) {
       (m) => {
         p.value = m;
         m.setOptions({ sat: game.sat, green: game.green, xyz: xyzProvider() });
+        // Buildings, land use and named places come a moment later (towns whose detail is built).
+        if (maps.byId.get(id)?.detail) m.loadDetail();
         return m;
       },
       () => null,

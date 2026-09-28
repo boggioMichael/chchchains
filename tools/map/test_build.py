@@ -137,7 +137,40 @@ def main():
              item('clear', 0.4, square(34, 31, 36, 33)), item('nohref', 0, square(34, 31, 36, 33))]
     items[3]['assets'] = {}
     assert [it['id'] for it in build.scene_order(items, corners)] == ['clear', 'partial', 'cloudy']
-    print('ok', json.dumps(stats, ensure_ascii=False))
+    # The detailed layer: buildings, land use, paths, motorways and named places, stored as steps.
+    import detail
+    assert detail.undelta(detail.delta([(10.4, -3), (12, -1.6), (-5, 7)])) == [(10, -3), (12, -2), (-5, 7)]
+    dfeat = []
+
+    def add(props, geometry):
+        dfeat.append({'type': 'Feature', 'geometry': geometry, 'properties': props})
+
+    def box(x, y, w, h):
+        return [ll(x, y), ll(x + w, y), ll(x + w, y + h), ll(x, y + h), ll(x, y)]
+    for i in range(30):  # a row of houses
+        add({'building': 'yes'}, {'type': 'Polygon', 'coordinates': [box(-1000 + i * 40, 300, 22, 14)]})
+    add({'building': 'yes'}, {'type': 'Polygon', 'coordinates': [box(0, 0, 2, 2)]})  # a shed: too small
+    add({'building': 'yes'}, {'type': 'Polygon', 'coordinates': [box(3200, 3200, 30, 30)]})  # outside the city
+    add({'landuse': 'residential'}, {'type': 'Polygon', 'coordinates': [box(-1100, 200, 1400, 300)]})
+    add({'amenity': 'school', 'landuse': 'residential', 'name': 'בית ספר אלון'}, {'type': 'Polygon', 'coordinates': [box(600, 600, 120, 90)]})
+    add({'landuse': 'military'}, {'type': 'Polygon', 'coordinates': [box(1500, 1500, 300, 300)]})
+    add({'highway': 'footway'}, {'type': 'LineString', 'coordinates': [ll(-500, 700), ll(-100, 720)]})
+    add({'highway': 'service'}, {'type': 'LineString', 'coordinates': [ll(-500, 800), ll(-100, 820)]})
+    add({'highway': 'motorway'}, {'type': 'LineString', 'coordinates': [ll(2000, -1900), ll(2000, 1900)]})
+    add({'amenity': 'cafe', 'name': 'קפה פינה'}, {'type': 'Point', 'coordinates': ll(-300, 350)})
+    add({'amenity': 'cafe', 'name': 'קפה פינה'}, {'type': 'Point', 'coordinates': ll(-290, 360)})  # the same café twice
+    add({'shop': 'supermarket', 'name': 'Super'}, {'type': 'Point', 'coordinates': ll(-200, 350)})
+    add({'amenity': 'pharmacy'}, {'type': 'Point', 'coordinates': ll(-100, 350)})  # no name: no icon
+    dstats = detail.build_detail(city, iter(dfeat), build, tmp)
+    d = json.load(open(os.path.join(tmp, 'test-city-detail.json'), encoding='utf-8'))
+    assert d['v'] == detail.DETAIL and len(d['b']) == 30, dstats
+    first = detail.undelta(d['b'][0])
+    assert abs(first[0][0] + 1000) <= 1 and abs(first[0][1] - 300) <= 1, first[:2]
+    assert set(d['a']) == {'residential', 'school'}, 'land use by class; the school wins over the homes; no military'
+    assert [m[0] for m in d['m']] == [1, 0] and len(d['f']) == 1
+    cats = sorted((p[2], p[3]) for p in d['p'])
+    assert cats == [('edu', 'בית ספר אלון'), ('food', 'קפה פינה'), ('shop', 'Super')], cats
+    print('ok', json.dumps(stats, ensure_ascii=False), json.dumps(dstats, ensure_ascii=False))
 
 
 if __name__ == '__main__':

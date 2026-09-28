@@ -77,10 +77,16 @@
 
 ה־workflow ‏`maps` בונה רק מה שחסר או ישן (או מפות שבוחרים בלשונית Actions). כל מפת עיר: רחובות, מים, פארקים ושמות מ־OpenStreetMap; קווי גובה ותבליט מ־SRTM; מקומות למשימות; ותמונת לוויין מ־Sentinel-2 (Copernicus, פיקסל של 10 מטר, ולכן מקרוב היא מטושטשת). המפות הגדולות: Natural Earth לאזור, AWS Terrain Tiles לגבהים ו־NASA Blue Marble ללוויין. כדי להוסיף עיר: שורה ב־`AUTHORITIES` ב־`tools/map/build.py`.
 
-**לוויין חד** (כמו בגוגל) צריך ספק עם מפתח, למשל Esri World Imagery או Mapbox Satellite (לשניהם מכסה חינמית ותנאי שימוש משלהם). מדביקים ב־`config.json`:
-```json
-"satellite": { "tiles": "https://…/{z}/{x}/{y}.jpg?access_token=…", "credit": "© …", "maxZoom": 19 }
-```
+**מפה מפורטת** (כמו מפת רחובות): לכל עיר גם `docs/maps/<id>-detail.json` (‏`tools/map/detail.py`): בניינים, שימושי קרקע (מגורים, מסחר, תעשייה, בתי ספר, בתי חולים, ספורט, חניות, בתי קברות, שדות, חורש, חול), סמטאות ושבילים, כבישים מהירים בכתום, ומקומות עם שם עם סמל (אוכל, קניות, בריאות, חינוך, תרבות, מלונות, משרדי ציבור, תחבורה, ספורט, בתי תפילה, דלק, בנקים, גנים). המשחק טוען אותו רגע אחרי המפה. כשמעלים את `DETAIL` ב־`detail.py`, ה־workflow בונה מחדש רק את השכבה הזאת.
+
+**לוויין חד** (כמו בגוגל) צריך ספק עם מפתח. Sentinel-2 הפתוח הוא 10 מטר לפיקסל, וזו התקרה של תמונות פתוחות. הדרך הקלה: **Esri World Imagery** דרך ArcGIS Location Platform, שנותן 2 מיליון אריחי מפה בחודש בחינם:
+1. נרשמים ב־https://location.arcgis.com ויוצרים API key עם הרשאת Basemaps. מגבילים אותו לכתובת האתר (HTTP referrer): `https://chchchains.onrender.com/*`.
+2. ב־Render, בשירות הסטטי `chchchains` → Environment, מוסיפים:
+   - `CHAIN_SATELLITE_TILES` = `https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=המפתח`
+   - `CHAIN_SATELLITE_CREDIT` = `Powered by Esri · Esri, Maxar, Earthstar Geographics, and the GIS User Community`
+3. Manual Deploy. כפתור 🛰️ מציג עכשיו את התמונות של Esri, עם הרחובות והשמות מעליהן.
+
+אפשר גם ב־`config.json`: `"satellite": { "tiles": "https://…/{z}/{y}/{x}?token=…", "credit": "…", "maxZoom": 19 }`. כל ספק XYZ אחר עובד באותה דרך (Mapbox, MapTiler), לפי התנאים שלו.
 
 ## הרצה מקומית
 
@@ -114,6 +120,7 @@ node server.mjs     # http://localhost:3000
 | `CHAIN_SERVERS` | כמה שרתים, מופרדים בפסיק: כל מפה גרה על אחד מהם (קבוע לכולם), ומסך הפתיחה מאחד את הספירות |
 | `CHAIN_BRAND` | שורת המותג מתחת לשם המשחק |
 | `CHAIN_PARTY` | שם המפלגה בסיפור, בכנסת ובכרטיס השיתוף (ברירת מחדל: עמך ישראל) |
+| `CHAIN_SATELLITE_TILES`, `CHAIN_SATELLITE_CREDIT`, `CHAIN_SATELLITE_MAX` | ספק אריחי לוויין (XYZ), הקרדיט שלו, והזום העמוק ביותר (19) |
 | `CHAIN_PUBLISHER` | שורת ״פורסם על ידי״ בתחתית המסך |
 | `CHAIN_JOIN_URL` | קישור להצטרפות שמופיע אחרי כל סיבוב (לא חובה) |
 | `CHAIN_SHARE_URL` | הכתובת שמשותפת ושמופיעה בתמונת השיתוף |

@@ -2,7 +2,7 @@
 //   docs/index.html          full page for any static host (and served by server.mjs), plus its manifest
 //   dist/page-content.html   the same page without <html>/<head>/<body>, for hosts that add their own skeleton
 // Settings come from config.json or environment variables (CHAIN_SERVER, CHAIN_BRAND, CHAIN_PARTY, CHAIN_PUBLISHER,
-// CHAIN_JOIN_URL, CHAIN_SHARE_URL); see README.md.
+// CHAIN_JOIN_URL, CHAIN_SHARE_URL, CHAIN_SATELLITE_TILES …); see README.md.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { NAME } from './src/brand.js';
@@ -48,8 +48,11 @@ function config() {
     shareUrl: env.CHAIN_SHARE_URL ?? fromFile.shareUrl ?? '',
     // Several game servers (each map lives on one): CHAIN_SERVERS="wss://a/ws,wss://b/ws".
     servers: (env.CHAIN_SERVERS ? env.CHAIN_SERVERS.split(',') : fromFile.servers ?? []).map((s) => String(s).trim()).filter(Boolean),
-    // A satellite picture provider's tiles, e.g. { "tiles": "https://…/{z}/{y}/{x}?token=…", "credit": "…" }.
-    satellite: fromFile.satellite ?? null,
+    // A satellite picture provider's tiles, e.g. { "tiles": "https://…/{z}/{y}/{x}?token=…", "credit": "…" }, or the
+    // same from CHAIN_SATELLITE_TILES, CHAIN_SATELLITE_CREDIT and CHAIN_SATELLITE_MAX (the deepest zoom, 19).
+    satellite: env.CHAIN_SATELLITE_TILES
+      ? { tiles: env.CHAIN_SATELLITE_TILES, credit: env.CHAIN_SATELLITE_CREDIT ?? '', maxZoom: Number(env.CHAIN_SATELLITE_MAX) || 19 }
+      : (fromFile.satellite ?? null),
     // Licensed songs in docs/music, e.g. [{ "title": "…", "url": "song.mp3", "credit": "…" }].
     music: fromFile.music ?? [],
   };

@@ -9,7 +9,8 @@ Runs in GitHub Actions (.github/workflows/maps.yml), which has the network acces
 Each map is the authority's own municipal boundary (from OSM), cut to at most R_MAX metres around the town centre,
 so the city limits are the edge of the arena. It writes docs/maps/<id>.json (vector layers in metres around the
 centre, y pointing south, plus the arena outline and a mask for "inside?"), docs/maps/<id>.jpg (the terrain: elevation
-tint and hill shading), and docs/maps/index.json (the list, with each map's area and how many people it holds).
+tint and hill shading), docs/maps/<id>-detail.json (buildings, land use, paths and named places: detail.py), and
+docs/maps/index.json (the list, with each map's area and how many people it holds).
 
 Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).
 Elevation: SRTM (NASA), from the AWS Terrain Tiles open dataset.
@@ -25,6 +26,9 @@ import urllib.request
 
 import numpy as np
 from PIL import Image, ImageDraw
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import detail  # noqa: E402  (the detailed layer: buildings, land use, paths, named places)
 from scipy import ndimage
 from skimage import measure
 
@@ -413,6 +417,15 @@ def osm_features(city):
     run(['osmium', 'export', '-O', '-f', 'geojsonseq', '-x', 'print_record_separator=false',
          base + '.filtered.osm.pbf', '-o', base + '.geojsonseq'])
     yield from read_seq(base + '.geojsonseq')
+
+
+def osm_detail_features(city):
+    """The city's buildings, land use, small streets and named places (from its extract), streamed."""
+    base = os.path.join(WORK, city['id'])
+    run(['osmium', 'tags-filter', '-O', base + '.osm.pbf', *detail.FILTER, '-o', base + '.detail.osm.pbf'])
+    run(['osmium', 'export', '-O', '-f', 'geojsonseq', '-x', 'print_record_separator=false',
+         base + '.detail.osm.pbf', '-o', base + '.detail.geojsonseq'])
+    yield from read_seq(base + '.detail.geojsonseq')
 
 
 def run(cmd):
@@ -1024,20 +1037,26 @@ def main(argv):
         e = old.get(aid)
         return not e or e.get('build') != BUILD or not e.get('sat') or not os.path.exists(os.path.join(OUT, aid + '.json'))
 
+    def detail_stale(aid):
+        e = old.get(aid)
+        return not e or e.get('detail') != detail.DETAIL or not os.path.exists(os.path.join(OUT, aid + '-detail.json'))
+
     import regions  # the big maps (the whole country, the borders of the promise)
     old_regions = {}
     if os.path.exists(index_path):
         for r in json.load(open(index_path, encoding='utf-8')).get('regions', []):
             old_regions[r['id']] = r
     todo = [a for a in AUTHORITIES if (a[0] in wanted if wanted else stale(a[0]))]
+    # The detail alone (buildings, land use, places) where only that is missing or older.
+    todo_detail = [a for a in AUTHORITIES if a not in todo and (a[0] in wanted if wanted else detail_stale(a[0]))]
     todo_regions = regions.stale(wanted, old_regions)
-    log('to build', [a[0] for a in todo], [r['id'] for r in todo_regions])
-    if not todo and not todo_regions:
+    log('to build', [a[0] for a in todo], 'detail only', [a[0] for a in todo_detail], [r['id'] for r in todo_regions])
+    if not todo and not todo_detail and not todo_regions:
         return
     pbf = download(PBF_URL, os.path.join(WORK, 'israel.osm.pbf'))
     bounds, places = admin_index(pbf)
     cities, missing = [], []
-    for auth in todo:
+    for auth in todo + todo_detail:
         c = resolve(auth, bounds, places)
         if c:
             cities.append(c)
@@ -1046,18 +1065,33 @@ def main(argv):
     log('resolved', len(cities), 'missing', missing)
     if cities:
         extract_all(pbf, cities)
-    results = []
+    full = {a[0] for a in todo}
+    results, details = [], {}
     for city in cities:
-        try:
-            proj = Projection(city['lat'], city['lon'])
+        if city['id'] in full:
             try:
-                sat = satellite_image(city, proj, R_MAX + MARGIN)
-            except Exception as e:  # imagery is a bonus: the map is built without it
-                log('satellite FAILED', city['id'], repr(e))
-                sat = None
-            results.append(build_city(city, osm_features(city), elevation_grid(city, proj), sat))
-        except Exception as e:  # one bad town should not stop the rest
-            log('FAILED', city['id'], repr(e))
+                proj = Projection(city['lat'], city['lon'])
+                try:
+                    sat = satellite_image(city, proj, R_MAX + MARGIN)
+                except Exception as e:  # imagery is a bonus: the map is built without it
+                    log('satellite FAILED', city['id'], repr(e))
+                    sat = None
+                results.append(build_city(city, osm_features(city), elevation_grid(city, proj), sat))
+            except Exception as e:  # one bad town should not stop the rest
+                log('FAILED', city['id'], repr(e))
+                continue
+        if not os.path.exists(os.path.join(OUT, city['id'] + '.json')):
+            continue
+        try:
+            details[city['id']] = detail.build_detail(city, osm_detail_features(city), sys.modules[__name__], OUT)
+            log('detail', json.dumps(details[city['id']], ensure_ascii=False))
+        except Exception as e:  # the plain map still works
+            log('detail FAILED', city['id'], repr(e))
+        for ext in ('.detail.osm.pbf', '.detail.geojsonseq'):
+            try:
+                os.remove(os.path.join(WORK, city['id'] + ext))
+            except OSError:
+                pass
     built = {r['id']: r for r in results}
     # Keep maps built earlier for authorities not rebuilt this time.
     entries = []
@@ -1069,7 +1103,11 @@ def main(argv):
                             'center': [round(c['lat'], 5), round(c['lon'], 5)], 'pois': r['pois'], 'sat': r['sat'],
                             'build': BUILD})
         elif aid in old and os.path.exists(os.path.join(OUT, aid + '.json')):
-            entries.append(old[aid])
+            entries.append(dict(old[aid]))
+        else:
+            continue
+        if aid in details:
+            entries[-1]['detail'] = detail.DETAIL
     built_regions = regions.build_regions(todo_regions, pbf, bounds) if todo_regions else {}
     region_entries = []
     for r in regions.REGIONS:

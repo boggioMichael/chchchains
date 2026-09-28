@@ -140,6 +140,8 @@ function cityMap(id) {
       (m) => {
         p.value = m;
         m.setOptions({ sat: game.sat, green: game.green, xyz: xyzProvider() });
+        // Buildings, land use and named places come a moment later (towns whose detail is built).
+        if (maps.byId.get(id)?.detail) m.loadDetail();
         return m;
       },
       () => null,
