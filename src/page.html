@@ -66,7 +66,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--cyan); outline-
 .screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; direction: rtl; z-index: 4;
   background: radial-gradient(ellipse at 50% 30%, rgba(8, 12, 32, 0.35), rgba(8, 12, 32, 0.82)); overflow-y: auto; }
 .card { width: min(420px, 100%); text-align: center; display: grid; gap: 16px; padding-block: 20px; }
-.logo { font-size: clamp(44px, 13.5vw, 88px); font-weight: 900; line-height: 1.05; margin: 0; letter-spacing: -1.5px; direction: ltr;
+.logo { font-size: clamp(36px, 12vw, 84px); font-weight: 900; line-height: 1.1; margin: 0; letter-spacing: -1.5px; direction: ltr;
+  white-space: nowrap;
   background: linear-gradient(90deg, #7af0ff, #ff8fd0 55%, #ffd66b); -webkit-background-clip: text; background-clip: text;
   color: transparent; filter: drop-shadow(0 0 22px rgba(255, 143, 208, 0.35)); text-wrap: balance; }
 .brand { margin: -6px 0 0; font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 0.3px; }

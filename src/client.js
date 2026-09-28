@@ -977,7 +977,7 @@ const serverUrl =
   CFG.server || (location.protocol.startsWith('http') && CFG.sameOrigin ? `${location.origin.replace(/^http/, 'ws')}/ws` : '');
 function netStatusText(status, online) {
   if (status === 'online') {
-    return online > 1 ? `🟢 ${online.toLocaleString('he-IL')} מחוברים עכשיו – משחקים עם אנשים אמיתיים` : '🟢 מחובר – משחקים עם אנשים אמיתיים (והבוטים 🤖)';
+    return online > 1 ? `🟢 ${online.toLocaleString('he-IL')} מחוברים עכשיו – משחקים עם אנשים אמיתיים` : '🟢 מחובר – משחקים עם אנשים אמיתיים';
   }
   if (status === 'connecting') return 'מעיר את השרת… אפשר כבר לשחק עם בוטים';
   if (status === 'full') return 'השרת מלא כרגע – משחקים עם בוטים';
