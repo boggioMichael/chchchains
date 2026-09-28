@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { NAME } from './src/brand.js';
 
 const ROOT = new URL('.', import.meta.url).pathname;
-const MODULES = ['brand', 'sim', 'streets', 'protocol', 'net', 'map', 'people', 'audio', 'client']; // dependency order
+const MODULES = ['brand', 'sim', 'names', 'arena', 'streets', 'protocol', 'net', 'map', 'people', 'avatars', 'audio', 'story', 'client']; // dependency order
 
 function bundle() {
   const parts = ['(() => {', "'use strict';", 'const __m = {};'];
@@ -44,6 +44,12 @@ function config() {
     publisher: env.CHAIN_PUBLISHER ?? fromFile.publisher ?? '',
     joinUrl: env.CHAIN_JOIN_URL ?? fromFile.joinUrl ?? '',
     shareUrl: env.CHAIN_SHARE_URL ?? fromFile.shareUrl ?? '',
+    // Several game servers (each map lives on one): CHAIN_SERVERS="wss://a/ws,wss://b/ws".
+    servers: (env.CHAIN_SERVERS ? env.CHAIN_SERVERS.split(',') : fromFile.servers ?? []).map((s) => String(s).trim()).filter(Boolean),
+    // A satellite picture provider's tiles, e.g. { "tiles": "https://…/{z}/{y}/{x}?token=…", "credit": "…" }.
+    satellite: fromFile.satellite ?? null,
+    // Licensed songs in docs/music, e.g. [{ "title": "…", "url": "song.mp3", "credit": "…" }].
+    music: fromFile.music ?? [],
   };
 }
 
@@ -61,15 +67,18 @@ const script = `<script>\n${bundle()}\n</script>`;
 const sha = (text) => `'sha256-${createHash('sha256').update(text, 'utf8').digest('base64')}'`;
 const inline = (tag, html) => [...html.matchAll(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'g'))].map((m) => sha(m[1]));
 let connect = "'self'";
-if (/^wss?:\/\//.test(cfg.server)) {
-  const u = new URL(cfg.server);
+for (const server of [cfg.server, ...cfg.servers]) {
+  if (!/^wss?:\/\//.test(server || '')) continue;
+  const u = new URL(server);
   connect += ` ${u.protocol}//${u.host} ${u.protocol === 'wss:' ? 'https:' : 'http:'}//${u.host}`;
 }
+const tiles = /^https:\/\/[a-z0-9.-]+/i.exec(cfg.satellite?.tiles || '')?.[0] ?? '';
 const csp = [
   "default-src 'self'",
   `script-src ${inline('script', `${cfgScript}\n${script}`).join(' ')}`,
   `style-src ${inline('style', head).join(' ')}`,
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob:${tiles ? ` ${tiles}` : ''}`,
+  "media-src 'self' blob:",
   `connect-src ${connect}`,
   "manifest-src 'self'",
   "base-uri 'none'",
@@ -78,7 +87,7 @@ const csp = [
 ].join('; ');
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const title = cfg.brand ? `${NAME} – ${cfg.brand}` : NAME;
-const description = 'משחק רשת בטלפון ברחובות האמיתיים של תל אביב, ירושלים וחיפה: אוספים אנשים, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.';
+const description = 'משחק רשת בטלפון ברחובות האמיתיים של ערי ישראל ועל מפת כל הארץ: אוספים אנשים, נותנים יד ומתארכים, ובמצב הסיפור – מנצחים בבחירות. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.';
 const meta = [
   `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
   '<link rel="manifest" href="manifest.webmanifest">',
@@ -135,4 +144,4 @@ writeFileSync(
   )}\n`,
 );
 const kb = (readFileSync(`${ROOT}docs/index.html`).length / 1024).toFixed(0);
-console.log(`built docs/index.html (${kb} KB) and dist/page-content.html; server: ${cfg.server || '(none: solo with bots)'}`);
+console.log(`built docs/index.html (${kb} KB) and dist/page-content.html; server: ${cfg.server || cfg.servers.join(', ') || '(none: offline only)'}`);

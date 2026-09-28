@@ -1,45 +1,179 @@
-// Ch-ch-chain-ges — music and sound, synthesised with Web Audio (no audio files). An original bouncy synth-pop
-// loop in D minor at 116 BPM whose layers follow the game: calm in the menus; drums and arpeggios while you play;
-// the lead melody once your chain grows; extra hi-hats while you run; bells when you hold hands.
+// Ch-ch-chain-ges — music and sound, synthesised with Web Audio (no audio files). Five original tracks to pick from,
+// each a 16-bar loop whose layers follow the game: calm in the menus; drums and arpeggios while you play; the lead
+// melody once your chain grows; extra hi-hats while you run; bells when you hold hands. A player may also play a
+// song of their own from their phone (it stays on the phone), or one the site has a licence for (config.json).
 // Browsers only allow sound after a tap, so nothing plays until unlock() is called from one.
 
-const BPM = 116;
-const STEP = 60 / BPM / 4; // one sixteenth note, seconds
 const LOOKAHEAD = 0.14;
+const B = (s, m, l) => [s, m, l];
 
-// Sixteen bars: section A then section B, one chord per bar.
-const CHORDS = [
-  // A
-  [62, 65, 69], [58, 62, 65], [65, 69, 72], [60, 64, 67], [62, 65, 69], [58, 62, 65], [65, 69, 72], [57, 61, 64],
-  // B
-  [58, 62, 65], [60, 64, 67], [57, 60, 64], [62, 65, 69], [58, 62, 65], [60, 64, 67], [62, 65, 69], [62, 65, 69],
+/** The tracks: bpm, one chord per bar (16 bars), bass roots, the lead melody [step, midi, length] per bar, and style. */
+export const TRACKS = [
+  {
+    id: 'chains',
+    title: 'שרשרת',
+    mood: 'סינת׳-פופ קופצני',
+    bpm: 116,
+    chords: [
+      [62, 65, 69], [58, 62, 65], [65, 69, 72], [60, 64, 67], [62, 65, 69], [58, 62, 65], [65, 69, 72], [57, 61, 64],
+      [58, 62, 65], [60, 64, 67], [57, 60, 64], [62, 65, 69], [58, 62, 65], [60, 64, 67], [62, 65, 69], [62, 65, 69],
+    ],
+    roots: [38, 34, 41, 36, 38, 34, 41, 45, 34, 36, 45, 38, 34, 36, 38, 38],
+    lead: [
+      [B(0, 69, 3), B(4, 74, 2), B(6, 72, 2), B(8, 69, 3), B(12, 67, 2), B(14, 65, 2)],
+      [B(0, 65, 3), B(4, 62, 2), B(6, 65, 2), B(8, 67, 2), B(10, 69, 6)],
+      [B(0, 72, 3), B(4, 74, 2), B(6, 72, 2), B(8, 69, 2), B(10, 65, 2), B(12, 69, 4)],
+      [B(0, 67, 4), B(4, 64, 2), B(6, 67, 2), B(8, 72, 4), B(12, 69, 2), B(14, 67, 2)],
+      [B(0, 69, 3), B(4, 74, 2), B(6, 76, 2), B(8, 77, 3), B(12, 76, 2), B(14, 74, 2)],
+      [B(0, 74, 4), B(4, 70, 2), B(6, 74, 2), B(8, 77, 4), B(12, 74, 4)],
+      [B(0, 72, 2), B(2, 69, 2), B(4, 72, 2), B(6, 77, 2), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 73, 6), B(8, 69, 2), B(10, 73, 2), B(12, 76, 4)],
+      [B(0, 74, 6), B(8, 72, 2), B(10, 70, 2), B(12, 69, 4)],
+      [B(0, 67, 6), B(8, 69, 2), B(10, 72, 2), B(12, 76, 4)],
+      [B(0, 76, 4), B(4, 74, 2), B(6, 72, 2), B(8, 69, 8)],
+      [B(0, 74, 4), B(4, 77, 4), B(8, 81, 6), B(14, 79, 2)],
+      [B(0, 77, 4), B(4, 74, 2), B(6, 77, 2), B(8, 82, 4), B(12, 81, 4)],
+      [B(0, 79, 4), B(4, 76, 2), B(6, 72, 2), B(8, 76, 4), B(12, 79, 4)],
+      [B(0, 77, 3), B(4, 76, 2), B(6, 74, 2), B(8, 72, 2), B(10, 69, 6)],
+      [B(0, 74, 12)],
+    ],
+    arp: [0, 1, 2, 1, 0, 1, 2, 3],
+    style: { bass: 'bounce', drums: 'pop', lead: ['square', 'sawtooth'], arp: 'square' },
+  },
+  {
+    id: 'city',
+    title: 'קצב העיר',
+    mood: 'דיסקו שמח',
+    bpm: 124,
+    chords: [
+      [65, 69, 72], [62, 65, 69], [58, 62, 65], [60, 64, 67], [65, 69, 72], [57, 60, 64], [58, 62, 65], [60, 64, 67],
+      [62, 65, 69], [58, 62, 65], [65, 69, 72], [60, 64, 67], [62, 65, 69], [58, 62, 65], [55, 58, 62], [60, 64, 67],
+    ],
+    roots: [41, 38, 34, 36, 41, 33, 34, 36, 38, 34, 41, 36, 38, 34, 31, 36],
+    lead: [
+      [B(0, 72, 2), B(2, 74, 2), B(4, 77, 4), B(8, 76, 2), B(10, 74, 2), B(12, 72, 4)],
+      [B(0, 74, 3), B(4, 72, 2), B(6, 69, 2), B(8, 65, 4), B(12, 69, 4)],
+      [B(0, 70, 2), B(2, 72, 2), B(4, 74, 4), B(8, 77, 2), B(10, 74, 2), B(12, 72, 4)],
+      [B(0, 72, 6), B(8, 76, 2), B(10, 79, 2), B(12, 76, 4)],
+      [B(0, 77, 2), B(2, 76, 2), B(4, 74, 2), B(6, 72, 2), B(8, 74, 4), B(12, 72, 4)],
+      [B(0, 76, 3), B(4, 72, 2), B(6, 69, 2), B(8, 72, 4), B(12, 76, 4)],
+      [B(0, 74, 2), B(2, 77, 2), B(4, 74, 2), B(6, 70, 2), B(8, 72, 4), B(12, 74, 4)],
+      [B(0, 79, 8), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 77, 4), B(4, 76, 2), B(6, 74, 2), B(8, 69, 4), B(12, 72, 4)],
+      [B(0, 74, 4), B(4, 72, 2), B(6, 70, 2), B(8, 65, 4), B(12, 70, 4)],
+      [B(0, 72, 2), B(2, 77, 2), B(4, 81, 4), B(8, 79, 2), B(10, 77, 2), B(12, 76, 4)],
+      [B(0, 74, 4), B(4, 76, 2), B(6, 77, 2), B(8, 79, 8)],
+      [B(0, 81, 4), B(4, 79, 2), B(6, 77, 2), B(8, 76, 4), B(12, 74, 4)],
+      [B(0, 77, 4), B(4, 74, 2), B(6, 70, 2), B(8, 74, 4), B(12, 77, 4)],
+      [B(0, 74, 2), B(2, 77, 2), B(4, 79, 4), B(8, 77, 2), B(10, 74, 2), B(12, 70, 4)],
+      [B(0, 72, 12)],
+    ],
+    arp: [0, 3, 1, 3, 2, 3, 1, 3],
+    style: { bass: 'disco', drums: 'disco', lead: ['sawtooth', 'sawtooth'], arp: 'sawtooth' },
+  },
+  {
+    id: 'night',
+    title: 'לילה בעיר',
+    mood: 'סינת׳ווייב',
+    bpm: 100,
+    chords: [
+      [57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62], [57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62],
+      [57, 62, 65], [53, 57, 60], [57, 60, 64], [55, 59, 62], [57, 62, 65], [53, 57, 60], [56, 59, 64], [56, 59, 64],
+    ],
+    roots: [33, 29, 36, 31, 33, 29, 36, 31, 38, 29, 33, 31, 38, 29, 28, 28],
+    lead: [
+      [B(0, 76, 6), B(6, 74, 2), B(8, 72, 4), B(12, 71, 4)],
+      [B(0, 72, 8), B(8, 69, 4), B(12, 72, 4)],
+      [B(0, 67, 6), B(6, 72, 2), B(8, 76, 6), B(14, 74, 2)],
+      [B(0, 74, 12), B(12, 71, 4)],
+      [B(0, 76, 4), B(4, 79, 4), B(8, 81, 6), B(14, 79, 2)],
+      [B(0, 77, 8), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 76, 6), B(6, 74, 2), B(8, 72, 4), B(12, 67, 4)],
+      [B(0, 71, 12), B(12, 74, 4)],
+      [B(0, 77, 6), B(6, 76, 2), B(8, 74, 4), B(12, 72, 4)],
+      [B(0, 72, 8), B(8, 74, 4), B(12, 76, 4)],
+      [B(0, 76, 6), B(6, 72, 2), B(8, 69, 8)],
+      [B(0, 71, 6), B(6, 72, 2), B(8, 74, 8)],
+      [B(0, 74, 4), B(4, 77, 4), B(8, 81, 8)],
+      [B(0, 79, 4), B(4, 77, 4), B(8, 76, 8)],
+      [B(0, 76, 6), B(6, 74, 2), B(8, 71, 4), B(12, 68, 4)],
+      [B(0, 68, 8), B(8, 71, 8)],
+    ],
+    arp: [0, 1, 2, 3, 2, 1, 0, 1],
+    style: { bass: 'pulse', drums: 'halftime', lead: ['sawtooth', 'triangle'], arp: 'triangle' },
+  },
+  {
+    id: 'race',
+    title: 'מרוץ',
+    mood: 'צ׳יפטיון מהיר',
+    bpm: 150,
+    chords: [
+      [64, 67, 71], [60, 64, 67], [62, 67, 71], [62, 66, 69], [64, 67, 71], [60, 64, 67], [62, 67, 71], [62, 66, 69],
+      [60, 64, 69], [60, 64, 67], [64, 67, 71], [62, 66, 69], [60, 64, 69], [60, 64, 67], [59, 63, 66], [59, 63, 66],
+    ],
+    roots: [40, 36, 43, 38, 40, 36, 43, 38, 45, 36, 40, 38, 45, 36, 35, 35],
+    lead: [
+      [B(0, 76, 2), B(2, 79, 2), B(4, 83, 2), B(6, 79, 2), B(8, 76, 2), B(10, 79, 2), B(12, 81, 2), B(14, 79, 2)],
+      [B(0, 76, 2), B(2, 79, 2), B(4, 84, 2), B(6, 79, 2), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 74, 2), B(2, 79, 2), B(4, 83, 2), B(6, 79, 2), B(8, 74, 2), B(10, 79, 2), B(12, 81, 2), B(14, 83, 2)],
+      [B(0, 81, 6), B(6, 78, 2), B(8, 74, 8)],
+      [B(0, 83, 2), B(2, 81, 2), B(4, 79, 2), B(6, 76, 2), B(8, 79, 4), B(12, 83, 4)],
+      [B(0, 84, 2), B(2, 83, 2), B(4, 79, 2), B(6, 76, 2), B(8, 72, 4), B(12, 76, 4)],
+      [B(0, 79, 2), B(2, 81, 2), B(4, 83, 4), B(8, 86, 4), B(12, 83, 4)],
+      [B(0, 81, 12), B(12, 78, 4)],
+      [B(0, 81, 4), B(4, 84, 4), B(8, 88, 4), B(12, 84, 4)],
+      [B(0, 84, 4), B(4, 79, 4), B(8, 76, 4), B(12, 79, 4)],
+      [B(0, 83, 2), B(2, 79, 2), B(4, 76, 2), B(6, 79, 2), B(8, 83, 4), B(12, 88, 4)],
+      [B(0, 86, 4), B(4, 81, 4), B(8, 78, 4), B(12, 81, 4)],
+      [B(0, 84, 2), B(2, 81, 2), B(4, 76, 2), B(6, 81, 2), B(8, 84, 4), B(12, 88, 4)],
+      [B(0, 88, 4), B(4, 84, 4), B(8, 79, 4), B(12, 84, 4)],
+      [B(0, 87, 4), B(4, 83, 4), B(8, 78, 4), B(12, 75, 4)],
+      [B(0, 83, 8), B(8, 78, 4), B(12, 75, 4)],
+    ],
+    arp: [0, 1, 2, 3, 0, 1, 2, 3],
+    style: { bass: 'chip', drums: 'chip', lead: ['square', 'square'], arp: 'square' },
+  },
+  {
+    id: 'march',
+    title: 'מצעד',
+    mood: 'המנון חגיגי',
+    bpm: 108,
+    chords: [
+      [60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65], [60, 64, 67], [59, 62, 67], [57, 60, 65], [59, 62, 67],
+      [57, 60, 64], [57, 60, 65], [60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65], [57, 62, 65], [59, 62, 67],
+    ],
+    roots: [36, 31, 33, 29, 36, 31, 29, 31, 33, 29, 36, 31, 33, 29, 38, 31],
+    lead: [
+      [B(0, 67, 4), B(4, 72, 4), B(8, 76, 6), B(14, 74, 2)],
+      [B(0, 74, 4), B(4, 71, 4), B(8, 67, 8)],
+      [B(0, 69, 4), B(4, 72, 4), B(8, 76, 4), B(12, 79, 4)],
+      [B(0, 77, 8), B(8, 76, 4), B(12, 74, 4)],
+      [B(0, 72, 4), B(4, 76, 4), B(8, 79, 6), B(14, 77, 2)],
+      [B(0, 76, 4), B(4, 74, 4), B(8, 71, 8)],
+      [B(0, 72, 4), B(4, 74, 4), B(8, 77, 4), B(12, 76, 4)],
+      [B(0, 74, 12), B(12, 67, 4)],
+      [B(0, 76, 6), B(6, 74, 2), B(8, 72, 8)],
+      [B(0, 77, 6), B(6, 76, 2), B(8, 74, 8)],
+      [B(0, 79, 6), B(6, 77, 2), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 74, 12), B(12, 79, 4)],
+      [B(0, 81, 6), B(6, 79, 2), B(8, 76, 8)],
+      [B(0, 77, 6), B(6, 76, 2), B(8, 74, 4), B(12, 72, 4)],
+      [B(0, 74, 4), B(4, 77, 4), B(8, 81, 4), B(12, 77, 4)],
+      [B(0, 79, 8), B(8, 74, 4), B(12, 71, 4)],
+    ],
+    arp: [0, 2, 1, 2, 0, 2, 1, 3],
+    style: { bass: 'march', drums: 'march', lead: ['triangle', 'square'], arp: 'triangle' },
+  },
 ];
-const ROOTS = [38, 34, 41, 36, 38, 34, 41, 45, 34, 36, 45, 38, 34, 36, 38, 38];
-// The lead melody, [step, midi note, length in steps] per bar.
-const LEAD = [
-  [[0, 69, 3], [4, 74, 2], [6, 72, 2], [8, 69, 3], [12, 67, 2], [14, 65, 2]],
-  [[0, 65, 3], [4, 62, 2], [6, 65, 2], [8, 67, 2], [10, 69, 6]],
-  [[0, 72, 3], [4, 74, 2], [6, 72, 2], [8, 69, 2], [10, 65, 2], [12, 69, 4]],
-  [[0, 67, 4], [4, 64, 2], [6, 67, 2], [8, 72, 4], [12, 69, 2], [14, 67, 2]],
-  [[0, 69, 3], [4, 74, 2], [6, 76, 2], [8, 77, 3], [12, 76, 2], [14, 74, 2]],
-  [[0, 74, 4], [4, 70, 2], [6, 74, 2], [8, 77, 4], [12, 74, 4]],
-  [[0, 72, 2], [2, 69, 2], [4, 72, 2], [6, 77, 2], [8, 76, 4], [12, 72, 4]],
-  [[0, 73, 6], [8, 69, 2], [10, 73, 2], [12, 76, 4]],
-  [[0, 74, 6], [8, 72, 2], [10, 70, 2], [12, 69, 4]],
-  [[0, 67, 6], [8, 69, 2], [10, 72, 2], [12, 76, 4]],
-  [[0, 76, 4], [4, 74, 2], [6, 72, 2], [8, 69, 8]],
-  [[0, 74, 4], [4, 77, 4], [8, 81, 6], [14, 79, 2]],
-  [[0, 77, 4], [4, 74, 2], [6, 77, 2], [8, 82, 4], [12, 81, 4]],
-  [[0, 79, 4], [4, 76, 2], [6, 72, 2], [8, 76, 4], [12, 79, 4]],
-  [[0, 77, 3], [4, 76, 2], [6, 74, 2], [8, 72, 2], [10, 69, 6]],
-  [[0, 74, 12]],
-];
-const ARP = [0, 1, 2, 1, 0, 1, 2, 3]; // chord tone index per sixteenth (3 = the root an octave up)
 
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
 /** context: an (Offline)AudioContext to use instead of making one — for rendering the music to a file. */
-export function createAudio({ muted = false, context = null } = {}) {
+export function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
+  let T = TRACKS.find((t) => t.id === track) || TRACKS[0];
+  let STEP = 60 / T.bpm / 4; // one sixteenth note, seconds
+  let pending = null; // a track to switch to at the next bar
+  let file = null; // { source, gain, title } while a song file plays instead of the synth
   let ac = null;
   let master = null;
   let noise = null;
@@ -96,33 +230,75 @@ export function createAudio({ muted = false, context = null } = {}) {
   function schedule() {
     if (!ac || ac.state !== 'running') return;
     while (nextTime < ac.currentTime + LOOKAHEAD) {
-      play(step, nextTime);
-      nextTime += STEP;
-      step = (step + 1) % (16 * 16);
+      advance();
     }
+  }
+  function advance() {
+    if (pending && step % 16 === 0) {
+      T = pending;
+      pending = null;
+      STEP = 60 / T.bpm / 4;
+      step = 0;
+      if (delay) delay.delayTime.setValueAtTime(STEP * 3, nextTime);
+    }
+    if (!file) play(step, nextTime);
+    nextTime += STEP;
+    step = (step + 1) % (16 * 16);
   }
 
   function play(s, t) {
     const bar = Math.floor(s / 16);
     const i = s % 16;
-    const chord = CHORDS[bar];
-    const B = bar >= 8;
+    const chord = T.chords[bar];
+    const root = T.roots[bar];
+    const st = T.style;
+    const second = bar >= 8;
     if (i === 0) pad(chord, t, STEP * 16);
-    // Bass: bouncy eighths, jumping an octave on the off-beats.
-    if (i % 2 === 0) note(layers.bass, 'sawtooth', hz(ROOTS[bar] + (i % 4 === 2 ? 12 : 0)), t, STEP * 1.6, 0.22, 700);
+    // Bass, in the track's own pattern.
+    if (st.bass === 'bounce') {
+      if (i % 2 === 0) note(layers.bass, 'sawtooth', hz(root + (i % 4 === 2 ? 12 : 0)), t, STEP * 1.6, 0.22, 700);
+    } else if (st.bass === 'disco') {
+      note(layers.bass, 'square', hz(root + (i % 2 ? 12 : 0)), t, STEP * 0.8, i % 2 ? 0.12 : 0.2, 900);
+    } else if (st.bass === 'pulse') {
+      if (i % 2 === 0) note(layers.bass, 'sawtooth', hz(root), t, STEP * 1.8, 0.2, 520);
+    } else if (st.bass === 'chip') {
+      if (i % 2 === 0) note(layers.bass, 'square', hz(root + (i % 8 === 4 ? 7 : 0)), t, STEP * 1.2, 0.13, 1600);
+    } else if (st.bass === 'march') {
+      if (i % 4 === 0) note(layers.bass, 'triangle', hz(root + (i === 4 || i === 12 ? 7 : 0)), t, STEP * 3, 0.32, 1200);
+    }
     if (level.drums > 0.01) {
-      if (i === 0 || i === 8 || (B && i === 10)) kick(t);
-      if (i === 4 || i === 12) snare(t);
-      if (i % 2 === 0) hat(t, 0.03, 0.18);
+      if (st.drums === 'pop') {
+        if (i === 0 || i === 8 || (second && i === 10)) kick(t);
+        if (i === 4 || i === 12) snare(t);
+        if (i % 2 === 0) hat(t, 0.03, 0.18);
+      } else if (st.drums === 'disco') {
+        if (i % 4 === 0) kick(t);
+        if (i === 4 || i === 12) snare(t);
+        if (i % 4 === 2) hat(t, 0.12, 0.34);
+        else hat(t, 0.02, 0.1);
+      } else if (st.drums === 'halftime') {
+        if (i === 0 || i === 10) kick(t);
+        if (i === 8) snare(t, 1.4);
+        if (i % 2 === 0) hat(t, 0.04, 0.16);
+      } else if (st.drums === 'chip') {
+        if (i === 0 || i === 8 || i === 11) kick(t);
+        if (i === 4 || i === 12) snare(t, 0.8);
+        hat(t, 0.015, 0.12);
+      } else if (st.drums === 'march') {
+        if (i === 0 || i === 8) kick(t);
+        if (i === 4 || i === 12) snare(t);
+        if ((i === 14 || i === 15) && bar % 2 === 1) snare(t, 0.45);
+        if (i === 2 || i === 6 || i === 10) snare(t, 0.25);
+      }
     }
     if (level.hats > 0.01 && i % 2 === 1) hat(t, 0.09, 0.5, layers.hats);
     if (level.arp > 0.01) {
-      const k = ARP[i % 8];
+      const k = T.arp[i % 8];
       const m = k === 3 ? chord[0] + 12 : chord[k];
-      note(layers.arp, 'square', hz(m + 12), t, STEP * 0.9, 0.06, 2600);
+      note(layers.arp, st.arp, hz(m + 12), t, STEP * 0.9, st.arp === 'triangle' ? 0.09 : 0.06, 2600);
     }
     if (level.lead > 0.01) {
-      for (const [at, m, len] of LEAD[bar]) if (at === i) lead(m, t, STEP * len);
+      for (const [at, m, len] of T.lead[bar]) if (at === i) lead(m, t, STEP * len);
     }
     if (level.bells > 0.01 && (i === 0 || i === 10)) bell(hz(chord[i === 0 ? 2 : 1] + 24), t, layers.bells, 0.08);
   }
@@ -174,7 +350,7 @@ export function createAudio({ muted = false, context = null } = {}) {
     lp.connect(g);
     g.connect(layers.lead);
     g.connect(delay);
-    for (const [type, det] of [['square', -5], ['sawtooth', 5]]) {
+    for (const [type, det] of [[T.style.lead[0], -5], [T.style.lead[1], 5]]) {
       const o = ac.createOscillator();
       o.type = type;
       o.frequency.value = hz(m);
@@ -219,14 +395,14 @@ export function createAudio({ muted = false, context = null } = {}) {
     o.stop(t + 0.3);
   }
 
-  function snare(t) {
+  function snare(t, loud = 1) {
     const n = ac.createBufferSource();
     n.buffer = noise;
     const hp = ac.createBiquadFilter();
     hp.type = 'highpass';
     hp.frequency.value = 1300;
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.22, t);
+    g.gain.setValueAtTime(0.22 * loud, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
     n.connect(hp).connect(g).connect(layers.drums);
     n.start(t, Math.random() * 0.5);
@@ -258,10 +434,22 @@ export function createAudio({ muted = false, context = null } = {}) {
     g.gain.linearRampToValueAtTime(value, now + secs);
   }
 
+  function stopFile() {
+    if (!file) return;
+    try {
+      file.source.stop();
+    } catch {
+      /* already stopped */
+    }
+    file.gain.disconnect();
+    file = null;
+    if (ac) for (const name of Object.keys(level)) layers[name].gain.setValueAtTime(level[name], ac.currentTime);
+  }
+
   /** Current chord's notes, for sound effects that fit the music. */
   function chordNow() {
     const s = ac ? Math.max(0, step - Math.round((nextTime - ac.currentTime) / STEP)) : 0;
-    return CHORDS[Math.floor((((s % 256) + 256) % 256) / 16)];
+    return T.chords[Math.floor((((s % 256) + 256) % 256) / 16)];
   }
 
   return {
@@ -339,11 +527,47 @@ export function createAudio({ muted = false, context = null } = {}) {
     },
     /** Offline rendering: schedules every note up to `seconds` into the given context. */
     renderUntil(seconds) {
-      while (nextTime < seconds) {
-        play(step, nextTime);
-        nextTime += STEP;
-        step = (step + 1) % (16 * 16);
-      }
+      while (nextTime < seconds) advance();
+    },
+    tracks: TRACKS,
+    /** The track playing (or about to): its id, or 'file' while a song file plays. */
+    get track() {
+      return file ? 'file' : (pending || T).id;
+    },
+    get fileTitle() {
+      return file?.title ?? '';
+    },
+    /** Switches to another original track: at the next bar, or at once (now = true, e.g. when picking one). */
+    setTrack(id, now = false) {
+      const next = TRACKS.find((t) => t.id === id);
+      if (!next) return;
+      stopFile();
+      if (!ac || now) {
+        T = next;
+        pending = null;
+        STEP = 60 / T.bpm / 4;
+        step = 0;
+        if (ac) {
+          nextTime = ac.currentTime + 0.06;
+          delay.delayTime.setValueAtTime(STEP * 3, ac.currentTime);
+        }
+      } else if (next !== T) pending = next;
+    },
+    /** Plays a song file (an ArrayBuffer: one the player picked on their phone, or a licensed one) on a loop. */
+    async playFile(data, title = '') {
+      unlock();
+      if (!ac) throw new Error('no audio');
+      const buffer = await ac.decodeAudioData(data);
+      stopFile();
+      const source = ac.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      const gain = ac.createGain();
+      gain.gain.value = 0.55;
+      source.connect(gain).connect(master);
+      source.start();
+      file = { source, gain, title };
+      for (const name of Object.keys(level)) layers[name].gain.setValueAtTime(0, ac.currentTime);
     },
     /** Pauses everything while the page is hidden. */
     pause(on) {

@@ -1,7 +1,7 @@
 # Render Blueprint: one click creates both parts of Ch-ch-chain-ges on free plans.
 #   chchchains          the game page — a static site on Render's CDN: loads instantly and never sleeps
 #   chchchains-server   the multiplayer server — a free web service that sleeps after 15 quiet minutes; meanwhile
-#                       the page lets people play with bots and wakes it (about a minute)
+#                       the page lets people play on their own and wakes it (about a minute)
 services:
   - type: web
     name: chchchains-server
@@ -18,7 +18,9 @@ services:
       - key: ALLOWED_ORIGINS
         value: "https://chchchains*.onrender.com"
       - key: MAX_CLIENTS
-        value: "40"
+        value: "80"
+      - key: MAX_ROOMS
+        value: "10"
   - type: web
     name: chchchains
     runtime: static

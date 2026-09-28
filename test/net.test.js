@@ -3,11 +3,12 @@
 import './quiet.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { _internals } from '../server.mjs';
 import { decodeSnapshot, FLAG_FULL } from '../src/protocol.js';
 import { RemoteWorld } from '../src/net.js';
-import { angleDiff } from '../src/sim.js';
+import { angleDiff, botName } from '../src/sim.js';
 
+process.env.MAPS = 'off'; // rooms here are plain circles, driven tick by tick
+const { _internals } = await import('../server.mjs');
 const { Room, Client, rooms } = _internals;
 
 function manualRoom(t) {
@@ -78,6 +79,8 @@ test('the client rebuilds every chain it sees exactly, from full bodies and smal
       }
     },
   );
+  // Other chains to come and go from the view (the game has no bots; the simulation's are handy here).
+  for (let i = 0; i < 18; i++) room.world.addSnake({ bot: true, name: botName(), mass: 12 + Math.random() * 60 });
   client.onMessage(JSON.stringify({ t: 'join', name: 'ניצוץ זריז', vw: 320, vh: 320 }));
   assert.ok(remote, 'the room was announced');
   let angle = 0;
@@ -185,10 +188,14 @@ test('a player who leaves breaks into sparks and frees the room', (t) => {
   assert.equal(rooms.size, 0);
 });
 
-test('names are only ever the generated ones', () => {
+test('names: one of your own when it is clean, else a generated one', () => {
   const { cleanName, VALID_NAMES } = _internals;
   assert.equal(cleanName('ניצוץ זריז'), 'ניצוץ זריז');
-  for (const bad of ['<script>', 'בדיקה', '', null, 42, 'ניצוץ זריז '.repeat(3)]) assert.ok(VALID_NAMES.has(cleanName(bad)));
+  assert.equal(cleanName('  מיכאל  '), 'מיכאל');
+  assert.equal(cleanName('Иван 7'), 'Иван 7');
+  for (const bad of ['<script>', '', null, 42, 'ניצוץ זריז '.repeat(3), 'www.spam.com', 'fuuuck', 'ז ו נ ה', '😀😀😀']) {
+    assert.ok(VALID_NAMES.has(cleanName(bad)), String(bad));
+  }
 });
 
 function place(s, x, y, a) {

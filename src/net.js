@@ -20,13 +20,15 @@ const EXTRAPOLATE = 150; // ms a chain keeps gliding on its own when snapshots a
 export class RemoteWorld {
   constructor(R) {
     this.R = R;
-    this.city = ''; // which city map this room plays on
+    this.city = ''; // which map this room plays on
+    this.cap = 0; // how many people the room holds
+    this.radar = null; // [[id, x/10, y/10, colour, score, team]] for the minimap, every two seconds
     this.time = 0; // seconds on the room clock, at the drawn moment
     this.snakes = new Map();
     this.sparks = new Map();
     this.teams = new Map();
     this.events = [];
-    this.names = new Map(); // id → { name, bot }
+    this.names = new Map(); // id → { name, bot, skin }
     this.board = null;
     this.me = 0;
     this.focus = 0;
@@ -51,12 +53,14 @@ export class RemoteWorld {
     for (let i = p.length - 1; i > 0 && p[i - 1].at > p[i].at; i--) [p[i - 1], p[i]] = [p[i], p[i - 1]];
   }
   setNames(list) {
-    for (const [id, name, bot] of list) {
-      this.names.set(id, { name: String(name), bot: !!bot });
+    for (const [id, name, bot, skin] of list) {
+      const n = { name: String(name), bot: !!bot, skin: typeof skin === 'string' ? skin : '' };
+      this.names.set(id, n);
       const s = this.snakes.get(id);
       if (s) {
-        s.name = String(name);
-        s.bot = !!bot;
+        s.name = n.name;
+        s.bot = n.bot;
+        s.skin = n.skin;
       }
     }
   }
@@ -92,6 +96,7 @@ export class RemoteWorld {
           id: d.id,
           name: n?.name ?? '…',
           bot: n?.bot ?? !!(d.flags & FLAG_BOT),
+          skin: n?.skin ?? '',
           color: 0,
           mass: d.mass,
           x: d.x,
@@ -249,7 +254,8 @@ export class RemoteWorld {
 
 /**
  * Connects to the game server at `url` (ws:// or wss://…/ws). hooks: onStatus(status, info) with status
- * 'connecting' | 'online' | 'offline' | 'full'; onWorld(world); onJoined(world, id); onLost().
+ * 'connecting' | 'online' | 'offline' | 'full'; onHello(msg); onLobby(maps, online); onWorld(world); onNoRoom(map);
+ * onBusy(map); onJoined(world, id); onLost().
  */
 export function connectOnline(url, hooks = {}) {
   const net = {
@@ -293,7 +299,7 @@ export function connectOnline(url, hooks = {}) {
   }
   function connect() {
     clearTimeout(net.retryTimer);
-    if (net.ws || net.sleeping || document.hidden) return;
+    if (net.ws || net.sleeping || net.closed || document.hidden) return;
     if (net.attempts === 0) net.since = Date.now();
     if (net.attempts === 0 || net.attempts % 4 === 0) wake();
     // A sleeping free server takes about a minute to wake: say "connecting" that long before "unavailable".
@@ -363,14 +369,32 @@ export function connectOnline(url, hooks = {}) {
         net.attempts = 0;
         net.online = m.online | 0;
         status('online');
-        if (net.wantWatch) send({ t: 'watch', ...net.view });
+        net.lobby = m.maps && typeof m.maps === 'object' ? m.maps : {};
+        net.home = typeof m.home === 'string' ? m.home : '';
+        hooks.onHello?.(m);
+        hooks.onLobby?.(net.lobby, net.online);
+        if (net.wantWatch) send({ t: 'watch', map: net.map, ...net.view });
+        break;
+      case 'lobby':
+        net.lobby = m.maps && typeof m.maps === 'object' ? m.maps : {};
+        net.online = m.online | 0;
+        hooks.onLobby?.(net.lobby, net.online);
+        break;
+      case 'noroom':
+        net.world = null;
+        hooks.onNoRoom?.(m.map);
+        break;
+      case 'busy':
+        net.joining = null;
+        hooks.onBusy?.(m.map);
         break;
       case 'full':
         net.full = true;
         break;
       case 'room':
         net.world = new RemoteWorld(m.R);
-        net.world.city = typeof m.city === 'string' ? m.city : '';
+        net.world.city = typeof m.map === 'string' ? m.map : typeof m.city === 'string' ? m.city : '';
+        net.world.cap = m.cap | 0;
         hooks.onWorld?.(net.world);
         break;
       case 'joined':
@@ -384,6 +408,7 @@ export function connectOnline(url, hooks = {}) {
       case 'lb':
         if (w) {
           w.board = m;
+          if (Array.isArray(m.radar)) w.radar = m.radar;
           const my = w.snakes.get(net.meId);
           if (my) my.handsCount = m.hands | 0;
         }
@@ -437,6 +462,9 @@ export function connectOnline(url, hooks = {}) {
   });
 
   net.view = { vw: 700, vh: 1300 };
+  net.map = '';
+  net.lobby = {};
+  net.home = '';
   const api = {
     ready: () => net.ready,
     get world() {
@@ -445,11 +473,22 @@ export function connectOnline(url, hooks = {}) {
     get online() {
       return net.online;
     },
-    /** Spectate the room behind the start screen. */
-    watch(view) {
+    get lobby() {
+      return net.lobby || {};
+    },
+    get home() {
+      return net.home || '';
+    },
+    /** Follow the busiest room on a map behind the start screen (the server says 'noroom' when nobody plays). */
+    watch(view, map) {
       net.wantWatch = true;
+      if (map !== undefined) net.map = map;
       if (view) net.view = { vw: Math.round(view.hw), vh: Math.round(view.hh) };
-      if (net.ready) send({ t: 'watch', ...net.view });
+      if (net.ready) send({ t: 'watch', map: net.map, ...net.view });
+    },
+    /** Ask where people play (the answer comes to onLobby). */
+    askLobby() {
+      if (net.ready) send({ t: 'lobby' });
     },
     /** Leave the room (playing offline): the server stops sending anything. */
     idle() {
@@ -459,11 +498,12 @@ export function connectOnline(url, hooks = {}) {
       net.world = null;
       if (net.ready) send({ t: 'idle' });
     },
-    join(name, view) {
+    join(name, view, { map, skin } = {}) {
       if (!net.ready) return false;
       if (view) net.view = { vw: Math.round(view.hw), vh: Math.round(view.hh) };
+      if (map !== undefined) net.map = map;
       net.joining = { id: -1 };
-      send({ t: 'join', name, ...net.view });
+      send({ t: 'join', map: net.map, name, skin, ...net.view });
       return true;
     },
     /** Per frame: advance the drawn room and send the steering (≤ 20 a second, and at least once a second). */
@@ -499,10 +539,20 @@ export function connectOnline(url, hooks = {}) {
       const w = net.world;
       return { bytes: net.bytes, snaps: net.snaps, delay: w?.delay ?? 0, jitter: w?.jitter ?? 0, chains: w?.snakes.size ?? 0 };
     },
+    /** Hangs up for good (the page moved to a map on another server). */
+    close() {
+      net.closed = true;
+      clearTimeout(net.retryTimer);
+      const ws = net.ws;
+      net.ws = null;
+      net.ready = false;
+      net.world = null;
+      ws?.close(1000, 'bye');
+    },
     /** The person did something: counts as activity, and wakes a connection that went to sleep. */
     poke() {
       net.activeAt = Date.now();
-      if (net.sleeping) {
+      if (net.sleeping && !net.closed) {
         net.sleeping = false;
         net.attempts = 0;
         connect();

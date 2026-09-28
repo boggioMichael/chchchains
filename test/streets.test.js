@@ -32,7 +32,9 @@ test('a world with a map fills its streets, and plays without one too', () => {
   const w = new World({ arenaRadius: map.R, sparkTarget: 300, spawnPoint: streetSpawner(map.roads, map.R) });
   assert.ok(w.sparks.size >= 300);
   for (const sp of w.sparks.values()) assert.ok(Math.hypot(sp.x, sp.y) < map.R + 70);
-  const s = w.addSnake({ name: 'בדיקה' });
-  assert.ok(Math.hypot(s.x, s.y) < map.R * 0.8);
+  for (let i = 0; i < 20; i++) {
+    const s = w.addSnake({ name: 'בדיקה' });
+    assert.ok(w.roomy(s.x, s.y, 150), 'chains start well inside the map');
+  }
   assert.equal(streetSpawner([], 3000), null);
 });

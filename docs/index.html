@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-gXo9IGk5DQuIUWkCK1TQOzU6sBa2VK0J6Tuko5iafT8=' 'sha256-kNn73hwyxQKmkUeCfPsLInlQ0G63PiE5IZD+LsUKLHY='; style-src 'sha256-lXMDbO2sjd+O7F+REwfgMmorVIAN/Q2I0IKf2Ub++qM='; img-src 'self' data: blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wlElr0v5dBU30TNQSYkTqmw/i5KtZNzrJGktI/+7aBQ=' 'sha256-5zUgUwz9FwH4uUYoqY7MX7EaY+YUFkPWc2rAMmgmAT0='; style-src 'sha256-vLmOaMk5TmHp0fj2cf3HHOmW6JbUnQBuBeH3+z9ANTE='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Ch-ch-chain-ges">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Ch-ch-chain-ges – המשחק של עמך ישראל">
-<meta property="og:description" content="משחק רשת בטלפון ברחובות האמיתיים של תל אביב, ירושלים וחיפה: אוספים אנשים, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.">
+<meta property="og:description" content="משחק רשת בטלפון ברחובות האמיתיים של ערי ישראל ועל מפת כל הארץ: אוספים אנשים, נותנים יד ומתארכים, ובמצב הסיפור – מנצחים בבחירות. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.">
 <meta property="og:url" content="https://chchchains.onrender.com/">
 <meta property="og:image" content="https://chchchains.onrender.com/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -23,13 +23,14 @@
 <style>
 :root {
   --paper: #f3efe6;
-  --card: rgba(255, 255, 255, 0.9);
+  --card: rgba(255, 255, 255, 0.92);
   --line: rgba(35, 32, 27, 0.12);
   --ink: #23201b;
   --ink-2: rgba(35, 32, 27, 0.62);
   --blue: #0038b8;
   --gold: #b07c0a;
   --danger: #e5484d;
+  --ok: #1f7a38;
   --font: system-ui, -apple-system, 'Segoe UI', 'Noto Sans Hebrew', 'Arial Hebrew', Arial, sans-serif;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -40,8 +41,9 @@ html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink
   overflow: hidden; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 body { touch-action: none; user-select: none; -webkit-user-select: none; }
 #game { position: fixed; inset: 0; display: block; }
-button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 button:disabled { opacity: 0.55; cursor: progress; }
 [hidden] { display: none !important; }
 a { color: inherit; }
@@ -54,7 +56,7 @@ a { color: inherit; }
 .unit { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
 #rank { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
 #rank:empty { display: none; }
-.hud-board { position: absolute; top: calc(var(--safe-t) + 10px); left: 10px; width: min(48vw, 210px);
+.hud-board { position: absolute; top: calc(var(--safe-t) + 10px); left: 10px; width: min(46vw, 210px);
   background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; box-shadow: var(--shadow); }
 #leaderboard { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; }
 #leaderboard li { display: grid; grid-template-columns: 8px 1fr auto; gap: 6px; align-items: center; color: var(--ink-2); }
@@ -66,9 +68,9 @@ a { color: inherit; }
 #boost { pointer-events: auto; position: absolute; left: 16px; bottom: calc(var(--safe-b) + 22px); width: 72px; height: 72px;
   border-radius: 50%; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow);
   font-size: 28px; display: grid; place-items: center; touch-action: none; }
-#boost.on { background: var(--ink); }
-#minimap { position: absolute; right: 14px; bottom: calc(var(--safe-b) + 22px); width: 96px; height: 96px; border-radius: 50%;
-  box-shadow: var(--shadow); }
+#boost.on { background: #f59e0b; border-color: #d98a06; }
+#minimap { position: absolute; right: 12px; bottom: calc(var(--safe-b) + 22px); border-radius: 14px; box-shadow: var(--shadow);
+  pointer-events: none; }
 #hand { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 112px);
   border: 0; border-radius: 999px; padding: 14px 22px; min-height: 52px; max-width: 86vw; background: var(--blue); color: #fff;
   font-weight: 800; font-size: 16px; box-shadow: 0 6px 22px rgba(0, 56, 184, 0.35); display: flex; align-items: center; gap: 8px;
@@ -76,14 +78,29 @@ a { color: inherit; }
 #hand span { overflow: hidden; text-overflow: ellipsis; }
 #hand.pulse { animation: pulse 0.9s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: translateX(-50%) scale(1.06); } }
-#sound-hud { pointer-events: auto; position: absolute; right: 12px; top: calc(var(--safe-t) + 104px); width: 40px; height: 40px;
-  border-radius: 50%; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); font-size: 17px;
-  display: grid; place-items: center; padding: 0; }
+.side { position: absolute; right: 12px; top: calc(var(--safe-t) + 104px); display: grid; gap: 8px; pointer-events: auto; }
+.round { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow);
+  font-size: 17px; display: grid; place-items: center; padding: 0; }
+.round:not(.sound)[aria-pressed='true'] { background: var(--ink); color: #fff; }
+#green-btn { font-size: 10px; line-height: 1; font-weight: 900; color: #16823c; }
+#green-btn[aria-pressed='true'] { background: #16823c; color: #fff; }
 .sound-text { justify-self: center; border: 0; background: none; font-size: 13px; font-weight: 700; color: var(--ink-2);
   padding: 4px 10px; border-radius: 999px; }
 #osm { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 3px);
   font-size: 10px; color: var(--ink-2); text-decoration: none; background: rgba(255, 255, 255, 0.7); padding: 1px 6px;
-  border-radius: 6px; direction: ltr; white-space: nowrap; }
+  border-radius: 6px; direction: ltr; white-space: nowrap; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
+#waiting { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 74px); pointer-events: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 6px 5px 12px; box-shadow: var(--shadow);
+  font-size: 12px; font-weight: 700; display: flex; gap: 8px; align-items: center; white-space: nowrap; max-width: 92vw; }
+#waiting button { border: 0; border-radius: 999px; background: var(--blue); color: #fff; font-weight: 800; font-size: 12px; padding: 5px 10px; }
+#mission { position: absolute; left: 10px; top: calc(var(--safe-t) + 10px); width: min(54vw, 250px); box-sizing: border-box;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 7px 10px; box-shadow: var(--shadow); text-align: right; }
+#mission small { display: block; font-size: 11px; color: var(--blue); font-weight: 800; margin-top: 3px; }
+#hud.story .hud-board { display: none; }
+#mission b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#mission span { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { height: 5px; background: rgba(35, 32, 27, 0.1); border-radius: 99px; margin-top: 5px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--blue); border-radius: 99px; transition: width 0.3s; }
 #toast { position: fixed; top: calc(var(--safe-t) + 124px); left: 50%; transform: translate(-50%, -10px); opacity: 0;
   background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; box-shadow: var(--shadow);
   font-size: 14px; font-weight: 600; max-width: min(90vw, 460px); text-align: center; direction: rtl;
@@ -97,35 +114,54 @@ a { color: inherit; }
 /* ------------------------------------------------------------------ screens */
 .screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; direction: rtl; z-index: 4;
   background: rgba(243, 239, 230, 0.5); overflow-y: auto; }
-.card { width: min(400px, 100%); text-align: center; display: grid; gap: 13px; padding: 20px 18px;
+.sheet { z-index: 6; background: rgba(35, 32, 27, 0.28); }
+.card { width: min(400px, 100%); text-align: center; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px 16px;
   background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); box-sizing: border-box; }
+.sheet .card { max-height: calc(100dvh - 32px); }
+.sheet .card.lists { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.sheet h2 { margin: 0; font-size: 19px; font-weight: 900; text-align: center; }
 #mark { width: 230px; height: 70px; justify-self: center; margin-bottom: -8px; }
 .logo { font-size: clamp(27px, 9.2vw, 54px); font-weight: 900; line-height: 1.05; margin: 0; letter-spacing: -1.5px;
   direction: ltr; white-space: nowrap; color: var(--ink); }
 .logo .st { color: rgba(35, 32, 27, 0.3); }
 .brand { margin: -8px 0 0; font-size: 17px; font-weight: 800; color: var(--blue); }
-#city { margin: -4px 0 0; font-size: 14px; font-weight: 700; color: var(--ink); }
-#city:empty { display: none; }
-.tag { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); margin: 0; text-wrap: balance; }
+.map-row { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 6px 6px 6px 12px; text-align: right; }
+.map-row div { flex: 1; min-width: 0; }
+.map-row b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-row small { display: block; font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-row small.live { color: var(--ok); font-weight: 700; }
+.pill { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 8px 12px; font-weight: 800; font-size: 13px;
+  white-space: nowrap; }
+.tag { font-size: 14.5px; line-height: 1.45; color: var(--ink-2); margin: 0; text-wrap: balance; }
 .tag strong { color: var(--ink); }
-.name-row { display: flex; gap: 8px; justify-content: center; align-items: center; }
-.name-chip { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; font-weight: 800; }
-.name-chip small { color: var(--ink-2); font-weight: 500; margin-inline-end: 6px; }
-#reroll { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 18px; }
-.primary { border: 0; border-radius: 16px; min-height: 60px; font-size: 21px; font-weight: 900; color: #fff; background: var(--blue);
+.me-row { display: flex; gap: 8px; align-items: center; }
+#skin-btn { width: 54px; height: 54px; border-radius: 50%; border: 1px solid var(--line); background: #fff; padding: 0; flex: none;
+  display: grid; place-items: center; }
+#skin-btn canvas { width: 48px; height: 48px; }
+.name-box { flex: 1; min-width: 0; display: grid; text-align: right; gap: 1px; }
+.name-box label { font-size: 11px; color: var(--ink-2); }
+#name { border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; font-weight: 800; font-size: 16px; background: #fff;
+  min-width: 0; direction: rtl; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+#name.bad { border-color: var(--danger); }
+#name-note { font-size: 11px; color: var(--danger); }
+#name-note:empty { display: none; }
+#reroll { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 18px; flex: none; }
+.primary { border: 0; border-radius: 16px; min-height: 58px; font-size: 21px; font-weight: 900; color: #fff; background: var(--blue);
   box-shadow: 0 8px 24px rgba(0, 56, 184, 0.3); }
 .primary:active { transform: scale(0.98); }
-.secondary { border: 1px solid var(--line); border-radius: 16px; min-height: 56px; font-size: 18px; font-weight: 800;
-  background: #fff; }
+.secondary { border: 1px solid var(--line); border-radius: 16px; min-height: 50px; font-size: 16px; font-weight: 800; background: #fff; }
 .foot { font-size: 12px; color: var(--ink-2); line-height: 1.6; margin: 0; }
 .foot a { text-decoration: none; }
 .foot bdi { direction: ltr; }
 #net-status, #over-net { font-size: 12.5px; color: var(--ink-2); margin: 0; }
-#net-status[data-state='online'], #over-net[data-state='online'] { color: #1f7a38; }
+#net-status[data-state='online'], #over-net[data-state='online'] { color: var(--ok); }
 .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.how div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 9px 6px; font-size: 12.5px;
-  color: var(--ink-2); line-height: 1.35; }
-.how b { display: block; font-size: 20px; margin-bottom: 3px; }
+.how div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px 6px; font-size: 12px;
+  color: var(--ink-2); line-height: 1.3; }
+.how b { display: block; font-size: 19px; margin-bottom: 2px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2:has(> [hidden]) { grid-template-columns: 1fr; }
 #over-title { font-size: 22px; font-weight: 900; margin: 0; text-wrap: balance; }
 .big { font-size: 64px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
 .big-label { color: var(--ink-2); font-size: 14px; margin-top: -6px; }
@@ -133,10 +169,43 @@ a { color: inherit; }
 .stats div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 4px; }
 .stats b { display: block; font-size: 21px; font-variant-numeric: tabular-nums; }
 .stats span { font-size: 12px; color: var(--ink-2); }
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 #join-link { color: var(--blue); font-weight: 800; font-size: 15px; }
 #share-text { width: 100%; min-height: 110px; background: #fff; color: var(--ink); border: 1px solid var(--line);
   border-radius: 12px; padding: 10px; font: 15px var(--font); direction: rtl; box-sizing: border-box; }
+
+/* sheets: maps, skins, music */
+.search { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 15px; background: #fff; direction: rtl;
+  user-select: text; -webkit-user-select: text; touch-action: manipulation; width: 100%; box-sizing: border-box; }
+.list { overflow-y: auto; display: grid; gap: 6px; align-content: start; padding: 2px; touch-action: pan-y; }
+.list h3 { margin: 8px 2px 0; font-size: 12px; color: var(--ink-2); font-weight: 800; text-align: right; }
+.item { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: #fff; border-radius: 12px;
+  padding: 9px 12px; text-align: right; width: 100%; box-sizing: border-box; }
+.item.on { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0, 56, 184, 0.25) inset; }
+.item div { flex: 1; min-width: 0; }
+.item b { display: block; font-size: 15px; }
+.item small { display: block; font-size: 12px; color: var(--ink-2); }
+.item em { font-style: normal; font-size: 12px; font-weight: 800; color: var(--ok); white-space: nowrap; }
+.grid { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; align-content: start;
+  padding: 2px; touch-action: pan-y; }
+.skin { border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 6px 4px; display: grid; justify-items: center; gap: 2px; }
+.skin.on { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0, 56, 184, 0.25) inset; }
+.skin canvas { width: 56px; height: 56px; }
+.skin span { font-size: 11.5px; font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note { font-size: 12.5px; color: var(--ink-2); margin: 0; line-height: 1.5; }
+.file { display: flex; gap: 6px; align-items: center; justify-content: center; border: 1px dashed rgba(35, 32, 27, 0.3); border-radius: 16px;
+  min-height: 50px; font-weight: 800; font-size: 15px; background: #fff; cursor: pointer; }
+.file input { display: none; }
+
+/* story */
+.mandates { display: grid; gap: 4px; }
+.mandates .bar { height: 12px; position: relative; overflow: visible; }
+.mandates .bar i { background: linear-gradient(90deg, var(--blue), #3d6fd8); }
+.mandates .bar s { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--danger); right: calc(61 / 80 * 100%); }
+.mandates small { font-size: 12px; color: var(--ink-2); }
+.mission-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; text-align: right; }
+.mission-card small { font-size: 12px; color: var(--blue); font-weight: 800; }
+.mission-card b { display: block; font-size: 18px; margin: 2px 0 4px; }
+.mission-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { #hand.pulse { animation: none; } #toast { transition: none; } }
 @media (min-width: 900px) { #score { font-size: 36px; } .hud-board { width: 240px; } #leaderboard { font-size: 13px; } }
 </style>
@@ -147,9 +216,15 @@ a { color: inherit; }
 <div id="hud" hidden>
   <div class="hud-score"><div id="score">0</div><div class="unit">אנשים בשרשרת</div><div id="rank"></div></div>
   <div class="hud-board"><ol id="leaderboard" aria-label="טבלת המובילים"></ol><div id="players"></div></div>
-  <button id="boost" type="button" aria-label="ריצה (החזיקו)">⚡</button>
+  <div id="mission" hidden><b id="mission-title"></b><span id="mission-text"></span><div class="bar"><i id="mission-bar"></i></div><small id="mission-mandates"></small></div>
+  <div id="waiting" hidden><span>👀 לבד במפה – מחכים לעוד אנשים</span><button id="waiting-share" type="button">הזמינו</button></div>
+  <button id="boost" type="button" aria-label="ריצה (החזיקו, או אצבע שנייה על המסך)">⚡</button>
   <button id="hand" type="button" hidden>🤝 <span>תנו יד</span></button>
-  <button id="sound-hud" class="sound" type="button" aria-label="מוסיקה">🔊</button>
+  <div class="side">
+    <button id="sound-hud" class="round sound" type="button" aria-label="מוסיקה">🔊</button>
+    <button id="sat-btn" class="round" type="button" aria-label="תצוגת לוויין" aria-pressed="false">🛰️</button>
+    <button id="green-btn" class="round" type="button" aria-label="הקו הירוק" aria-pressed="false" hidden>קו<br>ירוק</button>
+  </div>
   <canvas id="minimap" aria-hidden="true"></canvas>
   <a id="osm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
 </div>
@@ -161,21 +236,32 @@ a { color: inherit; }
     <canvas id="mark" aria-hidden="true"></canvas>
     <h1 id="logo" class="logo"><span class="st">Ch-ch-</span>chain<span class="st">-ges</span></h1>
     <p id="brand" class="brand">המשחק של עמך ישראל</p>
-    <p id="city"></p>
-    <p class="tag">אוספים אנשים ברחובות, נותנים יד ומתארכים.<br><strong>לבד אתה חזק – ביחד אנחנו שרשרת.</strong></p>
+    <div class="map-row">
+      <div><b id="map-name">…</b><small id="map-live">בוחרים מפה</small></div>
+      <button id="map-btn" class="pill" type="button">החלפת מפה</button>
+    </div>
+    <p class="tag">אוספים אנשים ברחובות, נותנים יד ומתארכים. <strong>לבד אתה חזק – ביחד אנחנו שרשרת.</strong></p>
     <div class="how" aria-label="איך משחקים">
       <div><b>👆</b>גוררים אצבע לכיוון</div>
-      <div><b>⚡</b>מחזיקים כדי לרוץ</div>
+      <div><b>✌️</b>אצבע שנייה: ריצה</div>
       <div><b>🤝</b>נותנים יד ומתחברים</div>
     </div>
-    <div class="name-row">
-      <div class="name-chip"><small>השם שלך:</small><span id="name"></span></div>
+    <div class="me-row">
+      <button id="skin-btn" type="button" aria-label="בחירת דמות"><canvas id="skin-face" width="96" height="96"></canvas></button>
+      <div class="name-box">
+        <label for="name">השם שלך</label>
+        <input id="name" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+        <span id="name-note" aria-live="polite"></span>
+      </div>
       <button id="reroll" type="button" aria-label="שם אחר">🔄</button>
     </div>
     <button id="play" class="primary" type="button">שחקו עכשיו</button>
+    <div class="row2">
+      <button id="story-btn" class="secondary" type="button">📖 הדרך לממשלה</button>
+      <button id="music-btn" class="secondary" type="button">🎵 מוסיקה</button>
+    </div>
     <p id="net-status" aria-live="polite"></p>
-    <button class="sound sound-text" type="button">🔊 מוסיקה</button>
-    <p class="foot">בלי הרשמה · בלי עוגיות · 🤖 מסמן בוט<br>מפה: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
+    <p class="foot">בלי הרשמה · בלי עוגיות · רק אנשים אמיתיים<br>מפה: <a id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
   </div>
 </section>
 
@@ -192,20 +278,65 @@ a { color: inherit; }
       <button id="again" class="primary" type="button">עוד סיבוב</button>
       <button id="share" class="secondary" type="button">שתפו</button>
     </div>
+    <button id="to-menu" class="sound-text" type="button">לתפריט</button>
     <a id="join-link" href="#" target="_blank" rel="noopener" hidden>רוצים להיות חוליה אמיתית? הצטרפו להתנדבות</a>
     <p id="over-net" class="foot" aria-live="polite"></p>
-    <button class="sound sound-text" type="button">🔊 מוסיקה</button>
   </div>
 </section>
 
-<section id="share-fallback" class="screen" hidden aria-label="שיתוף">
+<section id="maps" class="screen sheet" hidden aria-labelledby="maps-title">
+  <div class="card lists">
+    <h2 id="maps-title">איפה משחקים?</h2>
+    <input id="map-search" class="search" type="search" placeholder="חיפוש עיר…" autocomplete="off" aria-label="חיפוש עיר">
+    <div id="map-list" class="list"></div>
+    <button class="secondary close" type="button">סגירה</button>
+  </div>
+</section>
+
+<section id="skins" class="screen sheet" hidden aria-labelledby="skins-title">
+  <div class="card lists">
+    <h2 id="skins-title">הדמות שלך</h2>
+    <input id="skin-search" class="search" type="search" placeholder="חיפוש לפי שם…" autocomplete="off" aria-label="חיפוש דמות לפי שם">
+    <div id="skin-list" class="grid"></div>
+    <button class="secondary close" type="button">סגירה</button>
+  </div>
+</section>
+
+<section id="music" class="screen sheet" hidden aria-labelledby="music-title">
+  <div class="card">
+    <h2 id="music-title">מוסיקה</h2>
+    <p class="note">רצועות מקוריות שנכתבו למשחק, או שיר משלכם מהטלפון: הוא מתנגן רק אצלכם ולא עולה לשום מקום.</p>
+    <div id="track-list" class="list"></div>
+    <div class="row2">
+      <label class="file">🎧 שיר מהטלפון<input id="music-file" type="file" accept="audio/*"></label>
+      <button class="secondary sound" type="button">🔊 מוסיקה</button>
+    </div>
+    <button class="secondary close" type="button">סגירה</button>
+  </div>
+</section>
+
+<section id="story" class="screen sheet" hidden aria-labelledby="story-title">
+  <div class="card">
+    <h2 id="story-title">הדרך לממשלה</h2>
+    <p id="story-intro" class="note">יש לכם תנועה וחלום, ואף מנדט. יוצאים לרחובות, אוספים אנשים, תולים דגלים ומגיעים למקומות שחשובים. כל משימה מביאה מנדטים, ו־61 מהם מביאים ניצחון בבחירות והקמת ממשלה. סיפור בדיוני; ההתקדמות נשמרת רק בטלפון שלכם.</p>
+    <div class="mandates"><div class="bar"><i id="mandates-bar"></i><s></s></div><small id="mandates-text">0 מנדטים מתוך 61</small></div>
+    <div class="mission-card"><small id="story-chapter"></small><b id="story-mission"></b><p id="story-brief"></p></div>
+    <button id="story-go" class="primary" type="button">יוצאים לדרך</button>
+    <div class="row2">
+      <button id="story-reset" class="secondary" type="button">מההתחלה</button>
+      <button class="secondary close" type="button">סגירה</button>
+    </div>
+  </div>
+</section>
+
+<section id="share-fallback" class="screen sheet" hidden aria-label="שיתוף">
   <div class="card">
     <p class="tag">העתיקו ושלחו:</p>
     <textarea id="share-text" readonly></textarea>
     <button id="share-close" class="secondary" type="button">סגירה</button>
   </div>
 </section>
-<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/"};</script>
+<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[]};</script>
 <script>
 (() => {
 'use strict';
@@ -378,6 +509,9 @@ class World {
     this.sparkTarget = opts.sparkTarget ?? C.sparkTarget;
     // Where people turn up (e.g. along a city's streets); without it, anywhere in the arena.
     this.spawnPoint = opts.spawnPoint ?? null;
+    // The playing area: a map's city limits (arena.js), or else the circle of radius R.
+    const r2 = this.R * this.R;
+    this.inside = opts.inside ?? ((x, y) => x * x + y * y <= r2);
     this.snakes = new Map();
     this.sparks = new Map();
     this.teams = new Map();
@@ -414,17 +548,31 @@ class World {
     this.sparkGrid.remove(s.x, s.y, s);
     this.sparkLog?.removed.push(s.id);
   }
-  /** A random place for people: on the streets when the world has a map, else anywhere inside the arena. */
+  /** Inside the arena, and at least `margin` from its edge (checked in four directions). */
+  roomy(x, y, margin) {
+    const inside = this.inside;
+    return inside(x, y) && (margin <= 0 || (inside(x + margin, y) && inside(x - margin, y) && inside(x, y + margin) && inside(x, y - margin)));
+  }
+  /**
+   * A random place for people: on the streets when the world has a map, else anywhere inside the arena. `reach`
+   * keeps it off the edge: 1 − reach of 600 metres (0.97 → 18 m, 0.72 → 170 m).
+   */
   somewhere(reach = 0.97) {
+    const margin = (1 - reach) * 600;
     if (this.spawnPoint) {
-      for (let k = 0; k < 4; k++) {
+      for (let k = 0; k < 6; k++) {
         const p = this.spawnPoint();
-        if (Math.hypot(p.x, p.y) < this.R * reach) return p;
+        if (p && this.roomy(p.x, p.y, margin)) return p;
       }
     }
-    const rr = this.R * reach * Math.sqrt(Math.random());
-    const a = Math.random() * TAU;
-    return { x: Math.cos(a) * rr, y: Math.sin(a) * rr };
+    for (let k = 0; k < 40; k++) {
+      const rr = this.R * Math.sqrt(Math.random());
+      const a = Math.random() * TAU;
+      const x = Math.cos(a) * rr;
+      const y = Math.sin(a) * rr;
+      if (this.roomy(x, y, k < 30 ? margin : 0)) return { x, y };
+    }
+    return { x: 0, y: 0 };
   }
 
   spawnNaturalSpark() {
@@ -436,7 +584,9 @@ class World {
       for (let i = 0; i < n; i++) {
         const ra = Math.random() * TAU;
         const rd = 12 + Math.random() * 50;
-        this.addSpark(cx + Math.cos(ra) * rd, cy + Math.sin(ra) * rd, 1, 4.5 + Math.random() * 2, color);
+        const x = cx + Math.cos(ra) * rd;
+        const y = cy + Math.sin(ra) * rd;
+        if (this.inside(x, y)) this.addSpark(x, y, 1, 4.5 + Math.random() * 2, color);
       }
       return;
     }
@@ -464,13 +614,14 @@ class World {
     return best;
   }
 
-  addSnake({ name = randomName(), color, bot = false, mass = C.startMass } = {}) {
+  addSnake({ name = randomName(), color, bot = false, mass = C.startMass, skin = '' } = {}) {
     const id = this.nextId++;
     const { x, y } = this.safeSpawnPoint();
     const a = Math.atan2(-y, -x) + (Math.random() - 0.5) * 1.2; // face inwards
     const s = {
       id,
       name,
+      skin,
       color: color ?? (id - 1) % COLORS.length,
       bot,
       mass,
@@ -700,7 +851,7 @@ class World {
    */
   collision(s) {
     const r = radiusFor(s.mass);
-    if (Math.hypot(s.x, s.y) > this.R - r * 0.6) return 0;
+    if (!this.inside(s.x + Math.cos(s.a) * r * 0.4, s.y + Math.sin(s.a) * r * 0.4)) return 0; // off the map
     let killer = null;
     this.bodyGrid.query(s.x, s.y, r + 40, (i) => {
       const owner = this.bpOwner[i];
@@ -785,7 +936,7 @@ class World {
   // --------------------------------------------------------------------------------------------- bots
   /** Is a point dangerous for snake s (another body or a head about to be there, or the edge)? Returns 0 or 1. */
   hazard(s, x, y, pad, heads) {
-    if (Math.hypot(x, y) > this.R - pad - 30) return 1;
+    if (!this.roomy(x, y, pad + 30)) return 1;
     for (const h of heads) {
       const lim = pad + h.r + 26;
       if ((h.x - x) ** 2 + (h.y - y) ** 2 < lim * lim) return 1;
@@ -808,9 +959,8 @@ class World {
     const r = radiusFor(s.mass);
     let tx;
     let ty;
-    const fromCenter = Math.hypot(s.x, s.y);
     let chasing = 0;
-    if (fromCenter > this.R * 0.84) {
+    if (!this.roomy(s.x, s.y, 260)) {
       tx = 0;
       ty = 0;
     } else {
@@ -922,24 +1072,124 @@ function botName() {
 
 return { C, COLORS, SPARK_COLORS, NOUNS, ADJS, PLACES, randomName, lengthFor, radiusFor, scoreOf, angleDiff, World, botName };
 })();
+__m.names = (() => {
+// Ch-ch-chain-ges — player names. Anyone may pick a name of their own: 2–16 letters (any alphabet), digits, spaces and
+// a little punctuation; no links, no emoji, nothing from a short list of insults and slurs. The server applies the
+// same rules (and falls back to a generated name), so the page can say at once whether a name will pass.
+
+const NAME_MIN = 2;
+const NAME_MAX = 16;
+
+// Matched against the name with spaces, punctuation and Hebrew final letters folded away (so "ז ו נ ה" and
+// "fuuuck" are caught too). Short words that are also innocent parts of other words only match whole words.
+const BLOCK = [
+  'זונה', 'שרמוטה', 'שרמוטות', 'מזדיין', 'לזיין', 'זיון', 'זיונים', 'מניאק', 'בנזונה', 'כוסאמק', 'כוסאמא', 'כוסעמק',
+  'כוסית', 'קוקסינל', 'היטלר', 'יהודון', 'ערבוש', 'כושי', 'אשכנאצי', 'חמאס', 'דאעש', 'מוותל', 'fuck', 'fuk',
+  'bitch', 'cunt', 'pussy', 'nigger', 'nigga', 'faggot', 'kike', 'hitler', 'whore', 'slut', 'retard', 'porn', 'hamas',
+  'penis', 'vagina', 'dildo',
+];
+// Only as whole words: each is also part of innocent names (Shitrit, Nazir, grape, Isis…).
+const WHOLE = ['זין', 'כוס', 'חרא', 'נאצי', 'נאצים', 'shit', 'nazi', 'nazis', 'rape', 'isis', 'sex', 'fag', 'dick', 'cock'];
+const FINALS = { ך: 'כ', ם: 'מ', ן: 'נ', ף: 'פ', ץ: 'צ' };
+
+function fold(s) {
+  return s
+    .toLowerCase()
+    .replace(/[ךםןףץ]/g, (c) => FINALS[c])
+    .replace(/(.)\1+/gu, '$1');
+}
+const BLOCK_FOLDED = BLOCK.map(fold);
+const WHOLE_FOLDED = new Set(WHOLE.map(fold));
+
+/**
+ * The name as it will be shown, or '' when it may not be used. Accepts letters of any alphabet, digits, spaces and
+ * - _ . ' " ׳ ״ ! ?; trims, collapses spaces, and drops invisible and direction-changing characters.
+ */
+function cleanName(input) {
+  if (typeof input !== 'string') return '';
+  const s = input
+    .normalize('NFC')
+    .replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const len = [...s].length;
+  if (len < NAME_MIN || len > NAME_MAX) return '';
+  if (!/^[\p{L}\p{N} _.'"׳״!?\-]+$/u.test(s)) return '';
+  if (!/\p{L}/u.test(s)) return '';
+  if (/https?|www|\.(com|net|org|co|il|io|ly|me|app|xyz|gg|tv)\b|@/i.test(s)) return '';
+  const joined = fold(s.replace(/[\s_.'"׳״!?\-]+/g, ''));
+  if (BLOCK_FOLDED.some((w) => joined.includes(w))) return '';
+  for (const word of s.split(/[\s_.'"׳״!?\-]+/)) if (WHOLE_FOLDED.has(fold(word))) return '';
+  return s;
+}
+
+return { NAME_MIN, NAME_MAX, cleanName };
+})();
+__m.arena = (() => {
+// Ch-ch-chain-ges — the playing area of a map: the city limits (or the whole country, or the promise), stored in
+// the map file as an "inside?" mask on a grid. The same test runs in the browser and on the server.
+
+/**
+ * The arena of a map (its parsed JSON, or null for none): { R, inside(x, y), rings, E } where rings are the
+ * outline as flat [x0, y0, x1, y1, …] polygons. Maps without a mask are the circle of radius R.
+ */
+function arenaOf(data, fallbackR = 3000) {
+  const R = data?.R ?? fallbackR;
+  const a = data?.arena;
+  if (!a || !Array.isArray(a.rle) || !(a.n > 0) || !(a.cell > 0)) {
+    const r2 = R * R;
+    return { R, inside: (x, y) => x * x + y * y <= r2, rings: null, E: data?.extent ?? R };
+  }
+  const n = a.n;
+  const cell = a.cell;
+  const E = data.extent;
+  const mask = new Uint8Array(n * n);
+  let p = 0;
+  let on = false;
+  for (const run of a.rle) {
+    if (on) mask.fill(1, p, Math.min(n * n, p + run));
+    p += run;
+    on = !on;
+  }
+  const inside = (x, y) => {
+    const c = Math.round((x + E) / cell);
+    const r = Math.round((y + E) / cell);
+    return c >= 0 && r >= 0 && c < n && r < n && mask[r * n + c] === 1;
+  };
+  return { R, inside, rings: Array.isArray(a.rings) ? a.rings : null, E, mask, n, cell };
+}
+
+/** How close (in map units, up to `max`) the edge is ahead of a point walking at angle a. Infinity if not near. */
+function edgeAhead(inside, x, y, a, max = 400, step = 40) {
+  const dx = Math.cos(a);
+  const dy = Math.sin(a);
+  for (let d = step; d <= max; d += step) if (!inside(x + dx * d, y + dy * d)) return d;
+  return Infinity;
+}
+
+return { arenaOf, edgeAhead };
+})();
 __m.streets = (() => {
-// Ch-ch-chain-ges — where people turn up: random spots on a city's streets (on the pavement, a few metres to either
-// side of the road's centre line). The same code places people on the server and in offline play.
+// Ch-ch-chain-ges — where people turn up: random spots on a map's streets (on the pavement, a few metres to either
+// side of the road's centre line), and on the big maps also around the towns. The same code places people on the
+// server and in offline play.
 
 const WEIGHT = [1.5, 1.25, 1]; // main roads are a little busier
 
 /**
- * roads: [[polyline, …] per class] with polylines as flat [x0, y0, x1, y1, …] in metres; R: the arena radius.
- * Returns a function () => { x, y }, or null when there are no streets inside the arena.
+ * roads: [[polyline, …] per class] with polylines as flat [x0, y0, x1, y1, …] in map units; R: the arena radius.
+ * opts.inside(x, y): the arena test (else the circle of R); opts.hubs: [[x, y, weight], …] towns on a big map,
+ * where half the people turn up. Returns a function () => { x, y }, or null when there is nowhere to put anyone.
  */
-function streetSpawner(roads, R, rand = Math.random) {
+function streetSpawner(roads, R, rand = Math.random, opts = {}) {
+  const lim = (R - 60) ** 2;
+  const ok = opts.inside ? (x, y) => opts.inside(x, y) : (x, y) => x * x + y * y <= lim;
   const ax = [];
   const ay = [];
   const bx = [];
   const by = [];
   const cum = [];
   let total = 0;
-  const lim = (R - 60) ** 2;
   (roads || []).forEach((lines, cls) => {
     const w = WEIGHT[cls] ?? 1;
     for (const p of lines) {
@@ -948,7 +1198,7 @@ function streetSpawner(roads, R, rand = Math.random) {
         const y0 = p[i - 1];
         const x1 = p[i];
         const y1 = p[i + 1];
-        if (x0 * x0 + y0 * y0 > lim || x1 * x1 + y1 * y1 > lim) continue;
+        if (!ok(x0, y0) || !ok(x1, y1)) continue;
         const len = Math.hypot(x1 - x0, y1 - y0);
         if (len < 1) continue;
         total += len * w;
@@ -960,24 +1210,42 @@ function streetSpawner(roads, R, rand = Math.random) {
       }
     }
   });
-  if (!total) return null;
+  const hubs = (opts.hubs || []).filter(([x, y]) => ok(x, y));
+  let hubTotal = 0;
+  const hubCum = Float64Array.from(hubs, (h) => (hubTotal += Math.max(0.1, h[2] || 1)));
+  if (!total && !hubTotal) return null;
   const C = Float64Array.from(cum);
-  return () => {
-    const r = rand() * total;
+  const find = (arr, r) => {
     let lo = 0;
-    let hi = C.length - 1;
+    let hi = arr.length - 1;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (C[mid] < r) lo = mid + 1;
+      if (arr[mid] < r) lo = mid + 1;
       else hi = mid;
     }
+    return lo;
+  };
+  const onStreet = () => {
+    const k = find(C, rand() * total);
     const t = rand();
-    const dx = bx[lo] - ax[lo];
-    const dy = by[lo] - ay[lo];
+    const dx = bx[k] - ax[k];
+    const dy = by[k] - ay[k];
     const L = Math.hypot(dx, dy) || 1;
     const side = (rand() < 0.5 ? -1 : 1) * (4 + rand() * 7);
-    return { x: ax[lo] + dx * t - (dy / L) * side, y: ay[lo] + dy * t + (dx / L) * side };
+    return { x: ax[k] + dx * t - (dy / L) * side, y: ay[k] + dy * t + (dx / L) * side };
   };
+  const inTown = () => {
+    const [hx, hy, w] = hubs[find(hubCum, rand() * hubTotal)];
+    const sigma = 30 * Math.sqrt(Math.max(0.1, w || 1));
+    // Box–Muller: most people near the middle of town.
+    const u = Math.max(1e-9, rand());
+    const d = sigma * Math.sqrt(-2 * Math.log(u));
+    const a = rand() * Math.PI * 2;
+    return { x: hx + Math.cos(a) * d, y: hy + Math.sin(a) * d };
+  };
+  if (!hubTotal) return onStreet;
+  if (!total) return inTown;
+  return () => (rand() < 0.5 ? inTown() : onStreet());
 }
 
 return { streetSpawner };
@@ -1148,13 +1416,15 @@ const EXTRAPOLATE = 150; // ms a chain keeps gliding on its own when snapshots a
 class RemoteWorld {
   constructor(R) {
     this.R = R;
-    this.city = ''; // which city map this room plays on
+    this.city = ''; // which map this room plays on
+    this.cap = 0; // how many people the room holds
+    this.radar = null; // [[id, x/10, y/10, colour, score, team]] for the minimap, every two seconds
     this.time = 0; // seconds on the room clock, at the drawn moment
     this.snakes = new Map();
     this.sparks = new Map();
     this.teams = new Map();
     this.events = [];
-    this.names = new Map(); // id → { name, bot }
+    this.names = new Map(); // id → { name, bot, skin }
     this.board = null;
     this.me = 0;
     this.focus = 0;
@@ -1179,12 +1449,14 @@ class RemoteWorld {
     for (let i = p.length - 1; i > 0 && p[i - 1].at > p[i].at; i--) [p[i - 1], p[i]] = [p[i], p[i - 1]];
   }
   setNames(list) {
-    for (const [id, name, bot] of list) {
-      this.names.set(id, { name: String(name), bot: !!bot });
+    for (const [id, name, bot, skin] of list) {
+      const n = { name: String(name), bot: !!bot, skin: typeof skin === 'string' ? skin : '' };
+      this.names.set(id, n);
       const s = this.snakes.get(id);
       if (s) {
-        s.name = String(name);
-        s.bot = !!bot;
+        s.name = n.name;
+        s.bot = n.bot;
+        s.skin = n.skin;
       }
     }
   }
@@ -1220,6 +1492,7 @@ class RemoteWorld {
           id: d.id,
           name: n?.name ?? '…',
           bot: n?.bot ?? !!(d.flags & FLAG_BOT),
+          skin: n?.skin ?? '',
           color: 0,
           mass: d.mass,
           x: d.x,
@@ -1377,7 +1650,8 @@ class RemoteWorld {
 
 /**
  * Connects to the game server at `url` (ws:// or wss://…/ws). hooks: onStatus(status, info) with status
- * 'connecting' | 'online' | 'offline' | 'full'; onWorld(world); onJoined(world, id); onLost().
+ * 'connecting' | 'online' | 'offline' | 'full'; onHello(msg); onLobby(maps, online); onWorld(world); onNoRoom(map);
+ * onBusy(map); onJoined(world, id); onLost().
  */
 function connectOnline(url, hooks = {}) {
   const net = {
@@ -1421,7 +1695,7 @@ function connectOnline(url, hooks = {}) {
   }
   function connect() {
     clearTimeout(net.retryTimer);
-    if (net.ws || net.sleeping || document.hidden) return;
+    if (net.ws || net.sleeping || net.closed || document.hidden) return;
     if (net.attempts === 0) net.since = Date.now();
     if (net.attempts === 0 || net.attempts % 4 === 0) wake();
     // A sleeping free server takes about a minute to wake: say "connecting" that long before "unavailable".
@@ -1491,14 +1765,32 @@ function connectOnline(url, hooks = {}) {
         net.attempts = 0;
         net.online = m.online | 0;
         status('online');
-        if (net.wantWatch) send({ t: 'watch', ...net.view });
+        net.lobby = m.maps && typeof m.maps === 'object' ? m.maps : {};
+        net.home = typeof m.home === 'string' ? m.home : '';
+        hooks.onHello?.(m);
+        hooks.onLobby?.(net.lobby, net.online);
+        if (net.wantWatch) send({ t: 'watch', map: net.map, ...net.view });
+        break;
+      case 'lobby':
+        net.lobby = m.maps && typeof m.maps === 'object' ? m.maps : {};
+        net.online = m.online | 0;
+        hooks.onLobby?.(net.lobby, net.online);
+        break;
+      case 'noroom':
+        net.world = null;
+        hooks.onNoRoom?.(m.map);
+        break;
+      case 'busy':
+        net.joining = null;
+        hooks.onBusy?.(m.map);
         break;
       case 'full':
         net.full = true;
         break;
       case 'room':
         net.world = new RemoteWorld(m.R);
-        net.world.city = typeof m.city === 'string' ? m.city : '';
+        net.world.city = typeof m.map === 'string' ? m.map : typeof m.city === 'string' ? m.city : '';
+        net.world.cap = m.cap | 0;
         hooks.onWorld?.(net.world);
         break;
       case 'joined':
@@ -1512,6 +1804,7 @@ function connectOnline(url, hooks = {}) {
       case 'lb':
         if (w) {
           w.board = m;
+          if (Array.isArray(m.radar)) w.radar = m.radar;
           const my = w.snakes.get(net.meId);
           if (my) my.handsCount = m.hands | 0;
         }
@@ -1565,6 +1858,9 @@ function connectOnline(url, hooks = {}) {
   });
 
   net.view = { vw: 700, vh: 1300 };
+  net.map = '';
+  net.lobby = {};
+  net.home = '';
   const api = {
     ready: () => net.ready,
     get world() {
@@ -1573,11 +1869,22 @@ function connectOnline(url, hooks = {}) {
     get online() {
       return net.online;
     },
-    /** Spectate the room behind the start screen. */
-    watch(view) {
+    get lobby() {
+      return net.lobby || {};
+    },
+    get home() {
+      return net.home || '';
+    },
+    /** Follow the busiest room on a map behind the start screen (the server says 'noroom' when nobody plays). */
+    watch(view, map) {
       net.wantWatch = true;
+      if (map !== undefined) net.map = map;
       if (view) net.view = { vw: Math.round(view.hw), vh: Math.round(view.hh) };
-      if (net.ready) send({ t: 'watch', ...net.view });
+      if (net.ready) send({ t: 'watch', map: net.map, ...net.view });
+    },
+    /** Ask where people play (the answer comes to onLobby). */
+    askLobby() {
+      if (net.ready) send({ t: 'lobby' });
     },
     /** Leave the room (playing offline): the server stops sending anything. */
     idle() {
@@ -1587,11 +1894,12 @@ function connectOnline(url, hooks = {}) {
       net.world = null;
       if (net.ready) send({ t: 'idle' });
     },
-    join(name, view) {
+    join(name, view, { map, skin } = {}) {
       if (!net.ready) return false;
       if (view) net.view = { vw: Math.round(view.hw), vh: Math.round(view.hh) };
+      if (map !== undefined) net.map = map;
       net.joining = { id: -1 };
-      send({ t: 'join', name, ...net.view });
+      send({ t: 'join', map: net.map, name, skin, ...net.view });
       return true;
     },
     /** Per frame: advance the drawn room and send the steering (≤ 20 a second, and at least once a second). */
@@ -1627,10 +1935,20 @@ function connectOnline(url, hooks = {}) {
       const w = net.world;
       return { bytes: net.bytes, snaps: net.snaps, delay: w?.delay ?? 0, jitter: w?.jitter ?? 0, chains: w?.snakes.size ?? 0 };
     },
+    /** Hangs up for good (the page moved to a map on another server). */
+    close() {
+      net.closed = true;
+      clearTimeout(net.retryTimer);
+      const ws = net.ws;
+      net.ws = null;
+      net.ready = false;
+      net.world = null;
+      ws?.close(1000, 'bye');
+    },
     /** The person did something: counts as activity, and wakes a connection that went to sleep. */
     poke() {
       net.activeAt = Date.now();
-      if (net.sleeping) {
+      if (net.sleeping && !net.closed) {
         net.sleeping = false;
         net.attempts = 0;
         connect();
@@ -1644,12 +1962,14 @@ function connectOnline(url, hooks = {}) {
 return { RemoteWorld, connectOnline };
 })();
 __m.map = (() => {
-// Ch-ch-chain-ges — city maps. Loads docs/maps/<city>.json (streets, water, parks, contours, labels in metres around
-// the city centre) and its terrain image, and draws them under the game: the static layers are painted once into
-// tiles and reused while the camera moves; labels are drawn on top every frame so they never get cut at a tile edge.
-
+// Ch-ch-chain-ges — the maps. Loads docs/maps/<id>.json (streets, water, parks, contours, labels in map units around
+// the map's centre, plus the playing area's outline) and its terrain picture, and draws them under the game: the
+// static layers are painted once into tiles and reused while the camera moves; labels are drawn on top every frame
+// so they never get cut at a tile edge. A satellite view swaps the terrain for a picture (the map's own, or tiles
+// from a provider set in the config) with the roads and names over it.
+const { arenaOf } = __m.arena;
 const TILE_PX = 512; // tile size in device pixels
-const CELL = 256; // spatial index cell, metres
+const CELL = 256; // spatial index cell, map units
 const MAX_TILES = 40;
 
 const MAP_STYLE = {
@@ -1668,47 +1988,90 @@ const MAP_STYLE = {
   label: '#7f7768',
   place: 'rgba(110, 100, 84, 0.62)',
   halo: 'rgba(255, 255, 255, 0.92)',
+  outside: 'rgba(243, 239, 230, 0.74)',
+  edge: 'rgba(110, 96, 74, 0.55)',
+  border: 'rgba(90, 80, 70, 0.45)',
+  greenLine: 'rgba(22, 130, 60, 0.75)',
+  region: 'rgba(95, 84, 68, 0.3)',
 };
 
-/** Loads a city by id from `base` (a folder URL ending in '/'). Resolves to a CityMap. */
+/** Loads a map by id from `base` (a folder URL ending in '/'). Resolves to a CityMap. */
 async function loadCity(id, base = 'maps/') {
   const res = await fetch(`${base}${encodeURIComponent(id)}.json`);
   if (!res.ok) throw new Error(`map ${id}: ${res.status}`);
   const data = await res.json();
-  let terrain = null;
-  if (data.terrain) {
-    const img = new Image();
-    img.src = `${base}${encodeURIComponent(data.terrain)}`;
-    try {
-      await img.decode();
-      terrain = img;
-    } catch {
-      terrain = null; // the map still works without its shading
-    }
-  }
-  return new CityMap(data, terrain);
+  const terrain = data.terrain ? await loadImage(`${base}${encodeURIComponent(data.terrain)}`) : null;
+  return new CityMap(data, terrain, base);
 }
 
-/** The list of cities: [{ id, he, R, center }]. */
-async function loadCityIndex(base = 'maps/') {
+async function loadImage(src) {
+  const img = new Image();
+  img.src = src;
+  try {
+    await img.decode();
+    return img;
+  } catch {
+    return null; // the map still works without it
+  }
+}
+
+/** The list of maps: { regions: [{ id, he, … }], cities: [{ id, he, capacity, … }] }. */
+async function loadMapIndex(base = 'maps/') {
   const res = await fetch(`${base}index.json`);
   if (!res.ok) throw new Error(`map index: ${res.status}`);
-  return (await res.json()).cities || [];
+  const index = await res.json();
+  return { regions: index.regions || [], cities: index.cities || [] };
 }
 
 class CityMap {
-  constructor(data, terrain) {
+  constructor(data, terrain, base = 'maps/') {
     this.data = data;
     this.id = data.id;
     this.he = data.he;
-    this.R = data.R;
+    this.base = base;
+    this.kind = data.kind || 'city';
     this.E = data.extent;
+    this.arena = arenaOf(data);
+    this.R = this.arena.R;
     this.terrain = terrain;
+    this.sat = null; // the map's own satellite picture, once loaded
+    this.satLoading = false;
+    this.xyz = null; // { url, max, credit } when a provider's tiles are used
+    this.xyzTiles = new Map();
+    this.opts = { sat: false, green: false };
     this.attribution = data.attribution || '© OpenStreetMap contributors';
     this.tiles = new Map();
     this.labelCache = new Map();
     this.stamp = 0;
     this.index();
+  }
+
+  /** { sat, green, xyz }: the satellite view, the Green Line layer (big maps), a tile provider for the satellite. */
+  setOptions(opts) {
+    const next = { ...this.opts, ...opts };
+    if (opts.xyz !== undefined) this.xyz = opts.xyz;
+    if (next.sat === this.opts.sat && next.green === this.opts.green) return;
+    this.opts = next;
+    this.tiles.clear();
+    if (next.sat && !this.sat && !this.satLoading && this.data.satellite?.image) {
+      this.satLoading = true;
+      loadImage(`${this.base}${encodeURIComponent(this.data.satellite.image)}`).then((img) => {
+        this.sat = img;
+        this.tiles.clear();
+      });
+    }
+  }
+  get hasSatellite() {
+    return !!(this.data.satellite?.image || this.xyz);
+  }
+  get hasGreenLine() {
+    return !!this.data.lines?.green?.length;
+  }
+  /** Credit line for what is on screen. */
+  get credit() {
+    if (!this.opts.sat) return this.data.kind === 'region' ? 'OpenStreetMap · Natural Earth' : '© OpenStreetMap contributors';
+    if (this.xyz) return this.xyz.credit || '';
+    return this.data.satellite?.credit || '';
   }
 
   // --------------------------------------------------------------------------------------------- index
@@ -1756,9 +2119,13 @@ class CityMap {
       for (const line of lines) add(`road${cls}`, line, false, cls);
     });
     for (const line of d.rail || []) add('rail', line, false);
+    for (const line of d.lines?.borders || []) add('border', line, false);
+    for (const line of d.lines?.green || []) add('greenline', line, false);
+    if (this.arena.rings) add('arena', this.arena.rings, true);
     this.contourIndexStep = (d.contours?.step || 10) * 5;
     this.labels = (d.labels || []).map(([x, y, a, rank, text]) => ({ x, y, a: (a / 10) * (Math.PI / 180), rank, text }));
     this.places = (d.places || []).map(([x, y, rank, text]) => ({ x, y, rank, text }));
+    this.names = (d.names || []).map(([x, y, text, size]) => ({ x, y, text, size }));
   }
   cell(v) {
     return Math.max(0, Math.min(this.n - 1, Math.floor((v + this.E) / CELL)));
@@ -1782,23 +2149,25 @@ class CityMap {
 
   // --------------------------------------------------------------------------------------------- tiles
   /**
-   * Draws the map for a camera centred on (cx, cy) at `zoom` CSS pixels per metre into a canvas that already has
-   * the DPR transform. New tiles are painted nearest-first for at most `budgetMs` per frame (always at least one);
-   * the rest show the terrain alone until a later frame paints them.
+   * Draws the map for a camera centred on (cx, cy) at `zoom` CSS pixels per map unit into a canvas that already
+   * has the DPR transform. New tiles are painted nearest-first for at most `budgetMs` per frame (always at least
+   * one); the rest show the terrain alone until a later frame paints them.
    */
   draw(ctx, cx, cy, zoom, W, H, dpr, budgetMs = 7) {
     const scale = Math.min(2, dpr);
     const devZoom = zoom * scale;
     const level = Math.round(Math.log2(devZoom) * 2) / 2; // half-octave steps; tiles are stretched in between
-    const tz = 2 ** level; // tile pixels per metre
-    const tw = TILE_PX / tz; // metres per tile
+    const tz = 2 ** level; // tile pixels per map unit
+    const tw = TILE_PX / tz; // map units per tile
     const vx0 = cx - W / 2 / zoom;
     const vy0 = cy - H / 2 / zoom;
     const vx1 = cx + W / 2 / zoom;
     const vy1 = cy + H / 2 / zoom;
     const size = tw * zoom;
-    ctx.fillStyle = MAP_STYLE.land;
+    const xyz = this.opts.sat && this.xyz;
+    ctx.fillStyle = xyz ? '#2b2f2a' : MAP_STYLE.land;
     ctx.fillRect(0, 0, W, H);
+    if (xyz) this.drawXYZ(ctx, cx, cy, zoom, W, H, dpr);
     const want = [];
     for (let ty = Math.floor(vy0 / tw); ty <= Math.floor(vy1 / tw); ty++) {
       for (let tx = Math.floor(vx0 / tw); tx <= Math.floor(vx1 / tw); tx++) {
@@ -1808,6 +2177,7 @@ class CityMap {
     want.sort((a, b) => a.d - b.d);
     const start = performance.now();
     let painted = 0;
+    const back = this.opts.sat && this.sat ? this.sat : this.terrain;
     for (const { tx, ty } of want) {
       const key = `${level}:${tx}:${ty}`;
       let tile = this.tiles.get(key);
@@ -1821,10 +2191,10 @@ class CityMap {
         this.tiles.delete(key); // most recently used last
         this.tiles.set(key, tile);
         ctx.drawImage(tile, sx, sy, size + 0.5, size + 0.5);
-      } else if (this.terrain) {
+      } else if (back && !xyz) {
         // Not painted yet: the terrain alone for a frame or two.
-        const k = this.terrain.naturalWidth / (2 * this.E);
-        ctx.drawImage(this.terrain, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
+        const k = back.naturalWidth / (2 * this.E);
+        ctx.drawImage(back, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
       }
     }
     while (this.tiles.size > MAX_TILES) this.tiles.delete(this.tiles.keys().next().value);
@@ -1837,12 +2207,20 @@ class CityMap {
     const x0 = tx * tw;
     const y0 = ty * tw;
     g.setTransform(tz, 0, 0, tz, -x0 * tz, -y0 * tz);
-    g.fillStyle = MAP_STYLE.land;
-    g.fillRect(x0, y0, tw, tw);
-    if (this.terrain) g.drawImage(this.terrain, -this.E, -this.E, 2 * this.E, 2 * this.E);
+    const sat = this.opts.sat;
+    const xyz = sat && this.xyz; // the provider's pictures are drawn under the (transparent) tiles every frame
+    if (!xyz) {
+      g.fillStyle = MAP_STYLE.land;
+      g.fillRect(x0, y0, tw, tw);
+      const back = sat && this.sat ? this.sat : this.terrain;
+      if (back) {
+        g.imageSmoothingQuality = 'high';
+        g.drawImage(back, -this.E, -this.E, 2 * this.E, 2 * this.E);
+      }
+    }
     const pad = 40;
     const feats = this.query(x0 - pad, y0 - pad, x0 + tw + pad, y0 + tw + pad);
-    const px = 1 / tz; // one tile pixel, in metres
+    const px = 1 / tz; // one tile pixel, in map units
     const by = (layer) => feats.filter((f) => f.layer === layer);
     const fill = (layer, color) => {
       const list = by(layer);
@@ -1862,41 +2240,140 @@ class CityMap {
     };
     g.lineJoin = 'round';
     g.lineCap = 'round';
-    fill('sea', MAP_STYLE.sea);
-    fill('water', MAP_STYLE.water);
-    fill('beach', MAP_STYLE.beach);
-    fill('green', MAP_STYLE.green);
-    const contours = by('contour');
-    stroke(contours.filter((f) => f.extra % this.contourIndexStep !== 0), MAP_STYLE.contour, Math.max(0.9 * px, 1));
-    stroke(contours.filter((f) => f.extra % this.contourIndexStep === 0), MAP_STYLE.contourIndex, Math.max(1.3 * px, 1.4));
-    const rivers = by('river');
-    stroke(rivers.filter((f) => f.extra === 1), MAP_STYLE.water, Math.max(2.2 * px, 9));
-    stroke(rivers.filter((f) => f.extra !== 1), MAP_STYLE.water, Math.max(1.4 * px, 3));
     const widths = [Math.max(3 * px, 13), Math.max(2.2 * px, 9), Math.max(1.6 * px, 6)];
     const roads = [by('road0'), by('road1'), by('road2')];
-    stroke(roads[2], MAP_STYLE.casing, widths[2] + 2 * px);
-    stroke(roads[1], MAP_STYLE.casing, widths[1] + 2 * px);
-    stroke(roads[0], MAP_STYLE.casingMajor, widths[0] + 2.4 * px);
-    stroke(roads[2], MAP_STYLE.road, widths[2]);
-    stroke(roads[1], MAP_STYLE.road, widths[1]);
-    stroke(roads[0], MAP_STYLE.roadMajor, widths[0]);
-    const rail = by('rail');
-    if (rail.length) {
-      g.setLineDash([6 * px, 5 * px]);
-      g.lineCap = 'butt';
-      stroke(rail, MAP_STYLE.rail, Math.max(1.3 * px, 1.6));
+    if (sat) {
+      // Over the picture: the streets as thin light lines, enough to read the city by.
+      g.globalAlpha = 0.55;
+      stroke(roads[2], '#ffffff', Math.max(1.1 * px, widths[2] * 0.3));
+      stroke(roads[1], '#fff7dd', Math.max(1.4 * px, widths[1] * 0.35));
+      stroke(roads[0], '#ffe9a8', Math.max(1.8 * px, widths[0] * 0.4));
+      g.globalAlpha = 1;
+    } else {
+      fill('sea', MAP_STYLE.sea);
+      fill('water', MAP_STYLE.water);
+      fill('beach', MAP_STYLE.beach);
+      fill('green', MAP_STYLE.green);
+      const contours = by('contour');
+      stroke(contours.filter((f) => f.extra % this.contourIndexStep !== 0), MAP_STYLE.contour, Math.max(0.9 * px, 1));
+      stroke(contours.filter((f) => f.extra % this.contourIndexStep === 0), MAP_STYLE.contourIndex, Math.max(1.3 * px, 1.4));
+      const rivers = by('river');
+      stroke(rivers.filter((f) => f.extra === 1), MAP_STYLE.water, Math.max(2.2 * px, 9));
+      stroke(rivers.filter((f) => f.extra !== 1), MAP_STYLE.water, Math.max(1.4 * px, 3));
+      stroke(roads[2], MAP_STYLE.casing, widths[2] + 2 * px);
+      stroke(roads[1], MAP_STYLE.casing, widths[1] + 2 * px);
+      stroke(roads[0], MAP_STYLE.casingMajor, widths[0] + 2.4 * px);
+      stroke(roads[2], MAP_STYLE.road, widths[2]);
+      stroke(roads[1], MAP_STYLE.road, widths[1]);
+      stroke(roads[0], MAP_STYLE.roadMajor, widths[0]);
+      const rail = by('rail');
+      if (rail.length) {
+        g.setLineDash([6 * px, 5 * px]);
+        g.lineCap = 'butt';
+        stroke(rail, MAP_STYLE.rail, Math.max(1.3 * px, 1.6));
+        g.setLineDash([]);
+        g.lineCap = 'round';
+      }
+    }
+    // Today's borders, faint; the Green Line only when it is switched on.
+    const borders = by('border');
+    if (borders.length) {
+      g.setLineDash([7 * px, 5 * px]);
+      stroke(borders, sat ? 'rgba(255,255,255,0.7)' : MAP_STYLE.border, Math.max(1.4 * px, 2));
       g.setLineDash([]);
+    }
+    if (this.opts.green) {
+      g.setLineDash([10 * px, 6 * px]);
+      stroke(by('greenline'), MAP_STYLE.greenLine, Math.max(2.2 * px, 3));
+      g.setLineDash([]);
+    }
+    // Outside the playing area: paler, behind a dashed edge.
+    const arena = by('arena');
+    if (arena.length) {
+      g.fillStyle = sat ? 'rgba(20, 22, 20, 0.45)' : MAP_STYLE.outside;
+      g.beginPath();
+      g.rect(x0 - 1, y0 - 1, tw + 2, tw + 2);
+      for (const f of arena) for (const ring of f.geom) ringPath(g, ring);
+      g.fill('evenodd');
+      g.setLineDash([9 * px, 7 * px]);
+      stroke(arena, sat ? 'rgba(255,255,255,0.8)' : MAP_STYLE.edge, Math.max(2 * px, 2));
+      g.setLineDash([]);
+    } else if (this.arena.rings) {
+      // A tile wholly outside the outline (no edge crosses it): pale it if it is outside.
+      if (!this.arena.inside(x0 + tw / 2, y0 + tw / 2)) {
+        g.fillStyle = sat ? 'rgba(20, 22, 20, 0.45)' : MAP_STYLE.outside;
+        g.fillRect(x0, y0, tw, tw);
+      }
     }
     return c;
   }
 
+  /** A provider's satellite tiles (Web Mercator XYZ) under the map, placed through the map's own projection. */
+  drawXYZ(ctx, cx, cy, zoom, W, H, dpr) {
+    const d = this.data;
+    const [lat0, lon0] = d.center || [0, 0];
+    const s = d.scale || 1;
+    const phi = (lat0 * Math.PI) / 180;
+    const ky = 111132.954 - 559.822 * Math.cos(2 * phi) + 1.175 * Math.cos(4 * phi);
+    const kx = 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi);
+    const toLon = (x) => lon0 + (x * s) / kx;
+    const toLat = (y) => lat0 - (y * s) / ky;
+    const mpp = s / (zoom * Math.min(2, dpr)); // real metres per device pixel
+    const z = Math.max(1, Math.min(this.xyz.max || 19, Math.round(Math.log2((40075016 * Math.cos(phi)) / (256 * mpp)))));
+    const n = 2 ** z;
+    const tileX = (lon) => ((lon + 180) / 360) * n;
+    const tileY = (lat) => {
+      const r = (lat * Math.PI) / 180;
+      return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n;
+    };
+    const lonOf = (tx) => (tx / n) * 360 - 180;
+    const latOf = (ty) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * ty) / n))) * 180) / Math.PI;
+    const xOf = (lon) => ((lon - lon0) * kx) / s;
+    const yOf = (lat) => (-(lat - lat0) * ky) / s;
+    const vx0 = cx - W / 2 / zoom;
+    const vx1 = cx + W / 2 / zoom;
+    const vy0 = cy - H / 2 / zoom;
+    const vy1 = cy + H / 2 / zoom;
+    const t0x = Math.floor(tileX(toLon(vx0)));
+    const t1x = Math.floor(tileX(toLon(vx1)));
+    const t0y = Math.floor(tileY(toLat(vy0)));
+    const t1y = Math.floor(tileY(toLat(vy1)));
+    let asked = 0;
+    for (let ty = t0y; ty <= t1y; ty++) {
+      for (let tx = t0x; tx <= t1x; tx++) {
+        const key = `${z}/${tx}/${ty}`;
+        let img = this.xyzTiles.get(key);
+        if (!img && asked < 12) {
+          asked++;
+          img = new Image();
+          img.decoding = 'async';
+          img.src = this.xyz.url.replace('{z}', z).replace('{x}', tx).replace('{y}', ty);
+          this.xyzTiles.set(key, img);
+          if (this.xyzTiles.size > 300) this.xyzTiles.delete(this.xyzTiles.keys().next().value);
+        }
+        if (!img?.complete || !img.naturalWidth) continue;
+        const x0 = (xOf(lonOf(tx)) - cx) * zoom + W / 2;
+        const x1 = (xOf(lonOf(tx + 1)) - cx) * zoom + W / 2;
+        const y0 = (yOf(latOf(ty)) - cy) * zoom + H / 2;
+        const y1 = (yOf(latOf(ty + 1)) - cy) * zoom + H / 2;
+        ctx.drawImage(img, x0, y0, x1 - x0 + 0.5, y1 - y0 + 0.5);
+      }
+    }
+  }
+
   // --------------------------------------------------------------------------------------------- labels
-  /** Street names along their roads and neighbourhood names, sized in screen pixels (zoom = CSS px per metre). */
+  /** Street names along their roads, neighbourhoods and towns, and (on the big maps) regions, in screen pixels. */
   drawLabels(ctx, cx, cy, zoom, W, H, dpr) {
     const vx0 = cx - W / 2 / zoom - 120;
     const vx1 = cx + W / 2 / zoom + 120;
     const vy0 = cy - H / 2 / zoom - 60;
     const vy1 = cy + H / 2 / zoom + 60;
+    const put = (img, x, y) =>
+      ctx.drawImage(img, (x - cx) * zoom + W / 2 - img.width / dpr / 2, (y - cy) * zoom + H / 2 - img.height / dpr / 2, img.width / dpr, img.height / dpr);
+    for (const r of this.names) {
+      if (r.x < vx0 - 400 || r.x > vx1 + 400 || r.y < vy0 - 200 || r.y > vy1 + 200) continue;
+      put(this.label(r.text, r.size ? 'region1' : 'region0', dpr), r.x, r.y);
+    }
     const roadRank = zoom > 0.62 ? 2 : zoom > 0.4 ? 1 : zoom > 0.22 ? 0 : -1;
     for (const l of this.labels) {
       if (l.rank > roadRank || l.x < vx0 || l.x > vx1 || l.y < vy0 || l.y > vy1) continue;
@@ -1910,14 +2387,7 @@ class CityMap {
     const placeRank = zoom > 0.5 ? 2 : zoom > 0.3 ? 1 : 0;
     for (const p of this.places) {
       if (p.rank > placeRank || p.x < vx0 || p.x > vx1 || p.y < vy0 || p.y > vy1) continue;
-      const img = this.label(p.text, p.rank === 0 ? 'place0' : 'place', dpr);
-      ctx.drawImage(
-        img,
-        (p.x - cx) * zoom + W / 2 - img.width / dpr / 2,
-        (p.y - cy) * zoom + H / 2 - img.height / dpr / 2,
-        img.width / dpr,
-        img.height / dpr,
-      );
+      put(this.label(p.text, p.rank === 0 ? 'place0' : 'place', dpr), p.x, p.y);
     }
   }
 
@@ -1925,15 +2395,14 @@ class CityMap {
     const key = `${kind}|${dpr}|${text}`;
     let c = this.labelCache.get(key);
     if (c) return c;
-    const font =
-      kind === 'road'
-        ? '600 11px system-ui, -apple-system, "Segoe UI", Arial, sans-serif'
-        : `700 ${kind === 'place0' ? 15 : 13}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
+    const size = { road: 11, place: 13, place0: 15, region0: 22, region1: 17 }[kind] ?? 13;
+    const weight = kind === 'road' ? 600 : kind.startsWith('region') ? 800 : 700;
+    const font = `${weight} ${size}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
     c = document.createElement('canvas');
     const g = c.getContext('2d');
     g.font = font;
     const w = Math.ceil(g.measureText(text).width) + 8;
-    const h = kind === 'road' ? 16 : 20;
+    const h = size + 9;
     c.width = Math.ceil(w * dpr);
     c.height = Math.ceil(h * dpr);
     g.scale(dpr, dpr);
@@ -1943,9 +2412,9 @@ class CityMap {
     g.textBaseline = 'middle';
     g.lineJoin = 'round';
     g.strokeStyle = MAP_STYLE.halo;
-    g.lineWidth = 3;
+    g.lineWidth = kind.startsWith('region') ? 4 : 3;
     g.strokeText(text, w / 2, h / 2 + 0.5);
-    g.fillStyle = kind === 'road' ? MAP_STYLE.label : MAP_STYLE.place;
+    g.fillStyle = kind === 'road' ? MAP_STYLE.label : kind.startsWith('region') ? MAP_STYLE.region : MAP_STYLE.place;
     g.fillText(text, w / 2, h / 2 + 0.5);
     if (this.labelCache.size > 400) this.labelCache.clear();
     this.labelCache.set(key, c);
@@ -1963,7 +2432,7 @@ function ringPath(g, a) {
   g.closePath();
 }
 
-return { MAP_STYLE, loadCity, loadCityIndex, CityMap };
+return { MAP_STYLE, loadCity, loadMapIndex, CityMap };
 })();
 __m.people = (() => {
 // Ch-ch-chain-ges — the people. Flat paper-doll figures with a white cut-out edge: in a chain they reach out to hold
@@ -2080,49 +2549,547 @@ function drawFlag(g, x, y, hp, color, dir, t, outline = false) {
 
 return { FIG, figure, drawFlag };
 })();
+__m.avatars = (() => {
+// Ch-ch-chain-ges — skins: the face the leader of your chain wears, drawn big (a bobblehead on the paper-doll body).
+// Sixteen original cartoon faces are drawn here; more can be added as pictures in docs/skins (see README.md) and
+// are picked the same way, by name. The server only needs AVATAR_IDS, so nothing here touches the page on import.
+
+const TONES = ['#f7dcc0', '#efc49c', '#dba471', '#b97d4e', '#8e5b3b', '#5f3b27'];
+const HAIR = {
+  black: '#1f1a17',
+  dark: '#3b2a20',
+  brown: '#6e4b2f',
+  auburn: '#9a4322',
+  blonde: '#d9a441',
+  grey: '#a3a09b',
+  pink: '#e5679f',
+  blue: '#3f6fd8',
+};
+
+/** The original faces: id, label (for the picker), skin tone, hair style and colour, extras. */
+const AVATARS = [
+  { id: 'a0', name: 'חיוך', tone: 1, hair: 'short', color: 'dark', extras: [] },
+  { id: 'a1', name: 'תלתלים', tone: 3, hair: 'curly', color: 'black', extras: [] },
+  { id: 'a2', name: 'פרח', tone: 0, hair: 'long', color: 'blonde', extras: ['flower'] },
+  { id: 'a3', name: 'משקפיים', tone: 2, hair: 'bun', color: 'brown', extras: ['glasses'] },
+  { id: 'a4', name: 'זקן', tone: 4, hair: 'bald', color: 'dark', extras: ['beard'] },
+  { id: 'a5', name: 'מוהוק', tone: 1, hair: 'mohawk', color: 'blue', extras: [] },
+  { id: 'a6', name: 'אפרו', tone: 5, hair: 'afro', color: 'black', extras: [] },
+  { id: 'a7', name: 'קוקו', tone: 1, hair: 'ponytail', color: 'auburn', extras: [] },
+  { id: 'a8', name: 'משקפי שמש', tone: 2, hair: 'side', color: 'black', extras: ['shades'] },
+  { id: 'a9', name: 'שפם', tone: 0, hair: 'short', color: 'grey', extras: ['glasses', 'mustache'] },
+  { id: 'a10', name: 'כובע', tone: 3, hair: 'buzz', color: 'dark', extras: ['cap'] },
+  { id: 'a11', name: 'אוזניות', tone: 4, hair: 'long', color: 'black', extras: ['headphones'] },
+  { id: 'a12', name: 'כובע צמר', tone: 1, hair: 'wavy', color: 'brown', extras: ['beanie'] },
+  { id: 'a13', name: 'ג׳ינג׳י', tone: 0, hair: 'curly', color: 'auburn', extras: ['freckles'] },
+  { id: 'a14', name: 'כיפה', tone: 2, hair: 'short', color: 'black', extras: ['kippah', 'beard'] },
+  { id: 'a15', name: 'ורוד', tone: 1, hair: 'bun', color: 'pink', extras: ['shades'] },
+];
+const AVATAR_IDS = AVATARS.map((a) => a.id);
+
+const SIZE = 128;
+const cache = new Map();
+const supplied = new Map(); // id → { name, image: HTMLImageElement | null, url }
+
+/** Pictures supplied in docs/skins/index.json ({ skins: [{ id, name, image }] }); loads their list once. */
+async function loadSuppliedSkins(base = 'skins/') {
+  try {
+    const res = await fetch(`${base}index.json`, { cache: 'no-cache' });
+    if (!res.ok) return [];
+    const list = (await res.json()).skins || [];
+    const out = [];
+    for (const s of list) {
+      if (typeof s?.id !== 'string' || !/^[a-z0-9-]{1,40}$/.test(s.id) || typeof s.image !== 'string') continue;
+      if (!/^[a-z0-9-]+\.(png|jpg|webp|svg)$/.test(s.image)) continue;
+      supplied.set(s.id, { name: String(s.name || s.id), image: null, url: `${base}${s.image}` });
+      out.push({ id: s.id, name: String(s.name || s.id) });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/** Everything a player can pick: [{ id, name }], the supplied pictures first. */
+function allSkins() {
+  return [...[...supplied].map(([id, s]) => ({ id, name: s.name })), ...AVATARS.map(({ id, name }) => ({ id, name }))];
+}
+function skinName(id) {
+  return supplied.get(id)?.name ?? AVATARS.find((a) => a.id === id)?.name ?? '';
+}
+
+/** The face for a skin as a 128 × 128 canvas with a white cut-out edge, or null (unknown, or its picture is loading). */
+function avatar(id) {
+  if (!id) return null;
+  let c = cache.get(id);
+  if (c) return c;
+  const spec = AVATARS.find((a) => a.id === id);
+  if (spec) c = drawFace(spec);
+  else {
+    const s = supplied.get(id);
+    if (!s) return null;
+    if (!s.image) {
+      s.image = new Image();
+      s.image.decoding = 'async';
+      s.image.onload = () => cache.set(id, drawPicture(s.image));
+      s.image.src = s.url;
+    }
+    return null;
+  }
+  cache.set(id, c);
+  return c;
+}
+
+function roundRect(g, x, y, w, h, r) {
+  if (g.roundRect) g.roundRect(x, y, w, h, r);
+  else g.rect(x, y, w, h);
+}
+
+function canvas() {
+  const c = document.createElement('canvas');
+  c.width = c.height = SIZE;
+  return c;
+}
+
+/** A picture cropped to a circle, with a white ring. */
+function drawPicture(img) {
+  const c = canvas();
+  const g = c.getContext('2d');
+  const r = SIZE / 2 - 5;
+  g.save();
+  g.beginPath();
+  g.arc(SIZE / 2, SIZE / 2, r, 0, Math.PI * 2);
+  g.clip();
+  const k = Math.max((2 * r) / img.naturalWidth, (2 * r) / img.naturalHeight);
+  const w = img.naturalWidth * k;
+  const h = img.naturalHeight * k;
+  g.drawImage(img, SIZE / 2 - w / 2, SIZE / 2 - h / 2, w, h);
+  g.restore();
+  g.lineWidth = 6;
+  g.strokeStyle = '#ffffff';
+  g.beginPath();
+  g.arc(SIZE / 2, SIZE / 2, r, 0, Math.PI * 2);
+  g.stroke();
+  return c;
+}
+
+/** An original cartoon face, drawn once and then given a white sticker edge. */
+function drawFace(spec) {
+  const art = canvas();
+  const g = art.getContext('2d');
+  const tone = TONES[spec.tone] ?? TONES[1];
+  const hair = HAIR[spec.color] ?? HAIR.dark;
+  const has = (x) => spec.extras.includes(x);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  const disc = (x, y, r, color) => {
+    g.fillStyle = color;
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+  };
+  // Behind the head: long hair, afro, ponytail, bun.
+  g.fillStyle = hair;
+  if (spec.hair === 'long') {
+    g.beginPath();
+    g.moveTo(24, 60);
+    g.quadraticCurveTo(22, 20, 64, 18);
+    g.quadraticCurveTo(106, 20, 104, 60);
+    g.lineTo(108, 118);
+    g.quadraticCurveTo(64, 126, 20, 118);
+    g.closePath();
+    g.fill();
+  } else if (spec.hair === 'afro') {
+    disc(64, 56, 54, hair);
+  } else if (spec.hair === 'ponytail') {
+    g.beginPath();
+    g.moveTo(96, 44);
+    g.quadraticCurveTo(126, 60, 114, 104);
+    g.quadraticCurveTo(104, 84, 90, 70);
+    g.closePath();
+    g.fill();
+  } else if (spec.hair === 'bun') {
+    disc(64, 20, 17, hair);
+  }
+  // Ears and face.
+  disc(26, 72, 9, tone);
+  disc(102, 72, 9, tone);
+  g.fillStyle = tone;
+  g.beginPath();
+  g.ellipse(64, 70, 38, 42, 0, 0, Math.PI * 2);
+  g.fill();
+  if (has('beard')) {
+    g.fillStyle = hair;
+    g.beginPath();
+    g.moveTo(27, 72);
+    g.quadraticCurveTo(30, 118, 64, 118);
+    g.quadraticCurveTo(98, 118, 101, 72);
+    g.quadraticCurveTo(92, 92, 64, 94);
+    g.quadraticCurveTo(36, 92, 27, 72);
+    g.fill();
+  }
+  // Hair over the forehead.
+  g.fillStyle = hair;
+  const top = (fringeY, sides = 30) => {
+    g.beginPath();
+    g.moveTo(64 - 38, 70 - sides * 0.2);
+    g.quadraticCurveTo(22, 24, 64, 24);
+    g.quadraticCurveTo(106, 24, 102, 70 - sides * 0.2);
+    g.quadraticCurveTo(96, fringeY - 6, 80, fringeY);
+    g.quadraticCurveTo(64, fringeY + 6, 48, fringeY - 2);
+    g.quadraticCurveTo(32, fringeY + 2, 26, 70 - sides * 0.2);
+    g.closePath();
+    g.fill();
+  };
+  switch (spec.hair) {
+    case 'short':
+    case 'bun':
+    case 'ponytail':
+      top(44);
+      break;
+    case 'buzz':
+      g.beginPath();
+      g.ellipse(64, 50, 36, 26, 0, Math.PI, 0);
+      g.fill();
+      break;
+    case 'long':
+    case 'wavy':
+      top(46);
+      if (spec.hair === 'wavy') for (const x of [30, 98]) disc(x, 58, 10, hair);
+      break;
+    case 'side':
+      g.beginPath();
+      g.moveTo(26, 62);
+      g.quadraticCurveTo(22, 22, 66, 22);
+      g.quadraticCurveTo(108, 24, 102, 64);
+      g.quadraticCurveTo(90, 38, 40, 52);
+      g.closePath();
+      g.fill();
+      break;
+    case 'curly':
+      for (let k = 0; k <= 10; k++) {
+        const a = Math.PI + (k / 10) * Math.PI;
+        disc(64 + Math.cos(a) * 36, 58 + Math.sin(a) * 32, 11, hair);
+      }
+      disc(64, 30, 14, hair);
+      break;
+    case 'afro':
+      for (let k = 0; k <= 8; k++) {
+        const a = Math.PI + (k / 8) * Math.PI;
+        disc(64 + Math.cos(a) * 32, 52 + Math.sin(a) * 22, 10, hair);
+      }
+      break;
+    case 'mohawk':
+      for (let k = -2; k <= 2; k++) {
+        g.beginPath();
+        g.moveTo(56 + k * 3, 36 + Math.abs(k) * 4);
+        g.lineTo(64 + k * 6, 6 + Math.abs(k) * 6);
+        g.lineTo(72 + k * 3, 36 + Math.abs(k) * 4);
+        g.closePath();
+        g.fill();
+      }
+      break;
+    default:
+  }
+  // Eyes, brows, cheeks, nose, mouth.
+  const ink = '#2a211c';
+  disc(50, 72, 4.6, ink);
+  disc(78, 72, 4.6, ink);
+  disc(51.5, 70.5, 1.4, '#ffffff');
+  disc(79.5, 70.5, 1.4, '#ffffff');
+  g.strokeStyle = spec.hair === 'bald' ? '#6b4a33' : hair;
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(43, 62);
+  g.quadraticCurveTo(50, 58, 56, 61);
+  g.moveTo(72, 61);
+  g.quadraticCurveTo(78, 58, 85, 62);
+  g.stroke();
+  g.globalAlpha = 0.35;
+  disc(42, 84, 7, '#ff6f7a');
+  disc(86, 84, 7, '#ff6f7a');
+  g.globalAlpha = 1;
+  if (has('freckles')) for (const [x, y] of [[38, 80], [44, 78], [41, 86], [84, 80], [90, 78], [87, 86]]) disc(x, y, 1.4, '#b0673a');
+  g.strokeStyle = 'rgba(80, 50, 30, 0.45)';
+  g.lineWidth = 2.4;
+  g.beginPath();
+  g.moveTo(64, 76);
+  g.quadraticCurveTo(60, 84, 65, 85);
+  g.stroke();
+  if (has('mustache')) {
+    g.fillStyle = hair;
+    g.beginPath();
+    g.moveTo(64, 90);
+    g.quadraticCurveTo(50, 84, 44, 94);
+    g.quadraticCurveTo(56, 92, 64, 94);
+    g.quadraticCurveTo(72, 92, 84, 94);
+    g.quadraticCurveTo(78, 84, 64, 90);
+    g.fill();
+  }
+  g.strokeStyle = ink;
+  g.lineWidth = 3;
+  g.beginPath();
+  g.arc(64, 88, 11, 0.18 * Math.PI, 0.82 * Math.PI);
+  g.stroke();
+  // Extras.
+  if (has('glasses') || has('shades')) {
+    const dark = has('shades');
+    g.lineWidth = 3;
+    g.strokeStyle = ink;
+    g.fillStyle = dark ? '#1b1d24' : 'rgba(255,255,255,0.18)';
+    for (const x of [50, 78]) {
+      g.beginPath();
+      if (dark) roundRect(g, x - 12, 64, 24, 15, 5);
+      else g.arc(x, 72, 10.5, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+    }
+    g.beginPath();
+    g.moveTo(60, 71);
+    g.lineTo(68, 71);
+    g.stroke();
+  }
+  if (has('cap')) {
+    g.fillStyle = '#2f6fed';
+    g.beginPath();
+    g.ellipse(64, 44, 40, 24, 0, Math.PI, 0);
+    g.fill();
+    g.fillRect(24, 42, 80, 7);
+    g.beginPath();
+    g.ellipse(84, 48, 26, 6, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  if (has('beanie')) {
+    g.fillStyle = '#e5484d';
+    g.beginPath();
+    g.ellipse(64, 46, 40, 28, 0, Math.PI, 0);
+    g.fill();
+    g.fillStyle = '#c53a3f';
+    g.fillRect(24, 40, 80, 10);
+    disc(64, 16, 8, '#ffffff');
+  }
+  if (has('kippah')) {
+    g.fillStyle = '#0038b8';
+    g.beginPath();
+    g.ellipse(64, 28, 20, 9, 0, Math.PI, 0);
+    g.fill();
+  }
+  if (has('headphones')) {
+    g.strokeStyle = '#2b2b33';
+    g.lineWidth = 6;
+    g.beginPath();
+    g.arc(64, 70, 44, Math.PI * 1.05, Math.PI * 1.95);
+    g.stroke();
+    for (const x of [22, 106]) {
+      g.fillStyle = '#e93d82';
+      g.beginPath();
+      roundRect(g, x - 8, 62, 16, 24, 6);
+      g.fill();
+    }
+  }
+  if (has('flower')) {
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2;
+      disc(94 + Math.cos(a) * 7, 34 + Math.sin(a) * 7, 5.5, '#f59e0b');
+    }
+    disc(94, 34, 4.5, '#ffffff');
+  }
+  // The white sticker edge: the art stamped around itself in white, then the art on top.
+  const c = canvas();
+  const o = c.getContext('2d');
+  const edge = canvas();
+  const e = edge.getContext('2d');
+  e.drawImage(art, 0, 0);
+  e.globalCompositeOperation = 'source-in';
+  e.fillStyle = '#ffffff';
+  e.fillRect(0, 0, SIZE, SIZE);
+  for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2;
+    o.drawImage(edge, Math.cos(a) * 4, Math.sin(a) * 4);
+  }
+  o.drawImage(art, 0, 0);
+  return c;
+}
+
+return { AVATARS, AVATAR_IDS, loadSuppliedSkins, allSkins, skinName, avatar };
+})();
 __m.audio = (() => {
-// Ch-ch-chain-ges — music and sound, synthesised with Web Audio (no audio files). An original bouncy synth-pop
-// loop in D minor at 116 BPM whose layers follow the game: calm in the menus; drums and arpeggios while you play;
-// the lead melody once your chain grows; extra hi-hats while you run; bells when you hold hands.
+// Ch-ch-chain-ges — music and sound, synthesised with Web Audio (no audio files). Five original tracks to pick from,
+// each a 16-bar loop whose layers follow the game: calm in the menus; drums and arpeggios while you play; the lead
+// melody once your chain grows; extra hi-hats while you run; bells when you hold hands. A player may also play a
+// song of their own from their phone (it stays on the phone), or one the site has a licence for (config.json).
 // Browsers only allow sound after a tap, so nothing plays until unlock() is called from one.
 
-const BPM = 116;
-const STEP = 60 / BPM / 4; // one sixteenth note, seconds
 const LOOKAHEAD = 0.14;
+const B = (s, m, l) => [s, m, l];
 
-// Sixteen bars: section A then section B, one chord per bar.
-const CHORDS = [
-  // A
-  [62, 65, 69], [58, 62, 65], [65, 69, 72], [60, 64, 67], [62, 65, 69], [58, 62, 65], [65, 69, 72], [57, 61, 64],
-  // B
-  [58, 62, 65], [60, 64, 67], [57, 60, 64], [62, 65, 69], [58, 62, 65], [60, 64, 67], [62, 65, 69], [62, 65, 69],
+/** The tracks: bpm, one chord per bar (16 bars), bass roots, the lead melody [step, midi, length] per bar, and style. */
+const TRACKS = [
+  {
+    id: 'chains',
+    title: 'שרשרת',
+    mood: 'סינת׳-פופ קופצני',
+    bpm: 116,
+    chords: [
+      [62, 65, 69], [58, 62, 65], [65, 69, 72], [60, 64, 67], [62, 65, 69], [58, 62, 65], [65, 69, 72], [57, 61, 64],
+      [58, 62, 65], [60, 64, 67], [57, 60, 64], [62, 65, 69], [58, 62, 65], [60, 64, 67], [62, 65, 69], [62, 65, 69],
+    ],
+    roots: [38, 34, 41, 36, 38, 34, 41, 45, 34, 36, 45, 38, 34, 36, 38, 38],
+    lead: [
+      [B(0, 69, 3), B(4, 74, 2), B(6, 72, 2), B(8, 69, 3), B(12, 67, 2), B(14, 65, 2)],
+      [B(0, 65, 3), B(4, 62, 2), B(6, 65, 2), B(8, 67, 2), B(10, 69, 6)],
+      [B(0, 72, 3), B(4, 74, 2), B(6, 72, 2), B(8, 69, 2), B(10, 65, 2), B(12, 69, 4)],
+      [B(0, 67, 4), B(4, 64, 2), B(6, 67, 2), B(8, 72, 4), B(12, 69, 2), B(14, 67, 2)],
+      [B(0, 69, 3), B(4, 74, 2), B(6, 76, 2), B(8, 77, 3), B(12, 76, 2), B(14, 74, 2)],
+      [B(0, 74, 4), B(4, 70, 2), B(6, 74, 2), B(8, 77, 4), B(12, 74, 4)],
+      [B(0, 72, 2), B(2, 69, 2), B(4, 72, 2), B(6, 77, 2), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 73, 6), B(8, 69, 2), B(10, 73, 2), B(12, 76, 4)],
+      [B(0, 74, 6), B(8, 72, 2), B(10, 70, 2), B(12, 69, 4)],
+      [B(0, 67, 6), B(8, 69, 2), B(10, 72, 2), B(12, 76, 4)],
+      [B(0, 76, 4), B(4, 74, 2), B(6, 72, 2), B(8, 69, 8)],
+      [B(0, 74, 4), B(4, 77, 4), B(8, 81, 6), B(14, 79, 2)],
+      [B(0, 77, 4), B(4, 74, 2), B(6, 77, 2), B(8, 82, 4), B(12, 81, 4)],
+      [B(0, 79, 4), B(4, 76, 2), B(6, 72, 2), B(8, 76, 4), B(12, 79, 4)],
+      [B(0, 77, 3), B(4, 76, 2), B(6, 74, 2), B(8, 72, 2), B(10, 69, 6)],
+      [B(0, 74, 12)],
+    ],
+    arp: [0, 1, 2, 1, 0, 1, 2, 3],
+    style: { bass: 'bounce', drums: 'pop', lead: ['square', 'sawtooth'], arp: 'square' },
+  },
+  {
+    id: 'city',
+    title: 'קצב העיר',
+    mood: 'דיסקו שמח',
+    bpm: 124,
+    chords: [
+      [65, 69, 72], [62, 65, 69], [58, 62, 65], [60, 64, 67], [65, 69, 72], [57, 60, 64], [58, 62, 65], [60, 64, 67],
+      [62, 65, 69], [58, 62, 65], [65, 69, 72], [60, 64, 67], [62, 65, 69], [58, 62, 65], [55, 58, 62], [60, 64, 67],
+    ],
+    roots: [41, 38, 34, 36, 41, 33, 34, 36, 38, 34, 41, 36, 38, 34, 31, 36],
+    lead: [
+      [B(0, 72, 2), B(2, 74, 2), B(4, 77, 4), B(8, 76, 2), B(10, 74, 2), B(12, 72, 4)],
+      [B(0, 74, 3), B(4, 72, 2), B(6, 69, 2), B(8, 65, 4), B(12, 69, 4)],
+      [B(0, 70, 2), B(2, 72, 2), B(4, 74, 4), B(8, 77, 2), B(10, 74, 2), B(12, 72, 4)],
+      [B(0, 72, 6), B(8, 76, 2), B(10, 79, 2), B(12, 76, 4)],
+      [B(0, 77, 2), B(2, 76, 2), B(4, 74, 2), B(6, 72, 2), B(8, 74, 4), B(12, 72, 4)],
+      [B(0, 76, 3), B(4, 72, 2), B(6, 69, 2), B(8, 72, 4), B(12, 76, 4)],
+      [B(0, 74, 2), B(2, 77, 2), B(4, 74, 2), B(6, 70, 2), B(8, 72, 4), B(12, 74, 4)],
+      [B(0, 79, 8), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 77, 4), B(4, 76, 2), B(6, 74, 2), B(8, 69, 4), B(12, 72, 4)],
+      [B(0, 74, 4), B(4, 72, 2), B(6, 70, 2), B(8, 65, 4), B(12, 70, 4)],
+      [B(0, 72, 2), B(2, 77, 2), B(4, 81, 4), B(8, 79, 2), B(10, 77, 2), B(12, 76, 4)],
+      [B(0, 74, 4), B(4, 76, 2), B(6, 77, 2), B(8, 79, 8)],
+      [B(0, 81, 4), B(4, 79, 2), B(6, 77, 2), B(8, 76, 4), B(12, 74, 4)],
+      [B(0, 77, 4), B(4, 74, 2), B(6, 70, 2), B(8, 74, 4), B(12, 77, 4)],
+      [B(0, 74, 2), B(2, 77, 2), B(4, 79, 4), B(8, 77, 2), B(10, 74, 2), B(12, 70, 4)],
+      [B(0, 72, 12)],
+    ],
+    arp: [0, 3, 1, 3, 2, 3, 1, 3],
+    style: { bass: 'disco', drums: 'disco', lead: ['sawtooth', 'sawtooth'], arp: 'sawtooth' },
+  },
+  {
+    id: 'night',
+    title: 'לילה בעיר',
+    mood: 'סינת׳ווייב',
+    bpm: 100,
+    chords: [
+      [57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62], [57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62],
+      [57, 62, 65], [53, 57, 60], [57, 60, 64], [55, 59, 62], [57, 62, 65], [53, 57, 60], [56, 59, 64], [56, 59, 64],
+    ],
+    roots: [33, 29, 36, 31, 33, 29, 36, 31, 38, 29, 33, 31, 38, 29, 28, 28],
+    lead: [
+      [B(0, 76, 6), B(6, 74, 2), B(8, 72, 4), B(12, 71, 4)],
+      [B(0, 72, 8), B(8, 69, 4), B(12, 72, 4)],
+      [B(0, 67, 6), B(6, 72, 2), B(8, 76, 6), B(14, 74, 2)],
+      [B(0, 74, 12), B(12, 71, 4)],
+      [B(0, 76, 4), B(4, 79, 4), B(8, 81, 6), B(14, 79, 2)],
+      [B(0, 77, 8), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 76, 6), B(6, 74, 2), B(8, 72, 4), B(12, 67, 4)],
+      [B(0, 71, 12), B(12, 74, 4)],
+      [B(0, 77, 6), B(6, 76, 2), B(8, 74, 4), B(12, 72, 4)],
+      [B(0, 72, 8), B(8, 74, 4), B(12, 76, 4)],
+      [B(0, 76, 6), B(6, 72, 2), B(8, 69, 8)],
+      [B(0, 71, 6), B(6, 72, 2), B(8, 74, 8)],
+      [B(0, 74, 4), B(4, 77, 4), B(8, 81, 8)],
+      [B(0, 79, 4), B(4, 77, 4), B(8, 76, 8)],
+      [B(0, 76, 6), B(6, 74, 2), B(8, 71, 4), B(12, 68, 4)],
+      [B(0, 68, 8), B(8, 71, 8)],
+    ],
+    arp: [0, 1, 2, 3, 2, 1, 0, 1],
+    style: { bass: 'pulse', drums: 'halftime', lead: ['sawtooth', 'triangle'], arp: 'triangle' },
+  },
+  {
+    id: 'race',
+    title: 'מרוץ',
+    mood: 'צ׳יפטיון מהיר',
+    bpm: 150,
+    chords: [
+      [64, 67, 71], [60, 64, 67], [62, 67, 71], [62, 66, 69], [64, 67, 71], [60, 64, 67], [62, 67, 71], [62, 66, 69],
+      [60, 64, 69], [60, 64, 67], [64, 67, 71], [62, 66, 69], [60, 64, 69], [60, 64, 67], [59, 63, 66], [59, 63, 66],
+    ],
+    roots: [40, 36, 43, 38, 40, 36, 43, 38, 45, 36, 40, 38, 45, 36, 35, 35],
+    lead: [
+      [B(0, 76, 2), B(2, 79, 2), B(4, 83, 2), B(6, 79, 2), B(8, 76, 2), B(10, 79, 2), B(12, 81, 2), B(14, 79, 2)],
+      [B(0, 76, 2), B(2, 79, 2), B(4, 84, 2), B(6, 79, 2), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 74, 2), B(2, 79, 2), B(4, 83, 2), B(6, 79, 2), B(8, 74, 2), B(10, 79, 2), B(12, 81, 2), B(14, 83, 2)],
+      [B(0, 81, 6), B(6, 78, 2), B(8, 74, 8)],
+      [B(0, 83, 2), B(2, 81, 2), B(4, 79, 2), B(6, 76, 2), B(8, 79, 4), B(12, 83, 4)],
+      [B(0, 84, 2), B(2, 83, 2), B(4, 79, 2), B(6, 76, 2), B(8, 72, 4), B(12, 76, 4)],
+      [B(0, 79, 2), B(2, 81, 2), B(4, 83, 4), B(8, 86, 4), B(12, 83, 4)],
+      [B(0, 81, 12), B(12, 78, 4)],
+      [B(0, 81, 4), B(4, 84, 4), B(8, 88, 4), B(12, 84, 4)],
+      [B(0, 84, 4), B(4, 79, 4), B(8, 76, 4), B(12, 79, 4)],
+      [B(0, 83, 2), B(2, 79, 2), B(4, 76, 2), B(6, 79, 2), B(8, 83, 4), B(12, 88, 4)],
+      [B(0, 86, 4), B(4, 81, 4), B(8, 78, 4), B(12, 81, 4)],
+      [B(0, 84, 2), B(2, 81, 2), B(4, 76, 2), B(6, 81, 2), B(8, 84, 4), B(12, 88, 4)],
+      [B(0, 88, 4), B(4, 84, 4), B(8, 79, 4), B(12, 84, 4)],
+      [B(0, 87, 4), B(4, 83, 4), B(8, 78, 4), B(12, 75, 4)],
+      [B(0, 83, 8), B(8, 78, 4), B(12, 75, 4)],
+    ],
+    arp: [0, 1, 2, 3, 0, 1, 2, 3],
+    style: { bass: 'chip', drums: 'chip', lead: ['square', 'square'], arp: 'square' },
+  },
+  {
+    id: 'march',
+    title: 'מצעד',
+    mood: 'המנון חגיגי',
+    bpm: 108,
+    chords: [
+      [60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65], [60, 64, 67], [59, 62, 67], [57, 60, 65], [59, 62, 67],
+      [57, 60, 64], [57, 60, 65], [60, 64, 67], [59, 62, 67], [57, 60, 64], [57, 60, 65], [57, 62, 65], [59, 62, 67],
+    ],
+    roots: [36, 31, 33, 29, 36, 31, 29, 31, 33, 29, 36, 31, 33, 29, 38, 31],
+    lead: [
+      [B(0, 67, 4), B(4, 72, 4), B(8, 76, 6), B(14, 74, 2)],
+      [B(0, 74, 4), B(4, 71, 4), B(8, 67, 8)],
+      [B(0, 69, 4), B(4, 72, 4), B(8, 76, 4), B(12, 79, 4)],
+      [B(0, 77, 8), B(8, 76, 4), B(12, 74, 4)],
+      [B(0, 72, 4), B(4, 76, 4), B(8, 79, 6), B(14, 77, 2)],
+      [B(0, 76, 4), B(4, 74, 4), B(8, 71, 8)],
+      [B(0, 72, 4), B(4, 74, 4), B(8, 77, 4), B(12, 76, 4)],
+      [B(0, 74, 12), B(12, 67, 4)],
+      [B(0, 76, 6), B(6, 74, 2), B(8, 72, 8)],
+      [B(0, 77, 6), B(6, 76, 2), B(8, 74, 8)],
+      [B(0, 79, 6), B(6, 77, 2), B(8, 76, 4), B(12, 72, 4)],
+      [B(0, 74, 12), B(12, 79, 4)],
+      [B(0, 81, 6), B(6, 79, 2), B(8, 76, 8)],
+      [B(0, 77, 6), B(6, 76, 2), B(8, 74, 4), B(12, 72, 4)],
+      [B(0, 74, 4), B(4, 77, 4), B(8, 81, 4), B(12, 77, 4)],
+      [B(0, 79, 8), B(8, 74, 4), B(12, 71, 4)],
+    ],
+    arp: [0, 2, 1, 2, 0, 2, 1, 3],
+    style: { bass: 'march', drums: 'march', lead: ['triangle', 'square'], arp: 'triangle' },
+  },
 ];
-const ROOTS = [38, 34, 41, 36, 38, 34, 41, 45, 34, 36, 45, 38, 34, 36, 38, 38];
-// The lead melody, [step, midi note, length in steps] per bar.
-const LEAD = [
-  [[0, 69, 3], [4, 74, 2], [6, 72, 2], [8, 69, 3], [12, 67, 2], [14, 65, 2]],
-  [[0, 65, 3], [4, 62, 2], [6, 65, 2], [8, 67, 2], [10, 69, 6]],
-  [[0, 72, 3], [4, 74, 2], [6, 72, 2], [8, 69, 2], [10, 65, 2], [12, 69, 4]],
-  [[0, 67, 4], [4, 64, 2], [6, 67, 2], [8, 72, 4], [12, 69, 2], [14, 67, 2]],
-  [[0, 69, 3], [4, 74, 2], [6, 76, 2], [8, 77, 3], [12, 76, 2], [14, 74, 2]],
-  [[0, 74, 4], [4, 70, 2], [6, 74, 2], [8, 77, 4], [12, 74, 4]],
-  [[0, 72, 2], [2, 69, 2], [4, 72, 2], [6, 77, 2], [8, 76, 4], [12, 72, 4]],
-  [[0, 73, 6], [8, 69, 2], [10, 73, 2], [12, 76, 4]],
-  [[0, 74, 6], [8, 72, 2], [10, 70, 2], [12, 69, 4]],
-  [[0, 67, 6], [8, 69, 2], [10, 72, 2], [12, 76, 4]],
-  [[0, 76, 4], [4, 74, 2], [6, 72, 2], [8, 69, 8]],
-  [[0, 74, 4], [4, 77, 4], [8, 81, 6], [14, 79, 2]],
-  [[0, 77, 4], [4, 74, 2], [6, 77, 2], [8, 82, 4], [12, 81, 4]],
-  [[0, 79, 4], [4, 76, 2], [6, 72, 2], [8, 76, 4], [12, 79, 4]],
-  [[0, 77, 3], [4, 76, 2], [6, 74, 2], [8, 72, 2], [10, 69, 6]],
-  [[0, 74, 12]],
-];
-const ARP = [0, 1, 2, 1, 0, 1, 2, 3]; // chord tone index per sixteenth (3 = the root an octave up)
 
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
 /** context: an (Offline)AudioContext to use instead of making one — for rendering the music to a file. */
-function createAudio({ muted = false, context = null } = {}) {
+function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
+  let T = TRACKS.find((t) => t.id === track) || TRACKS[0];
+  let STEP = 60 / T.bpm / 4; // one sixteenth note, seconds
+  let pending = null; // a track to switch to at the next bar
+  let file = null; // { source, gain, title } while a song file plays instead of the synth
   let ac = null;
   let master = null;
   let noise = null;
@@ -2179,33 +3146,75 @@ function createAudio({ muted = false, context = null } = {}) {
   function schedule() {
     if (!ac || ac.state !== 'running') return;
     while (nextTime < ac.currentTime + LOOKAHEAD) {
-      play(step, nextTime);
-      nextTime += STEP;
-      step = (step + 1) % (16 * 16);
+      advance();
     }
+  }
+  function advance() {
+    if (pending && step % 16 === 0) {
+      T = pending;
+      pending = null;
+      STEP = 60 / T.bpm / 4;
+      step = 0;
+      if (delay) delay.delayTime.setValueAtTime(STEP * 3, nextTime);
+    }
+    if (!file) play(step, nextTime);
+    nextTime += STEP;
+    step = (step + 1) % (16 * 16);
   }
 
   function play(s, t) {
     const bar = Math.floor(s / 16);
     const i = s % 16;
-    const chord = CHORDS[bar];
-    const B = bar >= 8;
+    const chord = T.chords[bar];
+    const root = T.roots[bar];
+    const st = T.style;
+    const second = bar >= 8;
     if (i === 0) pad(chord, t, STEP * 16);
-    // Bass: bouncy eighths, jumping an octave on the off-beats.
-    if (i % 2 === 0) note(layers.bass, 'sawtooth', hz(ROOTS[bar] + (i % 4 === 2 ? 12 : 0)), t, STEP * 1.6, 0.22, 700);
+    // Bass, in the track's own pattern.
+    if (st.bass === 'bounce') {
+      if (i % 2 === 0) note(layers.bass, 'sawtooth', hz(root + (i % 4 === 2 ? 12 : 0)), t, STEP * 1.6, 0.22, 700);
+    } else if (st.bass === 'disco') {
+      note(layers.bass, 'square', hz(root + (i % 2 ? 12 : 0)), t, STEP * 0.8, i % 2 ? 0.12 : 0.2, 900);
+    } else if (st.bass === 'pulse') {
+      if (i % 2 === 0) note(layers.bass, 'sawtooth', hz(root), t, STEP * 1.8, 0.2, 520);
+    } else if (st.bass === 'chip') {
+      if (i % 2 === 0) note(layers.bass, 'square', hz(root + (i % 8 === 4 ? 7 : 0)), t, STEP * 1.2, 0.13, 1600);
+    } else if (st.bass === 'march') {
+      if (i % 4 === 0) note(layers.bass, 'triangle', hz(root + (i === 4 || i === 12 ? 7 : 0)), t, STEP * 3, 0.32, 1200);
+    }
     if (level.drums > 0.01) {
-      if (i === 0 || i === 8 || (B && i === 10)) kick(t);
-      if (i === 4 || i === 12) snare(t);
-      if (i % 2 === 0) hat(t, 0.03, 0.18);
+      if (st.drums === 'pop') {
+        if (i === 0 || i === 8 || (second && i === 10)) kick(t);
+        if (i === 4 || i === 12) snare(t);
+        if (i % 2 === 0) hat(t, 0.03, 0.18);
+      } else if (st.drums === 'disco') {
+        if (i % 4 === 0) kick(t);
+        if (i === 4 || i === 12) snare(t);
+        if (i % 4 === 2) hat(t, 0.12, 0.34);
+        else hat(t, 0.02, 0.1);
+      } else if (st.drums === 'halftime') {
+        if (i === 0 || i === 10) kick(t);
+        if (i === 8) snare(t, 1.4);
+        if (i % 2 === 0) hat(t, 0.04, 0.16);
+      } else if (st.drums === 'chip') {
+        if (i === 0 || i === 8 || i === 11) kick(t);
+        if (i === 4 || i === 12) snare(t, 0.8);
+        hat(t, 0.015, 0.12);
+      } else if (st.drums === 'march') {
+        if (i === 0 || i === 8) kick(t);
+        if (i === 4 || i === 12) snare(t);
+        if ((i === 14 || i === 15) && bar % 2 === 1) snare(t, 0.45);
+        if (i === 2 || i === 6 || i === 10) snare(t, 0.25);
+      }
     }
     if (level.hats > 0.01 && i % 2 === 1) hat(t, 0.09, 0.5, layers.hats);
     if (level.arp > 0.01) {
-      const k = ARP[i % 8];
+      const k = T.arp[i % 8];
       const m = k === 3 ? chord[0] + 12 : chord[k];
-      note(layers.arp, 'square', hz(m + 12), t, STEP * 0.9, 0.06, 2600);
+      note(layers.arp, st.arp, hz(m + 12), t, STEP * 0.9, st.arp === 'triangle' ? 0.09 : 0.06, 2600);
     }
     if (level.lead > 0.01) {
-      for (const [at, m, len] of LEAD[bar]) if (at === i) lead(m, t, STEP * len);
+      for (const [at, m, len] of T.lead[bar]) if (at === i) lead(m, t, STEP * len);
     }
     if (level.bells > 0.01 && (i === 0 || i === 10)) bell(hz(chord[i === 0 ? 2 : 1] + 24), t, layers.bells, 0.08);
   }
@@ -2257,7 +3266,7 @@ function createAudio({ muted = false, context = null } = {}) {
     lp.connect(g);
     g.connect(layers.lead);
     g.connect(delay);
-    for (const [type, det] of [['square', -5], ['sawtooth', 5]]) {
+    for (const [type, det] of [[T.style.lead[0], -5], [T.style.lead[1], 5]]) {
       const o = ac.createOscillator();
       o.type = type;
       o.frequency.value = hz(m);
@@ -2302,14 +3311,14 @@ function createAudio({ muted = false, context = null } = {}) {
     o.stop(t + 0.3);
   }
 
-  function snare(t) {
+  function snare(t, loud = 1) {
     const n = ac.createBufferSource();
     n.buffer = noise;
     const hp = ac.createBiquadFilter();
     hp.type = 'highpass';
     hp.frequency.value = 1300;
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.22, t);
+    g.gain.setValueAtTime(0.22 * loud, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
     n.connect(hp).connect(g).connect(layers.drums);
     n.start(t, Math.random() * 0.5);
@@ -2341,10 +3350,22 @@ function createAudio({ muted = false, context = null } = {}) {
     g.gain.linearRampToValueAtTime(value, now + secs);
   }
 
+  function stopFile() {
+    if (!file) return;
+    try {
+      file.source.stop();
+    } catch {
+      /* already stopped */
+    }
+    file.gain.disconnect();
+    file = null;
+    if (ac) for (const name of Object.keys(level)) layers[name].gain.setValueAtTime(level[name], ac.currentTime);
+  }
+
   /** Current chord's notes, for sound effects that fit the music. */
   function chordNow() {
     const s = ac ? Math.max(0, step - Math.round((nextTime - ac.currentTime) / STEP)) : 0;
-    return CHORDS[Math.floor((((s % 256) + 256) % 256) / 16)];
+    return T.chords[Math.floor((((s % 256) + 256) % 256) / 16)];
   }
 
   return {
@@ -2422,11 +3443,47 @@ function createAudio({ muted = false, context = null } = {}) {
     },
     /** Offline rendering: schedules every note up to `seconds` into the given context. */
     renderUntil(seconds) {
-      while (nextTime < seconds) {
-        play(step, nextTime);
-        nextTime += STEP;
-        step = (step + 1) % (16 * 16);
-      }
+      while (nextTime < seconds) advance();
+    },
+    tracks: TRACKS,
+    /** The track playing (or about to): its id, or 'file' while a song file plays. */
+    get track() {
+      return file ? 'file' : (pending || T).id;
+    },
+    get fileTitle() {
+      return file?.title ?? '';
+    },
+    /** Switches to another original track: at the next bar, or at once (now = true, e.g. when picking one). */
+    setTrack(id, now = false) {
+      const next = TRACKS.find((t) => t.id === id);
+      if (!next) return;
+      stopFile();
+      if (!ac || now) {
+        T = next;
+        pending = null;
+        STEP = 60 / T.bpm / 4;
+        step = 0;
+        if (ac) {
+          nextTime = ac.currentTime + 0.06;
+          delay.delayTime.setValueAtTime(STEP * 3, ac.currentTime);
+        }
+      } else if (next !== T) pending = next;
+    },
+    /** Plays a song file (an ArrayBuffer: one the player picked on their phone, or a licensed one) on a loop. */
+    async playFile(data, title = '') {
+      unlock();
+      if (!ac) throw new Error('no audio');
+      const buffer = await ac.decodeAudioData(data);
+      stopFile();
+      const source = ac.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      const gain = ac.createGain();
+      gain.gain.value = 0.55;
+      source.connect(gain).connect(master);
+      source.start();
+      file = { source, gain, title };
+      for (const name of Object.keys(level)) layers[name].gain.setValueAtTime(0, ac.currentTime);
     },
     /** Pauses everything while the page is hidden. */
     pause(on) {
@@ -2440,23 +3497,323 @@ function createAudio({ muted = false, context = null } = {}) {
   };
 }
 
-return { createAudio };
+return { TRACKS, createAudio };
+})();
+__m.story = (() => {
+// Ch-ch-chain-ges — the story: a single-player campaign on the real maps. You start with a movement and no seats;
+// every mission (gather people, hang flags in the squares, reach the places that matter, hold a rally) brings
+// mandates, and 61 of them win the election and form a government. The story and its people are made up; progress
+// is kept only on the player's own phone.
+
+const TO_WIN = 61;
+
+/**
+ * The missions, in order. goal.type: 'gather' (n people), 'reach' (a place, with n people), 'flags' (k places),
+ * 'rally' (stay by a place with n people for secs), 'race' (reach a place within secs), 'tour' (places in order).
+ * Places are picked from the map's named places: by name first, then by kind.
+ */
+const MISSIONS = [
+  {
+    map: 'tel-aviv',
+    chapter: 'תל אביב',
+    title: 'צעד ראשון',
+    brief: 'כל תנועה מתחילה באנשים. צאו לרחובות ואספו 25 אנשים לשרשרת.',
+    goal: { type: 'gather', n: 25 },
+    mandates: 3,
+  },
+  {
+    map: 'tel-aviv',
+    chapter: 'תל אביב',
+    title: 'דגלים בכיכרות',
+    brief: 'העיר צריכה לראות אתכם. עברו בשלוש כיכרות ותלו בכל אחת דגל.',
+    goal: { type: 'flags', k: 3, kinds: ['square', 'park', 'sight', 'hall'] },
+    mandates: 4,
+  },
+  {
+    map: 'tel-aviv',
+    chapter: 'תל אביב',
+    title: 'העצרת הראשונה',
+    brief: 'הגיעו לכיכר עם 30 אנשים לפחות והישארו שם 8 שניות: זו העצרת הראשונה שלכם.',
+    goal: { type: 'rally', names: ['כיכר רבין', 'כיכר דיזנגוף', 'כיכר הבימה'], kinds: ['square', 'park', 'hall'], n: 30, secs: 8 },
+    mandates: 5,
+  },
+  {
+    map: 'jerusalem',
+    chapter: 'ירושלים',
+    title: 'הדרך לכנסת',
+    brief: 'בירושלים מתקבלות ההחלטות. הביאו 30 אנשים עד הכנסת.',
+    goal: { type: 'reach', names: ['הכנסת', 'משכן הכנסת'], kinds: ['gov', 'hall'], n: 30 },
+    mandates: 5,
+  },
+  {
+    map: 'jerusalem',
+    chapter: 'ירושלים',
+    title: 'שוק ותחנה',
+    brief: 'איפה שיש אנשים – שם צריך להיות. תלו דגלים בשוק, בתחנה ובכיכר.',
+    goal: { type: 'flags', k: 3, names: ['שוק מחנה יהודה'], kinds: ['market', 'station', 'square'] },
+    mandates: 5,
+  },
+  {
+    map: 'jerusalem',
+    chapter: 'ירושלים',
+    title: 'גל של מתנדבים',
+    brief: 'הקמפיין צובר תאוצה: שרשרת של 60 אנשים.',
+    goal: { type: 'gather', n: 60 },
+    mandates: 6,
+  },
+  {
+    map: 'haifa',
+    chapter: 'חיפה',
+    title: 'סיור בעיר',
+    brief: 'חיפה מחכה: עברו בשלושה מקומות, אחד אחרי השני.',
+    goal: { type: 'tour', k: 3, kinds: ['uni', 'hall', 'park', 'sight', 'square'] },
+    mandates: 5,
+  },
+  {
+    map: 'haifa',
+    chapter: 'חיפה',
+    title: 'מרוץ נגד הזמן',
+    brief: 'הכתבים מחכים! הגיעו למקום המסומן תוך 45 שניות. ⚡ עוזר.',
+    goal: { type: 'race', kinds: ['station', 'square', 'hall'], secs: 45, far: true },
+    mandates: 5,
+  },
+  {
+    map: 'beer-sheva',
+    chapter: 'באר שבע',
+    title: 'לב הנגב',
+    brief: 'הנגב הוא לב הארץ. הגיעו לעירייה עם 50 אנשים.',
+    goal: { type: 'reach', names: ['עיריית באר שבע'], kinds: ['hall', 'square', 'uni'], n: 50 },
+    mandates: 6,
+  },
+  {
+    map: 'israel',
+    chapter: 'כל הארץ',
+    title: 'מסע ארצי',
+    brief: 'עכשיו כל הארץ: ירושלים, תל אביב, חיפה ובאר שבע – לפי הסדר.',
+    goal: { type: 'tour', k: 4, names: ['ירושלים', 'תל אביב-יפו', 'חיפה', 'באר שבע'], kinds: ['city'] },
+    mandates: 7,
+  },
+  {
+    map: 'israel',
+    chapter: 'כל הארץ',
+    title: 'הגל הגדול',
+    brief: 'שרשרת של 120 אנשים מקצה הארץ ועד קצה.',
+    goal: { type: 'gather', n: 120 },
+    mandates: 7,
+  },
+  {
+    map: 'israel',
+    chapter: 'כל הארץ',
+    title: 'ליל הבחירות',
+    brief: 'העצרת הגדולה: 150 אנשים בירושלים, 12 שניות. זה הרגע.',
+    goal: { type: 'rally', names: ['ירושלים'], kinds: ['city'], n: 150, secs: 12 },
+    mandates: 8,
+  },
+];
+
+const KEY = 'chain:story';
+
+/** Saved progress: { i: next mission, mandates }. */
+function loadProgress() {
+  try {
+    const p = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (p && Number.isInteger(p.i) && Number.isFinite(p.mandates)) return { i: Math.max(0, Math.min(MISSIONS.length, p.i)), mandates: p.mandates };
+  } catch {
+    /* storage unavailable */
+  }
+  return { i: 0, mandates: 0 };
+}
+function saveProgress(p) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ i: p.i, mandates: p.mandates }));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * Chooses the mission's places on the map: named ones first, then by kind, spread apart, inside the arena. Falls
+ * back to neighbourhood names, then to any street corner. Returns [{ x, y, name }].
+ */
+function pickPlaces(map, goal, count, rand = Math.random) {
+  const data = map?.data || {};
+  const inside = map?.arena?.inside || (() => true);
+  const pois = (data.pois || []).filter(([x, y]) => inside(x, y)).map(([x, y, kind, name]) => ({ x, y, kind, name }));
+  const out = [];
+  const far = (p) => out.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > 350);
+  const take = (p, unique = true) => {
+    if (out.length < count && far(p) && !(unique && out.some((q) => q.name === p.name))) out.push(p);
+  };
+  const norm = (s) => String(s).replace(/[–—־]/g, '-');
+  for (const want of goal.names || []) {
+    const w = norm(want);
+    const hit = pois.find((p) => norm(p.name) === w) || pois.find((p) => norm(p.name).includes(w));
+    if (hit) take(hit);
+  }
+  for (const kind of goal.kinds || []) {
+    const list = pois.filter((p) => p.kind === kind);
+    // Shuffle a little, so replays differ, but keep the big ones likely.
+    for (let i = list.length - 1; i > 0; i--) {
+      if (rand() < 0.5) {
+        const j = Math.floor(rand() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+    }
+    for (const p of list) take(p);
+  }
+  for (const [x, y, , name] of data.places || []) if (inside(x, y)) take({ x, y, kind: 'place', name });
+  for (let k = 0; out.length < count && k < 400; k++) {
+    const R = map?.R || 2000;
+    const x = (rand() * 2 - 1) * R * 0.7;
+    const y = (rand() * 2 - 1) * R * 0.7;
+    if (inside(x, y)) take({ x, y, kind: 'spot', name: 'הנקודה המסומנת' }, false);
+  }
+  return out;
+}
+
+/**
+ * A running mission: update(me, score, dt) each frame → { done, failed, text, progress, targets }.
+ * me: the player's chain (x, y) or null; targets: [{ x, y, name, done, active }] for the map, arrows and minimap.
+ */
+function startMission(mission, map, rand = Math.random) {
+  const g = mission.goal;
+  const want = { gather: 0, reach: 1, flags: g.k || 3, rally: 1, race: 1, tour: g.k || 3 }[g.type] ?? 0;
+  let places = want ? pickPlaces(map, g, want, rand) : [];
+  if (g.type === 'race' && places.length) {
+    // The race goes to the place furthest from the start (picked once the chain appears).
+    places = places.slice(0, 1);
+  }
+  const targets = places.map((p) => ({ ...p, done: false, active: false }));
+  let held = 0;
+  let clock = 0;
+  let next = 0;
+  let placedRace = false;
+  const near = (me, t, r) => me && Math.hypot(me.x - t.x, me.y - t.y) < r;
+  return {
+    mission,
+    targets,
+    update(me, score, dt) {
+      clock += dt;
+      const res = { done: false, failed: false, text: '', progress: 0, targets };
+      switch (g.type) {
+        case 'gather':
+          res.progress = Math.min(1, score / g.n);
+          res.text = `${Math.min(score, g.n)}/${g.n} אנשים`;
+          res.done = score >= g.n;
+          break;
+        case 'reach': {
+          const t = targets[0];
+          if (!t) return { ...res, done: true };
+          t.active = true;
+          const enough = score >= g.n;
+          res.text = enough ? `עכשיו ל${t.name}` : `${score}/${g.n} אנשים, ואז ל${t.name}`;
+          res.progress = Math.min(1, score / g.n) * 0.5 + (near(me, t, 110) && enough ? 0.5 : 0);
+          if (enough && near(me, t, 110)) {
+            t.done = true;
+            res.done = true;
+          }
+          break;
+        }
+        case 'flags': {
+          let n = 0;
+          for (const t of targets) {
+            t.active = !t.done;
+            if (!t.done && near(me, t, 95)) t.done = true;
+            if (t.done) n++;
+          }
+          res.text = `${n}/${targets.length} דגלים`;
+          res.progress = targets.length ? n / targets.length : 1;
+          res.done = n === targets.length;
+          break;
+        }
+        case 'tour': {
+          while (next < targets.length && targets[next].done) next++;
+          targets.forEach((t, k) => (t.active = k === next));
+          const t = targets[next];
+          if (t && near(me, t, g.names ? 160 : 100)) {
+            t.done = true;
+            next++;
+          }
+          res.text = next < targets.length ? `${next + 1}/${targets.length}: ${targets[next].name}` : '';
+          res.progress = targets.length ? next / targets.length : 1;
+          res.done = next >= targets.length;
+          break;
+        }
+        case 'rally': {
+          const t = targets[0];
+          if (!t) return { ...res, done: true };
+          t.active = true;
+          const there = near(me, t, g.names?.[0] === 'ירושלים' ? 220 : 150);
+          if (there && score >= g.n) held += dt;
+          else held = Math.max(0, held - dt * 0.5);
+          res.progress = Math.min(1, held / g.secs);
+          res.text =
+            score < g.n ? `${score}/${g.n} אנשים, ואז ל${t.name}` : there ? `עצרת! ${Math.ceil(Math.max(0, g.secs - held))} שנ׳` : `ל${t.name}`;
+          res.done = held >= g.secs;
+          break;
+        }
+        case 'race': {
+          const t = targets[0];
+          if (!t) return { ...res, done: true };
+          if (!placedRace && me) {
+            // As far as the map allows from where the chain started, among the kinds asked for.
+            placedRace = true;
+            const pool = pickPlaces(map, { kinds: g.kinds }, 12, rand);
+            let best = t;
+            for (const p of pool) if (Math.hypot(p.x - me.x, p.y - me.y) > Math.hypot(best.x - me.x, best.y - me.y)) best = p;
+            Object.assign(t, best, { done: false });
+            clock = 0;
+          }
+          t.active = true;
+          const left = g.secs - clock;
+          res.text = `${Math.max(0, Math.ceil(left))} שנ׳ עד ${t.name}`;
+          res.progress = Math.min(1, clock / g.secs);
+          if (near(me, t, 110)) {
+            t.done = true;
+            res.done = true;
+          } else if (left <= 0) res.failed = true;
+          break;
+        }
+        default:
+          res.done = true;
+      }
+      return res;
+    },
+  };
+}
+
+return { TO_WIN, MISSIONS, loadProgress, saveProgress, pickPlaces, startMission };
 })();
 __m.client = (() => {
-// Ch-ch-chain-ges — the browser client: the city map, the human chains, touch/mouse/keyboard input, screens and
-// sharing. Offline play simulates the world here with labelled bots; online play (net.js) draws the server's room.
-const { World, C, COLORS, radiusFor, scoreOf, randomName, botName } = __m.sim;
+// Ch-ch-chain-ges — the browser client: the maps, the human chains, touch/mouse/keyboard input, the lobby, skins,
+// music, the story, screens and sharing. Online play (net.js) draws the server's room; offline play and the story
+// simulate the world here. There are no bots: alone on a map, you walk its streets until others come.
+const { World, C, COLORS, radiusFor, scoreOf, randomName } = __m.sim;
 const { connectOnline } = __m.net;
-const { loadCity, loadCityIndex, MAP_STYLE } = __m.map;
+const { loadCity, loadMapIndex, MAP_STYLE } = __m.map;
 const { streetSpawner } = __m.streets;
+const { edgeAhead } = __m.arena;
 const { figure, drawFlag, FIG } = __m.people;
-const { createAudio } = __m.audio;
+const { createAudio, TRACKS } = __m.audio;
 const { NAME, SLUG, drawWordmark } = __m.brand;
+const { cleanName } = __m.names;
+const { AVATARS, avatar, allSkins, loadSuppliedSkins } = __m.avatars;
+const { MISSIONS, TO_WIN, loadProgress, saveProgress, startMission } = __m.story;
 const CFG = Object.assign(
-  { server: '', brand: 'המשחק של עמך ישראל', publisher: '', joinUrl: '', shareUrl: '', maps: 'maps/' },
+  {
+    server: '',
+    servers: [],
+    brand: 'המשחק של עמך ישראל',
+    publisher: '',
+    joinUrl: '',
+    shareUrl: '',
+    maps: 'maps/',
+    skins: 'skins/',
+    satellite: null,
+    music: [],
+  },
   globalThis.CHAIN_CONFIG || {},
 );
-const BOTS = 20;
 const TAU = Math.PI * 2;
 const INK = '#23201b';
 
@@ -2466,10 +3823,27 @@ const ctx = canvas.getContext('2d', { alpha: false });
 const mini = $('minimap');
 const mctx = mini.getContext('2d');
 
+// ------------------------------------------------------------------------------------------------ preferences
+function pref(key, fallback = '') {
+  try {
+    return localStorage.getItem(`chain:${key}`) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function setPref(key, value) {
+  try {
+    localStorage.setItem(`chain:${key}`, String(value));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 let W = 0;
 let H = 0;
 let DPR = 1;
 let dprCap = 2;
+const miniSize = { w: 110, h: 110 };
 function resize() {
   DPR = Math.min(dprCap, window.devicePixelRatio || 1);
   W = window.innerWidth;
@@ -2478,23 +3852,22 @@ function resize() {
   canvas.height = Math.round(H * DPR);
   canvas.style.width = `${W}px`;
   canvas.style.height = `${H}px`;
-  // The minimap is 96 CSS px (see page.html); its HUD may still be hidden, so do not measure it.
-  const m = Math.round(96 * DPR);
-  mini.width = m;
-  mini.height = m;
+  sizeMinimap();
 }
 window.addEventListener('resize', resize);
 
 // ------------------------------------------------------------------------------------------------ state
 const game = {
-  mode: 'solo', // 'solo' | 'online'
+  mode: 'solo', // 'solo' | 'online' | 'story'
   world: null,
   meId: 0,
   running: false,
   alive: false,
-  name: loadName(),
+  name: cleanName(pref('name')) || randomName(),
+  skin: pref('skin') || AVATARS[Math.floor(Math.random() * AVATARS.length)].id,
   best: { rank: 99, maxScore: 0, hands: 0, born: 0 },
   net: null,
+  netUrl: '',
   deathInfo: null,
   hintStage: 0,
   refusedAt: new Map(),
@@ -2502,43 +3875,25 @@ const game = {
   joining: false,
   joinTimer: 0,
   idleWorld: null,
-  toldOnline: false,
   preview: null,
+  here: 0,
+  hereSeen: 0,
+  story: null, // { index, run, map, flags }
+  sat: pref('sat') === '1',
+  green: pref('green') === '1',
 };
 const cam = { x: 0, y: 0, zoom: 1 };
-const input = { angle: 0, boost: false, pointerId: null, touches: 0 };
+const input = { angle: 0, boost: false, holdBoost: false, turn: 0 };
 let last = performance.now();
 let acc = 0;
 let frameTimes = [];
-
-function loadName() {
-  try {
-    return localStorage.getItem('chain:name') || randomName();
-  } catch {
-    return randomName();
-  }
-}
-function saveName(n) {
-  try {
-    localStorage.setItem('chain:name', n);
-  } catch {
-    /* storage unavailable */
-  }
-}
 
 function me() {
   return game.world?.snakes.get(game.meId) || null;
 }
 
 // ------------------------------------------------------------------------------------------------ sound
-const audio = createAudio({ muted: loadMuted() });
-function loadMuted() {
-  try {
-    return localStorage.getItem('chain:muted') === '1';
-  } catch {
-    return false;
-  }
-}
+const audio = createAudio({ muted: pref('muted') === '1', track: pref('track', 'chains') });
 function renderSound() {
   for (const b of document.querySelectorAll('.sound')) {
     b.textContent = b.id === 'sound-hud' ? (audio.muted ? '🔇' : '🔊') : audio.muted ? '🔇 בלי מוסיקה' : '🔊 מוסיקה';
@@ -2549,67 +3904,82 @@ for (const b of document.querySelectorAll('.sound')) {
   b.addEventListener('click', () => {
     audio.unlock();
     audio.setMuted(!audio.muted);
-    try {
-      localStorage.setItem('chain:muted', audio.muted ? '1' : '0');
-    } catch {
-      /* storage unavailable */
-    }
+    setPref('muted', audio.muted ? '1' : '0');
     renderSound();
   });
 }
 document.addEventListener('visibilitychange', () => audio.pause(document.hidden));
 
-// ------------------------------------------------------------------------------------------------ city maps
-const maps = { cities: [], loaded: new Map(), soloCity: '' };
+// ------------------------------------------------------------------------------------------------ maps
+const maps = { list: [], byId: new Map(), loaded: new Map(), current: '', lobby: {}, online: 0 };
 /** Resolves to the CityMap for `id` (loading it once), or null when it cannot be loaded. */
 function cityMap(id) {
   if (!id) return Promise.resolve(null);
   if (!maps.loaded.has(id)) {
-    maps.loaded.set(
-      id,
-      loadCity(id, CFG.maps).then(
-        (m) => ((maps.loaded.get(id).value = m), m),
-        () => null,
-      ),
+    const p = loadCity(id, CFG.maps).then(
+      (m) => {
+        p.value = m;
+        m.setOptions({ sat: game.sat, green: game.green, xyz: xyzProvider() });
+        return m;
+      },
+      () => null,
     );
+    maps.loaded.set(id, p);
   }
   return maps.loaded.get(id);
 }
 /** The map for a world, if it has finished loading. */
 function mapFor(w) {
-  const p = w && maps.loaded.get(w.city);
-  return p?.value ?? null;
+  return (w && maps.loaded.get(w.city)?.value) ?? null;
 }
-const cityName = (id) => maps.cities.find((c) => c.id === id)?.he ?? '';
-/** Offline play and the start screen use the city of the hour. */
-function hourCity() {
-  if (!maps.cities.length) return '';
-  return maps.cities[Math.floor(Date.now() / 3_600_000) % maps.cities.length].id;
+const mapName = (id) => maps.byId.get(id)?.he ?? '';
+function xyzProvider() {
+  const s = CFG.satellite;
+  return s && /^https:\/\/[^\s]+\{z\}[^\s]*$/.test(s.tiles || '') ? { url: s.tiles, max: s.maxZoom || 19, credit: s.credit || '' } : null;
+}
+function sparkTargetFor(map) {
+  if (!map) return 850;
+  if (map.kind === 'region') return 1100;
+  return Math.round(Math.max(380, Math.min(1000, (map.data.area || 20) * 45)));
 }
 function newWorld(map, opts = {}) {
   const w = map
-    ? new World({ arenaRadius: map.R, sparkTarget: opts.sparkTarget ?? 900, spawnPoint: streetSpawner(map.data.roads, map.R) })
+    ? new World({
+        arenaRadius: map.R,
+        sparkTarget: opts.sparkTarget ?? sparkTargetFor(map),
+        spawnPoint: streetSpawner(map.data.roads, map.R, Math.random, { inside: map.arena.inside, hubs: map.data.hubs }) ?? undefined,
+        inside: map.arena.inside,
+      })
     : new World({ sparkTarget: opts.sparkTarget });
   w.city = map?.id ?? '';
   return w;
 }
+/** Sets the map everyone on this phone plays next; the start screen follows it. */
+function chooseMap(id, { save = true } = {}) {
+  if (!id || (maps.byId.size && !maps.byId.has(id))) return;
+  maps.current = id;
+  if (save) setPref('map', id);
+  cityMap(id);
+  renderMapRow();
+  ensureNet();
+  game.net?.watch(viewExtents(), id);
+}
 
 // ------------------------------------------------------------------------------------------------ flow
-async function startSolo() {
-  // The map is usually loaded by now; wait a moment if not, then play either way.
-  const map = await Promise.race([cityMap(maps.soloCity || hourCity()), new Promise((r) => setTimeout(() => r(null), 2500))]);
+async function startSolo(reason) {
+  const map = await Promise.race([cityMap(maps.current), new Promise((r) => setTimeout(() => r(null), 3000))]);
   const w = newWorld(map);
-  for (let i = 0; i < BOTS; i++) w.addSnake({ bot: true, name: botName(), mass: 12 + Math.random() * 60 });
-  // Let the bots settle so the world is alive when the player arrives.
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 60; i++) {
     w.step(1 / 30);
     w.events.length = 0;
   }
-  const s = w.addSnake({ name: game.name });
+  const s = w.addSnake({ name: game.name, skin: game.skin });
   game.world = w;
   game.meId = s.id;
   game.mode = 'solo';
+  game.story = null;
   beginRound(s);
+  if (reason) toast(reason, 4200);
 }
 
 function beginRound(s) {
@@ -2622,14 +3992,22 @@ function beginRound(s) {
   game.refusedAt.clear();
   game.lastColor = s.color;
   game.lastScore = scoreOf(s.mass);
+  game.hereSeen = 0;
   audio.setScene('play');
   cam.x = s.x;
   cam.y = s.y;
   show('hud');
-  hide('start');
-  hide('over');
-  const city = cityName(game.world.city);
-  if (city) toast(`${city} · אוספים אנשים ברחובות`, 2600);
+  for (const id of ['start', 'over', 'story', 'maps', 'skins', 'music']) hide(id);
+  $('mission').hidden = game.mode !== 'story';
+  $('hud').classList.toggle('story', game.mode === 'story');
+  if (game.mode === 'story') $('mission-mandates').textContent = `🗳️ ${loadProgress().mandates} מנדטים מתוך ${TO_WIN}`;
+  $('waiting').hidden = true;
+  const map = mapFor(game.world);
+  $('green-btn').hidden = !map?.hasGreenLine;
+  updateCredit();
+  sizeMinimap();
+  const name = mapName(game.world.city);
+  if (game.mode !== 'story' && name) toast(`${name} · אוספים אנשים ברחובות`, 2600);
   if (game.hintStage === 0) hint('גררו את האצבע לכיוון שרוצים ללכת', 5000);
 }
 
@@ -2638,12 +4016,13 @@ function setButtonsBusy(busy) {
   $('again').disabled = busy;
 }
 
-/** Online when the server is there (people + bots), otherwise at once with bots on this phone. */
+/** Online on the chosen map when a server is there, otherwise at once, alone, on this phone. */
 function play() {
   if (game.joining) return;
   audio.unlock(); // a tap: browsers allow sound from here on
+  commitName();
   const net = game.net;
-  if (net?.ready() && net.join(game.name, viewExtents())) {
+  if (net?.ready() && net.join(game.name, viewExtents(), { map: maps.current, skin: game.skin })) {
     game.joining = true;
     setButtonsBusy(true);
     clearTimeout(game.joinTimer);
@@ -2652,12 +4031,12 @@ function play() {
       game.joining = false;
       setButtonsBusy(false);
       net.idle();
-      startSolo();
+      startSolo('השרת לא ענה – משחקים לבד בינתיים');
     }, 6000);
     return;
   }
   net?.idle();
-  startSolo();
+  startSolo(net ? 'אין חיבור לשרת כרגע – משחקים לבד, והמפה מחכה לאחרים' : '');
 }
 
 function onJoined(world, meId) {
@@ -2668,6 +4047,8 @@ function onJoined(world, meId) {
   game.world = world;
   game.meId = meId;
   game.mode = 'online';
+  game.story = null;
+  if (world.city && world.city !== maps.current) chooseMap(world.city);
   beginRound(world.snakes.get(meId));
 }
 
@@ -2675,7 +4056,7 @@ function onDeath(e) {
   game.alive = false;
   const w = game.world;
   const killer = e.killer ? w.snakes.get(e.killer) : null;
-  game.deathInfo = { killer: e.name || (killer ? displayName(killer) : null), edge: !!e.edge || e.killer === 0 };
+  game.deathInfo = { killer: e.name || (killer ? killer.name : null), edge: !!e.edge || e.killer === 0 };
   navigator.vibrate?.(120);
   audio.sfx('break');
   audio.setScene('over');
@@ -2697,17 +4078,25 @@ function onLost() {
 function showOver() {
   const b = game.best;
   const secs = Math.round((performance.now() - b.born) / 1000);
+  const story = game.mode === 'story';
   $('over-title').textContent = game.deathInfo?.lost
     ? 'החיבור לשרת נותק'
-    : game.deathInfo?.edge
-      ? 'יצאת מהמפה'
-      : game.deathInfo?.killer
-        ? `נתקלת בשרשרת של ${game.deathInfo.killer}`
-        : 'השרשרת נקרעה';
+    : game.deathInfo?.timeout
+      ? 'נגמר הזמן – המשימה לא הושלמה'
+      : game.deathInfo?.edge
+        ? story
+          ? 'יצאתם מהמפה – המשימה לא הושלמה'
+          : 'יצאת מהמפה'
+        : game.deathInfo?.killer
+          ? `נתקלת בשרשרת של ${game.deathInfo.killer}`
+          : story
+            ? 'השרשרת נקרעה – המשימה לא הושלמה'
+            : 'השרשרת נקרעה';
   $('stat-score').textContent = b.maxScore.toLocaleString('he-IL');
   $('stat-rank').textContent = b.rank < 99 ? `#${b.rank}` : '–';
   $('stat-hands').textContent = String(b.hands);
   $('stat-time').textContent = secs >= 60 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : `${secs} שנ׳`;
+  $('again').textContent = story ? 'עוד ניסיון' : 'עוד סיבוב';
   const join = $('join-link');
   if (CFG.joinUrl && /^https?:\/\//.test(CFG.joinUrl)) {
     join.href = CFG.joinUrl;
@@ -2716,6 +4105,20 @@ function showOver() {
   hide('hud');
   show('over');
   $('again').focus();
+}
+
+function toMenu() {
+  game.running = false;
+  game.alive = false;
+  game.world = null; // the start screen shows the chosen map (and its room, when people play there)
+  game.meId = 0;
+  game.story = null;
+  hide('over');
+  hide('hud');
+  show('start');
+  audio.setScene('menu');
+  renderMapRow();
+  game.net?.watch(viewExtents(), maps.current);
 }
 
 // ------------------------------------------------------------------------------------------------ input
@@ -2727,22 +4130,36 @@ function setAngleFromPoint(px, py) {
   if (Math.hypot(px - hx, py - hy) < 6) return;
   input.angle = Math.atan2(py - hy, px - hx);
 }
+// One finger steers; any second finger, anywhere on the map, runs (as long as it is down).
+const pointers = new Map();
+let steerId = null;
+function updateBoost() {
+  input.boost = input.holdBoost || pointers.size >= 2;
+  $('boost').classList.toggle('on', input.boost);
+}
 window.addEventListener('pointerdown', () => game.net?.poke(), { capture: true, passive: true });
 window.addEventListener('keydown', () => game.net?.poke(), { capture: true, passive: true });
 canvas.addEventListener('pointerdown', (e) => {
-  input.touches++;
-  if (input.touches >= 2) input.boost = true;
-  input.pointerId = e.pointerId;
-  setAngleFromPoint(e.clientX, e.clientY);
+  pointers.set(e.pointerId, e.pointerType);
+  if (steerId === null) {
+    steerId = e.pointerId;
+    setAngleFromPoint(e.clientX, e.clientY);
+  } else if (game.hintStage < 4 && game.running) {
+    game.hintStage = 4;
+    hint('⚡ אצבע שנייה = ריצה', 2500);
+  }
+  if (e.pointerType === 'mouse' && e.button === 2) input.holdBoost = true;
+  updateBoost();
   canvas.setPointerCapture?.(e.pointerId);
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (e.pointerType === 'mouse' || e.pointerId === input.pointerId) setAngleFromPoint(e.clientX, e.clientY);
+  if (e.pointerType === 'mouse' || e.pointerId === steerId) setAngleFromPoint(e.clientX, e.clientY);
 });
 const endPointer = (e) => {
-  input.touches = Math.max(0, input.touches - 1);
-  if (input.touches < 2 && !input.holdBoost) input.boost = false;
-  if (e.pointerId === input.pointerId) input.pointerId = null;
+  pointers.delete(e.pointerId);
+  if (e.pointerType === 'mouse' && e.button === 2) input.holdBoost = false;
+  if (e.pointerId === steerId) steerId = pointers.size ? [...pointers.keys()].pop() : null;
+  updateBoost();
 };
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
@@ -2751,8 +4168,7 @@ canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 const boostBtn = $('boost');
 const setHoldBoost = (on) => {
   input.holdBoost = on;
-  input.boost = on;
-  boostBtn.classList.toggle('on', on);
+  updateBoost();
 };
 boostBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault();
@@ -2763,8 +4179,16 @@ for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) boostBtn.addEve
 $('hand').addEventListener('click', () => giveHand());
 
 window.addEventListener('keydown', (e) => {
+  if (e.target?.tagName === 'INPUT') {
+    if (e.key === 'Enter' && e.target.id === 'name') {
+      e.preventDefault();
+      e.target.blur();
+      play();
+    }
+    return;
+  }
   if (!game.running) {
-    if ((e.key === 'Enter' || e.key === ' ') && !$('start').hidden && document.activeElement?.id !== 'reroll') {
+    if ((e.key === 'Enter' || e.key === ' ') && !$('start').hidden && !document.activeElement?.closest('button')) {
       e.preventDefault();
       play();
     }
@@ -2789,7 +4213,7 @@ function giveHand() {
   }
   const other = game.world.offerHand(s.id);
   if (other && !game.world.sameTeam(s, other)) {
-    toast(`הושטת יד ל${displayName(other)}…`);
+    toast(`הושטת יד ל${other.name}…`);
     game.refusedAt.set(other.id, game.world.time + 5.2);
   }
 }
@@ -2817,17 +4241,11 @@ function hint(text, ms) {
   clearTimeout(hintTimer);
   hintTimer = setTimeout(() => el.classList.remove('on'), ms);
 }
-function displayName(s) {
-  return s.bot ? `🤖 ${s.name}` : s.name;
-}
 /** Display name for an id, even after that chain left the view. */
 function nameOf(w, id) {
-  const s = w.snakes.get(id);
-  if (s) return displayName(s);
-  const n = w.names?.get(id);
-  return n ? (n.bot ? `🤖 ${n.name}` : n.name) : '';
+  return w.snakes.get(id)?.name || w.names?.get(id)?.name || '';
 }
-/** How much of the city fits across the screen, in metres, for a chain of radius r. */
+/** How much of the map fits across the screen, in map units, for a chain of radius r. */
 function viewSpan(r) {
   return Math.min(1400, 420 + r * 18);
 }
@@ -2839,6 +4257,16 @@ function viewExtents() {
   const zoom = Math.max(0.05, Math.min(cam.zoom || target, target));
   return { hw: W / 2 / zoom, hh: H / 2 / zoom };
 }
+function updateCredit() {
+  const map = mapFor(game.world) ?? maps.loaded.get(maps.current)?.value;
+  const text = map?.credit || '© OpenStreetMap contributors';
+  $('osm').textContent = text;
+  $('osm').href = /Copernicus|Sentinel/.test(text)
+    ? 'https://sentinels.copernicus.eu/'
+    : /NASA/.test(text)
+      ? 'https://earthobservatory.nasa.gov/features/BlueMarble'
+      : 'https://www.openstreetmap.org/copyright';
+}
 
 // ------------------------------------------------------------------------------------------------ loop
 function frame(now) {
@@ -2849,9 +4277,9 @@ function frame(now) {
   trackPerformance(dt);
   updateStats(now);
   const w = game.world;
-  if (w) {
+  if (w && game.running) {
     if (input.turn) input.angle += input.turn * 3.2 * dt;
-    if (game.mode === 'solo') {
+    if (game.mode === 'solo' || game.mode === 'story') {
       const s = me();
       if (s?.alive) w.setInput(s.id, input.angle, input.boost);
       acc += dt;
@@ -2859,11 +4287,12 @@ function frame(now) {
         w.step(1 / 60);
         acc -= 1 / 60;
       }
-      respawnBots(w);
+      for (const o of [...w.snakes.values()]) if (!o.alive && o.id !== game.meId) w.removeSnake(o.id);
     } else if (game.net) {
       game.net.tick(dt, input, viewExtents());
     }
     handleEvents(w);
+    if (game.mode === 'story') updateStory(dt);
     updateCamera(dt);
     render(now / 1000);
     updateHud();
@@ -2878,20 +4307,6 @@ function frame(now) {
   } else {
     renderIdle(now / 1000, dt);
   }
-}
-
-function respawnBots(w) {
-  let bots = 0;
-  for (const s of w.snakes.values()) {
-    if (s.bot) {
-      if (!s.alive) {
-        if (!s.goneAt) s.goneAt = w.time;
-        if (w.time - s.goneAt > 2.5) w.removeSnake(s.id);
-        else bots++;
-      } else bots++;
-    }
-  }
-  if (bots < BOTS && Math.random() < 0.05) w.addSnake({ bot: true, name: botName() });
 }
 
 function handleEvents(w) {
@@ -2927,9 +4342,7 @@ function handleEvents(w) {
       game.refusedAt.delete(id);
       const o = w.snakes.get(id);
       const m = me();
-      if (o && m && !w.sameTeam(o, m) && !game.handIds.has(id) && game.alive) {
-        toast(`${displayName(o)} לא הושיט יד בחזרה. נסו מישהו אחר`);
-      }
+      if (o && m && !w.sameTeam(o, m) && !game.handIds.has(id) && game.alive) toast(`${o.name} לא הושיט יד בחזרה. נסו מישהו אחר`);
     }
   }
 }
@@ -2954,8 +4367,10 @@ function render(t) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   const map = mapFor(w);
   if (map) map.draw(ctx, cam.x, cam.y, z, W, H, DPR);
-  else drawPlainGround();
-  drawArena(w.R);
+  else {
+    drawPlainGround();
+    drawArena(w.R);
+  }
   if (map) map.drawLabels(ctx, cam.x, cam.y, z, W, H, DPR);
   const vx0 = cam.x - W / 2 / z - 80;
   const vx1 = cam.x + W / 2 / z + 80;
@@ -2963,6 +4378,8 @@ function render(t) {
   const vy1 = cam.y + H / 2 / z + 140;
   const sx = (x) => (x - cam.x) * z + W / 2;
   const sy = (y) => (y - cam.y) * z + H / 2;
+
+  if (game.story?.run) drawTargets(game.story.run.targets, t, sx, sy, false);
 
   // People on the street, waiting to join a chain.
   for (const sp of w.sparks.values()) {
@@ -3015,7 +4432,7 @@ function render(t) {
   for (const s of w.snakes.values()) {
     if (!s.alive) continue;
     const r = radiusFor(s.mass);
-    const h = r * 3.2; // a person's height in metres
+    const h = r * 3.2; // a person's height in map units
     const k = Math.max(2, Math.round(r * 0.22)); // path points between people
     const color = COLORS[s.color % COLORS.length];
     const pts = [s.x, s.y];
@@ -3068,8 +4485,21 @@ function render(t) {
       const hand = y - ((FIG.feet - FIG.hand) / FIG.h) * f.hp;
       const isMe = f.s.id === game.meId;
       drawFlag(ctx, x + dir * f.hp * 0.26, hand, f.hp * 1.05, f.color, dir, t + f.s.id, isMe);
+      // The leader wears the chain's face: a bobblehead over the paper doll.
+      const face = avatar(f.s.skin);
+      if (face) {
+        const size = Math.max(22, f.hp * 0.8);
+        const hy = y - (FIG.feet - 22) * k - size * 0.12;
+        ctx.beginPath();
+        ctx.arc(x, hy, size * 0.47, 0, TAU);
+        ctx.fillStyle = f.color;
+        ctx.fill();
+        ctx.drawImage(face, x - size / 2, hy - size / 2, size, size);
+      }
     }
   }
+
+  if (game.story?.run) drawTargets(game.story.run.targets, t, sx, sy, true);
 
   // Names above the other leaders, and hands being offered.
   ctx.textAlign = 'center';
@@ -3083,9 +4513,9 @@ function render(t) {
       ctx.font = '600 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
       ctx.strokeStyle = 'rgba(255,255,255,0.92)';
       ctx.lineWidth = 3;
-      ctx.strokeText(displayName(s), x, y - 4);
+      ctx.strokeText(s.name, x, y - 4);
       ctx.fillStyle = INK;
-      ctx.fillText(displayName(s), x, y - 4);
+      ctx.fillText(s.name, x, y - 4);
     }
     if (s.offer && s.offer.until > w.time && (s.offer.to === game.meId || s.id === game.meId)) {
       const bob = Math.sin(t * 6) * 3;
@@ -3093,8 +4523,42 @@ function render(t) {
       ctx.fillText('🤝', x, y - 20 + bob);
     }
   }
-  drawEdgeWarning(me(), w.R);
-  drawMinimap(w);
+  const my = me();
+  if (my?.alive && game.alive) drawPointer(my, t);
+  drawEdgeWarning(my, w, map);
+  if (game.story?.run) drawOffscreenTargets(game.story.run.targets, sx, sy);
+  drawMinimap(w, map);
+}
+
+/** The direction arrow, like a compass needle just ahead of your leader (where your finger is steering). */
+function drawPointer(s, t) {
+  const z = cam.zoom;
+  const r = radiusFor(s.mass);
+  const hp = r * 3.2 * z;
+  const x = (s.x - cam.x) * z + W / 2;
+  const y = (s.y - cam.y) * z + H / 2 - hp * 0.45;
+  const a = input.angle;
+  const dist = Math.max(38, hp * 1.05) + Math.sin(t * 5) * 2;
+  const ax = x + Math.cos(a) * dist;
+  const ay = y + Math.sin(a) * dist;
+  const size = Math.max(9, Math.min(16, hp * 0.22));
+  ctx.save();
+  ctx.translate(ax, ay);
+  ctx.rotate(a);
+  ctx.beginPath();
+  ctx.moveTo(size, 0);
+  ctx.lineTo(-size * 0.7, size * 0.75);
+  ctx.lineTo(-size * 0.35, 0);
+  ctx.lineTo(-size * 0.7, -size * 0.75);
+  ctx.closePath();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.stroke();
+  ctx.fillStyle = input.boost ? '#f59e0b' : COLORS[s.color % COLORS.length];
+  ctx.globalAlpha = 0.9;
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawPlainGround() {
@@ -3135,42 +4599,234 @@ function drawArena(R) {
   ctx.restore();
 }
 
-function drawEdgeWarning(s, R) {
-  if (!s || !s.alive) return;
-  const d = Math.hypot(s.x, s.y);
-  const near = (d - (R - 450)) / 450;
-  if (near <= 0) return;
+/** Red at the screen's edge when the city limits are just ahead. */
+function drawEdgeWarning(s, w, map) {
+  if (!s || !s.alive || !game.alive) return;
+  const inside = map?.arena.inside ?? w.inside;
+  if (!inside) return;
+  const d = edgeAhead(inside, s.x, s.y, s.a, 420, 35);
+  if (d === Infinity) return;
+  const near = 1 - d / 420;
   const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.7);
   g.addColorStop(0, 'rgba(229, 72, 77, 0)');
-  g.addColorStop(1, `rgba(229, 72, 77, ${Math.min(0.35, near * 0.35)})`);
+  g.addColorStop(1, `rgba(229, 72, 77, ${Math.min(0.38, near * 0.45)})`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 }
 
-function drawMinimap(w) {
-  const m = mini.width;
-  if (m < 16) return;
+/** Mission places: a pulsing ring and the place's name; hung flags once done. Drawn under (rings) or over (flags). */
+function drawTargets(targets, t, sx, sy, over) {
+  const z = cam.zoom;
+  for (const p of targets) {
+    const x = sx(p.x);
+    const y = sy(p.y);
+    if (x < -120 || x > W + 120 || y < -120 || y > H + 120) continue;
+    if (!over && p.active && !p.done) {
+      const r = Math.max(26, 95 * z) + Math.sin(t * 4) * 4;
+      ctx.save();
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.16)';
+      ctx.strokeStyle = 'rgba(176, 124, 10, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 7]);
+      ctx.lineDashOffset = -t * 20;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (over) {
+      if (p.done) drawFlag(ctx, x, y + 2, Math.max(26, 70 * z), COLORS[me()?.color ?? 0], 1, t, true);
+      if (p.active || p.done) {
+        ctx.font = '800 13px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+        const label = `${p.done ? '✅' : '⭐'} ${p.name}`;
+        ctx.strokeText(label, x, y + 8);
+        ctx.fillStyle = p.done ? '#1f7a38' : '#8a5a00';
+        ctx.fillText(label, x, y + 8);
+      }
+    }
+  }
+}
+
+/** An arrow at the screen's edge toward a mission place that is off screen, with how far it is. */
+function drawOffscreenTargets(targets, sx, sy) {
+  const s = me();
+  if (!s) return;
+  for (const p of targets) {
+    if (!p.active || p.done) continue;
+    const x = sx(p.x);
+    const y = sy(p.y);
+    if (x > 30 && x < W - 30 && y > 30 && y < H - 30) continue;
+    const a = Math.atan2(y - H / 2, x - W / 2);
+    const m = 46;
+    const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m - 40) / Math.abs(Math.sin(a) || 1e-6));
+    const ex = W / 2 + Math.cos(a) * k;
+    const ey = H / 2 + Math.sin(a) * k;
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, TAU);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fill();
+    ctx.strokeStyle = '#b07c0a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.rotate(a);
+    ctx.beginPath();
+    ctx.moveTo(14, 0);
+    ctx.lineTo(2, 8);
+    ctx.lineTo(2, -8);
+    ctx.closePath();
+    ctx.fillStyle = '#b07c0a';
+    ctx.fill();
+    ctx.restore();
+    const map = mapFor(game.world);
+    const metres = Math.hypot(p.x - s.x, p.y - s.y) * (map?.data.scale || 1);
+    ctx.font = '800 11px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#8a5a00';
+    ctx.fillText(metres >= 1000 ? `${(metres / 1000).toFixed(metres < 10_000 ? 1 : 0)} ק״מ` : `${Math.round(metres / 10) * 10} מ׳`, ex, ey + 30);
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ minimap
+let miniBase = null; // { id, canvas, x0, y0, k } the map's outline, drawn once per map and size
+function sizeMinimap() {
+  const map = mapFor(game.world) ?? maps.loaded.get(maps.current)?.value;
+  const box = arenaBox(map);
+  const maxW = Math.min(120, W * 0.3);
+  const maxH = Math.min(160, H * 0.26);
+  const k = Math.min(maxW / (box[2] - box[0]), maxH / (box[3] - box[1]));
+  miniSize.w = Math.max(64, Math.round((box[2] - box[0]) * k));
+  miniSize.h = Math.max(64, Math.round((box[3] - box[1]) * k));
+  mini.style.width = `${miniSize.w}px`;
+  mini.style.height = `${miniSize.h}px`;
+  mini.width = Math.round(miniSize.w * DPR);
+  mini.height = Math.round(miniSize.h * DPR);
+  miniBase = null;
+}
+function arenaBox(map) {
+  const rings = map?.arena.rings;
+  if (!rings?.length) {
+    const R = map?.R ?? game.world?.R ?? 3000;
+    return [-R, -R, R, R];
+  }
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const r of rings) {
+    for (let i = 0; i < r.length; i += 2) {
+      x0 = Math.min(x0, r[i]);
+      x1 = Math.max(x1, r[i]);
+      y0 = Math.min(y0, r[i + 1]);
+      y1 = Math.max(y1, r[i + 1]);
+    }
+  }
+  const pad = Math.max(x1 - x0, y1 - y0) * 0.05;
+  return [x0 - pad, y0 - pad, x1 + pad, y1 + pad];
+}
+function minimapBase(map, w) {
+  const id = map?.id ?? `circle${w.R}`;
+  if (miniBase?.id === id && miniBase.canvas.width === mini.width) return miniBase;
+  const box = arenaBox(map ?? { R: w.R, arena: {} });
+  const c = document.createElement('canvas');
+  c.width = mini.width;
+  c.height = mini.height;
+  const g = c.getContext('2d');
+  const k = Math.min(c.width / (box[2] - box[0]), c.height / (box[3] - box[1]));
+  const x0 = box[0];
+  const y0 = box[1];
+  g.fillStyle = 'rgba(214, 230, 236, 0.92)';
+  g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = 'rgba(255, 255, 255, 0.95)';
+  g.strokeStyle = 'rgba(110, 96, 74, 0.55)';
+  g.lineWidth = 1.2 * DPR;
+  g.beginPath();
+  if (map?.arena.rings?.length) {
+    for (const r of map.arena.rings) {
+      g.moveTo((r[0] - x0) * k, (r[1] - y0) * k);
+      for (let i = 2; i < r.length; i += 2) g.lineTo((r[i] - x0) * k, (r[i + 1] - y0) * k);
+      g.closePath();
+    }
+  } else g.arc((0 - x0) * k, (0 - y0) * k, w.R * k, 0, TAU);
+  g.fill('evenodd');
+  g.stroke();
+  // The main roads, faintly, so the shape reads as the town.
+  const roads = map?.data.roads?.[0] || [];
+  g.strokeStyle = 'rgba(160, 140, 110, 0.35)';
+  g.lineWidth = 0.8 * DPR;
+  g.beginPath();
+  for (const line of roads) {
+    g.moveTo((line[0] - x0) * k, (line[1] - y0) * k);
+    for (let i = 2; i < line.length; i += 2) g.lineTo((line[i] - x0) * k, (line[i + 1] - y0) * k);
+  }
+  g.stroke();
+  miniBase = { id, canvas: c, x0, y0, k };
+  return miniBase;
+}
+let miniAt = 0;
+function drawMinimap(w, map) {
+  const now = performance.now();
+  if (now - miniAt < 90 || mini.width < 16) return;
+  miniAt = now;
+  const base = minimapBase(map, w);
+  const { x0, y0, k } = base;
   mctx.setTransform(1, 0, 0, 1, 0, 0);
-  mctx.clearRect(0, 0, m, m);
-  const c = m / 2;
-  const k = (m / 2 - 3) / w.R;
-  mctx.fillStyle = 'rgba(255, 255, 255, 0.86)';
-  mctx.beginPath();
-  mctx.arc(c, c, m / 2 - 1, 0, TAU);
-  mctx.fill();
-  mctx.strokeStyle = 'rgba(110, 96, 74, 0.45)';
-  mctx.lineWidth = 1.2 * DPR;
-  mctx.stroke();
+  mctx.clearRect(0, 0, mini.width, mini.height);
+  mctx.drawImage(base.canvas, 0, 0);
+  const px = (x) => (x - x0) * k;
+  const py = (y) => (y - y0) * k;
+  // What the screen shows.
+  const hw = W / 2 / cam.zoom;
+  const hh = H / 2 / cam.zoom;
+  mctx.strokeStyle = 'rgba(35, 32, 27, 0.55)';
+  mctx.lineWidth = 1 * DPR;
+  mctx.strokeRect(px(cam.x - hw), py(cam.y - hh), hw * 2 * k, hh * 2 * k);
   const my = me();
-  for (const s of w.snakes.values()) {
-    if (!s.alive) continue;
-    const isMe = s.id === game.meId;
-    const mate = my && my.team && s.team === my.team && !isMe;
-    mctx.fillStyle = isMe ? INK : mate ? '#b07c0a' : s.bot ? 'rgba(120, 110, 95, 0.4)' : COLORS[s.color % COLORS.length];
-    const rr = (isMe ? 3.2 : mate ? 2.6 : 1.8) * DPR + Math.min(3, s.mass / 150) * DPR;
+  // Everyone: online the server's radar (all the room, every two seconds) plus what is in view, else the world.
+  const dots = new Map();
+  if (game.mode === 'online' && w.radar) for (const [id, x, y, color, score, team] of w.radar) dots.set(id, { x: x * 10, y: y * 10, color, score, team });
+  for (const s of w.snakes.values()) if (s.alive) dots.set(s.id, { x: s.x, y: s.y, color: s.color, score: scoreOf(s.mass), team: s.team });
+  for (const [id, d] of dots) {
+    const isMe = id === game.meId;
+    if (isMe) continue;
+    const mate = my && my.team && d.team === my.team;
+    mctx.fillStyle = mate ? '#b07c0a' : COLORS[d.color % COLORS.length];
     mctx.beginPath();
-    mctx.arc(c + s.x * k, c + s.y * k, rr, 0, TAU);
+    mctx.arc(px(d.x), py(d.y), (mate ? 2.8 : 2.2) * DPR + Math.min(2.5, d.score / 120) * DPR, 0, TAU);
     mctx.fill();
+  }
+  // Mission places.
+  for (const p of game.story?.run?.targets || []) {
+    if (!p.active && !p.done) continue;
+    mctx.font = `${Math.round(11 * DPR)}px system-ui, sans-serif`;
+    mctx.textAlign = 'center';
+    mctx.textBaseline = 'middle';
+    mctx.fillText(p.done ? '✅' : '⭐', px(p.x), py(p.y));
+  }
+  if (my?.alive) {
+    const x = px(my.x);
+    const y = py(my.y);
+    mctx.fillStyle = '#ffffff';
+    mctx.beginPath();
+    mctx.arc(x, y, 5 * DPR, 0, TAU);
+    mctx.fill();
+    mctx.fillStyle = INK;
+    mctx.beginPath();
+    mctx.arc(x, y, 3.4 * DPR, 0, TAU);
+    mctx.fill();
+    mctx.strokeStyle = INK;
+    mctx.lineWidth = 1.6 * DPR;
+    mctx.beginPath();
+    mctx.moveTo(x, y);
+    mctx.lineTo(x + Math.cos(my.a) * 9 * DPR, y + Math.sin(my.a) * 9 * DPR);
+    mctx.stroke();
   }
 }
 
@@ -3178,48 +4834,51 @@ function handsOf(s) {
   return s ? (s.handsCount ?? s.hands.size) : 0;
 }
 
+/** Behind the start screen: the chosen map's live room when people play there, else the map itself, drifting. */
 function renderIdle(t, dt) {
-  // Behind the start screen: the live room when connected (following its leader), else a local preview.
   const remote = game.net?.world;
   let w = remote;
-  if (remote) {
+  if (remote && remote.city === maps.current) {
     game.net.tick(dt, input, viewExtents());
     remote.events.length = 0;
   } else {
-    const map = mapFor({ city: maps.soloCity || hourCity() });
-    if (!game.preview || (map && game.preview.city !== map.id)) {
-      game.preview = newWorld(map, { sparkTarget: 700 });
-      for (let i = 0; i < 12; i++) game.preview.addSnake({ bot: true, name: botName(), mass: 20 + Math.random() * 120 });
+    const map = maps.loaded.get(maps.current)?.value ?? null;
+    if (!game.preview || game.preview.city !== (map?.id ?? '')) {
+      game.preview = newWorld(map, { sparkTarget: 500 });
+      game.idleWorld = null;
     }
     w = game.preview;
     w.step(1 / 60);
     w.events.length = 0;
-    for (const s of [...w.snakes.values()]) {
-      if (s.alive) continue;
-      w.removeSnake(s.id);
-      w.addSnake({ bot: true, name: botName() });
-    }
   }
   let lead = w.snakes.get(w.focus);
   if (!lead) for (const s of w.snakes.values()) if (s.alive && (!lead || s.mass > lead.mass)) lead = s;
-  if (game.idleWorld !== w && lead) {
+  if (game.idleWorld !== w) {
     game.idleWorld = w;
-    cam.x = lead.x;
-    cam.y = lead.y;
+    const p = lead ?? (w.somewhere ? w.somewhere(0.8) : { x: cam.x, y: cam.y });
+    cam.x = p.x;
+    cam.y = p.y;
   }
   if (lead) {
     const k = 1 - Math.exp(-dt * 2);
     cam.x += (lead.x - cam.x) * k;
     cam.y += (lead.y - cam.y) * k;
+  } else {
+    // Nobody here yet: a slow drift across the streets.
+    cam.x += Math.cos(t * 0.05) * 18 * dt;
+    cam.y += Math.sin(t * 0.037) * 14 * dt;
   }
   cam.zoom = Math.min(W, H) / 820;
   const saved = game.world;
   const savedMe = game.meId;
+  const savedStory = game.story;
   game.world = w;
   game.meId = -1;
+  game.story = null;
   render(t);
   game.world = saved;
   game.meId = savedMe;
+  game.story = savedStory;
 }
 
 // ------------------------------------------------------------------------------------------------ HUD
@@ -3238,16 +4897,16 @@ function updateHud() {
     const rank = game.mode === 'online' ? board?.rank || 0 : alive.indexOf(s) + 1;
     const total = game.mode === 'online' ? board?.total || 0 : alive.length;
     $('score').textContent = score.toLocaleString('he-IL');
-    $('rank').textContent = rank ? `מקום ${rank} מתוך ${total}` : '';
+    $('rank').textContent = rank && total > 1 ? `מקום ${rank} מתוך ${total}` : '';
     game.best.maxScore = Math.max(game.best.maxScore, score);
-    if (rank) game.best.rank = Math.min(game.best.rank, rank);
+    if (rank && total > 1) game.best.rank = Math.min(game.best.rank, rank);
     game.best.hands = Math.max(game.best.hands, handsOf(s), game.handIds.size);
     // Hand button: someone close enough to hold hands with
-    const cand = game.mode === 'solo' ? w.handCandidate(s) : game.net?.candidate?.() ?? null;
+    const cand = game.mode === 'online' ? game.net?.candidate?.() ?? null : w.handCandidate(s);
     const btn = $('hand');
     if (cand) {
       btn.hidden = false;
-      btn.querySelector('span').textContent = cand.offer?.to === s.id ? `קבלו את היד של ${displayName(cand)}` : `תנו יד ל${displayName(cand)}`;
+      btn.querySelector('span').textContent = cand.offer?.to === s.id ? `קבלו את היד של ${cand.name}` : `תנו יד ל${cand.name}`;
       btn.classList.toggle('pulse', cand.offer?.to === s.id);
       if (game.hintStage < 2) {
         game.hintStage = 2;
@@ -3256,13 +4915,13 @@ function updateHud() {
     } else btn.hidden = true;
     if (game.hintStage === 0 && now - game.best.born > 6000) {
       game.hintStage = 1;
-      hint('החזיקו ⚡ כדי לרוץ – זה עולה קצת אנשים', 4500);
+      hint('⚡ ריצה: אצבע שנייה במקום כלשהו על המסך (זה עולה קצת אנשים)', 4800);
     }
   }
   const lb = $('leaderboard');
   const rows = board
-    ? board.top.map(([id, name, score, color, bot]) => ({ id, label: bot ? `🤖 ${name}` : name, score, color }))
-    : alive.slice(0, 5).map((o) => ({ id: o.id, label: displayName(o), score: scoreOf(o.mass), color: o.color }));
+    ? board.top.map(([id, name, score, color]) => ({ id, label: name, score, color }))
+    : alive.slice(0, 5).map((o) => ({ id: o.id, label: o.name, score: scoreOf(o.mass), color: o.color }));
   lb.replaceChildren(
     ...rows.map((o, i) => {
       const li = document.createElement('li');
@@ -3277,19 +4936,18 @@ function updateHud() {
       return li;
     }),
   );
-  const city = cityName(w.city);
-  if (board) {
-    $('players').textContent = `${city ? `${city} · ` : ''}${people(board.people)} · ${bots(board.bots)}`;
+  const name = mapName(w.city);
+  if (game.mode === 'story') {
+    $('players').textContent = `🗳️ ${loadProgress().mandates} מנדטים מתוך ${TO_WIN}`;
+  } else if (board) {
+    const here = board.here ?? 1;
+    $('players').textContent = `${name ? `${name} · ` : ''}${here === 1 ? 'רק אתה כאן' : `${here} משחקים כאן`}`;
+    $('waiting').hidden = here > 1 || !game.alive;
+    if (here > game.hereSeen && game.hereSeen >= 1 && game.alive) toast(here - game.hereSeen === 1 ? '👋 עוד מישהו הצטרף למפה!' : `👋 ${here - game.hereSeen} אנשים הצטרפו למפה!`);
+    game.hereSeen = here;
   } else {
-    const n = alive.filter((o) => o.bot).length;
-    $('players').textContent = `${city ? `${city} · ` : ''}${game.mode === 'online' ? bots(n) : `מקומי · ${bots(n)}`}`;
+    $('players').textContent = `${name ? `${name} · ` : ''}משחקים לבד בטלפון`;
   }
-}
-function people(n) {
-  return n === 1 ? 'אדם אחד' : `${n} אנשים`;
-}
-function bots(n) {
-  return n === 1 ? '🤖 בוט אחד' : `🤖 ${n} בוטים`;
 }
 
 // ?stats in the address shows frame rate and network numbers (for tuning on real phones).
@@ -3328,17 +4986,375 @@ function trackPerformance(dt) {
   }
 }
 
-// ------------------------------------------------------------------------------------------------ share
-function shareUrl() {
-  if (CFG.shareUrl) return CFG.shareUrl;
-  try {
-    const u = new URL(location.href);
-    return u.origin + u.pathname;
-  } catch {
-    return '';
+// ------------------------------------------------------------------------------------------------ story
+function renderStory() {
+  const p = loadProgress();
+  const done = p.i >= MISSIONS.length || p.mandates >= TO_WIN;
+  $('mandates-bar').style.width = `${Math.min(100, (p.mandates / 80) * 100)}%`;
+  $('mandates-text').textContent = done
+    ? `🎉 ${p.mandates} מנדטים – ניצחתם בבחירות!`
+    : `${p.mandates} מנדטים מתוך ${TO_WIN} · משימה ${p.i + 1} מתוך ${MISSIONS.length}`;
+  if (done) {
+    $('story-chapter').textContent = 'סוף הסיפור';
+    $('story-mission').textContent = 'הקמתם ממשלה';
+    $('story-brief').textContent = `${p.mandates} מנדטים. מתחילים בשרשרת של אדם אחד, ומגיעים לממשלה – כי ביחד אנחנו שרשרת. אפשר לשתף, או להתחיל את הדרך מחדש.`;
+    $('story-go').textContent = 'שתפו את הניצחון';
+  } else {
+    const m = MISSIONS[p.i];
+    const onMap = maps.byId.has(m.map) ? m.map : '';
+    $('story-chapter').textContent = `${m.chapter}${onMap ? '' : ' (על המפה שבחרתם)'} · +${m.mandates} מנדטים`;
+    $('story-mission').textContent = m.title;
+    $('story-brief').textContent = m.brief;
+    $('story-go').textContent = p.i === 0 && p.mandates === 0 ? 'יוצאים לדרך' : 'למשימה';
+  }
+  $('story-reset').hidden = p.i === 0 && p.mandates === 0;
+}
+function openStory() {
+  renderStory();
+  show('story');
+}
+async function startStory() {
+  const p = loadProgress();
+  if (p.i >= MISSIONS.length || p.mandates >= TO_WIN) {
+    shareVictory();
+    return;
+  }
+  audio.unlock();
+  commitName();
+  game.net?.idle();
+  const mission = MISSIONS[p.i];
+  const id = maps.byId.has(mission.map) ? mission.map : maps.current;
+  $('story-go').disabled = true;
+  const map = await Promise.race([cityMap(id), new Promise((r) => setTimeout(() => r(null), 6000))]);
+  $('story-go').disabled = false;
+  const w = newWorld(map);
+  for (let i = 0; i < 60; i++) {
+    w.step(1 / 30);
+    w.events.length = 0;
+  }
+  const s = w.addSnake({ name: game.name, skin: game.skin });
+  game.world = w;
+  game.meId = s.id;
+  game.mode = 'story';
+  game.story = { index: p.i, run: startMission(mission, map), map };
+  $('mission-title').textContent = `${mission.title} · +${mission.mandates}`;
+  beginRound(s);
+  toast(mission.brief, 5200);
+}
+function updateStory(dt) {
+  const st = game.story;
+  if (!st?.run || !game.alive) return;
+  const s = me();
+  const res = st.run.update(s?.alive ? s : null, s ? scoreOf(s.mass) : 0, dt);
+  $('mission-text').textContent = res.text;
+  $('mission-bar').style.width = `${Math.round(res.progress * 100)}%`;
+  if (res.failed) {
+    game.alive = false;
+    game.deathInfo = { timeout: true };
+    audio.sfx('break');
+    audio.setScene('over');
+    setTimeout(showOver, 600);
+    return;
+  }
+  if (res.done) {
+    const p = loadProgress();
+    const mission = MISSIONS[st.index];
+    p.mandates += mission.mandates;
+    p.i = st.index + 1;
+    saveProgress(p);
+    game.alive = false;
+    game.running = false;
+    game.story = null;
+    audio.sfx('link');
+    navigator.vibrate?.([60, 40, 60, 40, 120]);
+    hide('hud');
+    renderStory();
+    $('story-title').textContent = `✅ ${mission.title}: +${mission.mandates} מנדטים`;
+    $('story-intro').hidden = true;
+    show('story');
+    audio.setScene('menu');
   }
 }
-function cardCanvas() {
+function shareVictory() {
+  const p = loadProgress();
+  shareText(`ניצחתי בבחירות ב-${NAME} עם ${p.mandates} מנדטים והקמתי ממשלה 🗳️ ביחד אנחנו שרשרת – נראה אתכם:`, cardCanvas({ mandates: p.mandates }));
+}
+
+// ------------------------------------------------------------------------------------------------ lobby: maps
+function lobbyCount(id) {
+  return maps.lobby[id] | 0;
+}
+function renderMapRow() {
+  const id = maps.current;
+  const info = maps.byId.get(id);
+  $('map-name').textContent = info ? `📍 ${info.he}` : '📍 …';
+  const n = lobbyCount(id);
+  const live = $('map-live');
+  live.classList.toggle('live', n > 0);
+  live.textContent =
+    n > 0
+      ? `🟢 ${n === 1 ? 'אדם אחד משחק' : `${n} משחקים`} עכשיו`
+      : info?.kind === 'region'
+        ? `${info.subtitle || 'מפה גדולה'} · עד ${info.capacity || 50} איש`
+        : info
+          ? `עד ${info.capacity || 20} איש בחדר · תהיו הראשונים`
+          : 'בוחרים מפה';
+}
+function renderMapList() {
+  const q = $('map-search').value.trim();
+  const list = $('map-list');
+  const match = (m) => !q || m.he.includes(q) || m.id.includes(q.toLowerCase());
+  const item = (m) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `item${m.id === maps.current ? ' on' : ''}`;
+    const text = document.createElement('div');
+    const name = document.createElement('b');
+    name.textContent = m.he;
+    const sub = document.createElement('small');
+    sub.textContent = m.kind === 'region' ? `${m.subtitle || ''} · עד ${m.capacity || 50}` : `עד ${m.capacity || 20} איש בחדר`;
+    text.append(name, sub);
+    b.append(text);
+    const n = lobbyCount(m.id);
+    if (n) {
+      const em = document.createElement('em');
+      em.textContent = `🟢 ${n}`;
+      b.append(em);
+    }
+    b.addEventListener('click', () => {
+      chooseMap(m.id);
+      hide('maps');
+    });
+    return b;
+  };
+  const head = (text) => {
+    const h = document.createElement('h3');
+    h.textContent = text;
+    return h;
+  };
+  const regions = maps.list.filter((m) => m.kind === 'region' && match(m));
+  const cities = maps.list.filter((m) => m.kind !== 'region' && match(m));
+  const busy = cities.filter((m) => lobbyCount(m.id)).sort((a, b) => lobbyCount(b.id) - lobbyCount(a.id));
+  const rest = cities.filter((m) => !lobbyCount(m.id));
+  const out = [];
+  if (regions.length) out.push(head('מפות גדולות'), ...regions.map(item));
+  if (busy.length) out.push(head('משחקים עכשיו'), ...busy.map(item));
+  if (rest.length) out.push(head(busy.length ? 'עוד ערים' : 'ערים'), ...rest.map(item));
+  if (!out.length) out.push(head('לא נמצאה עיר בשם הזה'));
+  list.replaceChildren(...out);
+}
+$('map-btn').addEventListener('click', () => {
+  $('map-search').value = '';
+  renderMapList();
+  show('maps');
+  game.net?.askLobby();
+});
+$('map-search').addEventListener('input', renderMapList);
+
+// ------------------------------------------------------------------------------------------------ skins and name
+function drawSkinInto(c, id) {
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  const face = avatar(id);
+  if (face) g.drawImage(face, 0, 0, c.width, c.height);
+  else {
+    g.fillStyle = '#e9e3d6';
+    g.beginPath();
+    g.arc(c.width / 2, c.height / 2, c.width * 0.42, 0, TAU);
+    g.fill();
+    setTimeout(() => avatar(id) && drawSkinInto(c, id), 400); // a picture still loading
+  }
+}
+function renderSkinButton() {
+  drawSkinInto($('skin-face'), game.skin);
+}
+function renderSkinList() {
+  const q = $('skin-search').value.trim();
+  const list = allSkins().filter((s) => !q || s.name.includes(q));
+  $('skin-list').replaceChildren(
+    ...list.map((s) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `skin${s.id === game.skin ? ' on' : ''}`;
+      const c = document.createElement('canvas');
+      c.width = c.height = 112;
+      drawSkinInto(c, s.id);
+      const label = document.createElement('span');
+      label.textContent = s.name;
+      b.append(c, label);
+      b.addEventListener('click', () => {
+        game.skin = s.id;
+        setPref('skin', s.id);
+        renderSkinButton();
+        hide('skins');
+      });
+      return b;
+    }),
+  );
+}
+$('skin-btn').addEventListener('click', () => {
+  $('skin-search').value = '';
+  renderSkinList();
+  show('skins');
+});
+$('skin-search').addEventListener('input', renderSkinList);
+
+function renderName() {
+  $('name').value = game.name;
+  $('name').classList.remove('bad');
+  $('name-note').textContent = '';
+}
+/** The name typed so far: kept if it passes the filter, else the last good one stays (and the box says so). */
+function commitName() {
+  const typed = $('name').value;
+  const clean = cleanName(typed);
+  if (clean) {
+    game.name = clean;
+    setPref('name', clean);
+  }
+  renderName();
+  if (typed.trim() && !clean) toast('השם הזה לא עובר בסינון, נשארים עם הקודם');
+}
+$('name').addEventListener('input', () => {
+  const typed = $('name').value;
+  const ok = !typed.trim() || !!cleanName(typed);
+  $('name').classList.toggle('bad', !ok);
+  $('name-note').textContent = ok ? '' : 'בלי קישורים, סמלים או מילים פוגעניות; 2–16 אותיות';
+});
+$('name').addEventListener('change', commitName);
+$('reroll').addEventListener('click', () => {
+  game.name = randomName();
+  setPref('name', game.name);
+  renderName();
+});
+
+// ------------------------------------------------------------------------------------------------ music
+function renderTracks() {
+  const current = audio.track;
+  const items = [
+    ...TRACKS.map((t) => ({ id: t.id, title: t.title, mood: t.mood })),
+    ...(Array.isArray(CFG.music) ? CFG.music : [])
+      .filter((m) => m && typeof m.url === 'string' && /^[a-z0-9-]+\.(mp3|m4a|ogg)$/.test(m.url))
+      .map((m) => ({ id: `lic:${m.url}`, title: String(m.title || m.url), mood: String(m.credit || 'ברישיון'), url: m.url })),
+  ];
+  $('track-list').replaceChildren(
+    ...items.map((t) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const on = t.id === current || (current === 'file' && t.id === game.fileTrack);
+      b.className = `item${on ? ' on' : ''}`;
+      const text = document.createElement('div');
+      const name = document.createElement('b');
+      name.textContent = `${on ? '▶ ' : ''}${t.title}`;
+      const sub = document.createElement('small');
+      sub.textContent = t.mood;
+      text.append(name, sub);
+      b.append(text);
+      b.addEventListener('click', async () => {
+        audio.unlock();
+        if (audio.muted) {
+          audio.setMuted(false);
+          setPref('muted', '0');
+          renderSound();
+        }
+        if (t.url) {
+          try {
+            const res = await fetch(`music/${t.url}`);
+            await audio.playFile(await res.arrayBuffer(), t.title);
+            game.fileTrack = t.id;
+          } catch {
+            toast('השיר לא נטען');
+          }
+        } else {
+          audio.setTrack(t.id, true);
+          setPref('track', t.id);
+          game.fileTrack = '';
+        }
+        renderTracks();
+      });
+      return b;
+    }),
+  );
+  if (current === 'file' && !game.fileTrack) {
+    const own = document.createElement('div');
+    own.className = 'item on';
+    own.textContent = `▶ ${audio.fileTitle || 'שיר מהטלפון'}`;
+    $('track-list').append(own);
+  }
+}
+$('music-btn').addEventListener('click', () => {
+  renderTracks();
+  show('music');
+});
+$('music-file').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    await audio.playFile(await file.arrayBuffer(), file.name.replace(/\.[a-z0-9]+$/i, ''));
+    game.fileTrack = '';
+    if (audio.muted) {
+      audio.setMuted(false);
+      setPref('muted', '0');
+      renderSound();
+    }
+    renderTracks();
+    toast('🎧 השיר שלך מתנגן (רק אצלך)');
+  } catch {
+    toast('את הקובץ הזה אי אפשר לנגן');
+  }
+});
+
+// ------------------------------------------------------------------------------------------------ satellite, Green Line
+function renderToggles() {
+  $('sat-btn').setAttribute('aria-pressed', String(game.sat));
+  $('green-btn').setAttribute('aria-pressed', String(game.green));
+}
+function applyMapOptions() {
+  for (const p of maps.loaded.values()) p.value?.setOptions({ sat: game.sat, green: game.green, xyz: xyzProvider() });
+  updateCredit();
+}
+$('sat-btn').addEventListener('click', () => {
+  game.sat = !game.sat;
+  setPref('sat', game.sat ? '1' : '0');
+  const map = mapFor(game.world) ?? maps.loaded.get(maps.current)?.value;
+  const credit = map?.data.satellite?.credit || '';
+  if (game.sat && map && !map.hasSatellite) toast('למפה הזו עוד אין תמונת לוויין');
+  else if (game.sat) {
+    toast(
+      xyzProvider()
+        ? '🛰️ תצוגת לוויין'
+        : /NASA/.test(credit)
+          ? '🛰️ תצוגת לוויין (NASA Blue Marble)'
+          : '🛰️ תצוגת לוויין (Sentinel-2: פיקסל של 10 מטר, אז מקרוב זה מטושטש)',
+      3200,
+    );
+  }
+  renderToggles();
+  applyMapOptions();
+});
+$('green-btn').addEventListener('click', () => {
+  game.green = !game.green;
+  setPref('green', game.green ? '1' : '0');
+  toast(game.green ? 'הקו הירוק מוצג' : 'הקו הירוק מוסתר');
+  renderToggles();
+  applyMapOptions();
+});
+
+// ------------------------------------------------------------------------------------------------ share
+function shareUrl(map = maps.current) {
+  let u = CFG.shareUrl;
+  if (!u) {
+    try {
+      const l = new URL(location.href);
+      u = l.origin + l.pathname;
+    } catch {
+      return '';
+    }
+  }
+  return map ? `${u}${u.includes('?') ? '&' : '?'}map=${encodeURIComponent(map)}` : u;
+}
+function cardCanvas({ mandates = 0 } = {}) {
   const c = document.createElement('canvas');
   c.width = 1080;
   c.height = 1350;
@@ -3363,8 +5379,6 @@ function cardCanvas() {
   }
   const color = COLORS[me()?.color ?? game.lastColor ?? 0];
   g.textAlign = 'center';
-  g.direction = 'ltr';
-  g.fillStyle = INK;
   drawWordmark(g, 540, 210, 124, { maxWidth: 980, ink: INK });
   g.direction = 'rtl';
   if (CFG.brand) {
@@ -3374,14 +5388,15 @@ function cardCanvas() {
   }
   g.font = '600 48px system-ui, sans-serif';
   g.fillStyle = INK;
-  g.fillText('הבאתי לשרשרת', 540, 430);
+  g.fillText(mandates ? 'ניצחתי בבחירות עם' : 'הבאתי לשרשרת', 540, 430);
   g.font = '900 190px system-ui, sans-serif';
   g.fillStyle = color;
-  g.fillText(game.best.maxScore.toLocaleString('he-IL'), 540, 610);
+  g.fillText((mandates || game.best.maxScore).toLocaleString('he-IL'), 540, 610);
   g.font = '700 54px system-ui, sans-serif';
   g.fillStyle = INK;
-  g.fillText('אנשים', 540, 680);
-  // The chain itself: people holding hands across the card, the leader with a flag.
+  const where = mapName(game.world?.city || maps.current);
+  g.fillText(mandates ? 'מנדטים 🗳️' : where ? `אנשים ב${where}` : 'אנשים', 540, 680);
+  // The chain itself: people holding hands across the card, the leader with a flag and a face.
   const n = 9;
   const hp = 150;
   const k = hp / FIG.h;
@@ -3398,13 +5413,15 @@ function cardCanvas() {
     .sort((a, b) => a[1] - b[1])
     .forEach(([x, y]) => g.drawImage(figure(color, 'chain', 0), x - (FIG.w * k) / 2, y - FIG.feet * k, FIG.w * k, FIG.h * k));
   drawFlag(g, pts[0][0] + hp * 0.26, pts[0][1] - ((FIG.feet - FIG.hand) / FIG.h) * hp, hp * 0.95, color, 1, 0.4);
+  const face = avatar(game.skin);
+  if (face) g.drawImage(face, pts[0][0] - hp * 0.27, pts[0][1] - (FIG.feet - 24) * k - hp * 0.27, hp * 0.54, hp * 0.54);
   g.font = '600 46px system-ui, sans-serif';
   g.fillStyle = INK;
-  g.fillText(game.best.hands > 0 ? `והחזקתי ידיים עם ${game.best.hands} 🤝` : 'נראה אתכם עוברים אותי', 540, 1080);
+  g.fillText(mandates ? 'והקמתי ממשלה' : game.best.hands > 0 ? `והחזקתי ידיים עם ${game.best.hands} 🤝` : 'נראה אתכם עוברים אותי', 540, 1080);
   g.font = '700 40px system-ui, sans-serif';
   g.fillStyle = '#0038b8';
   g.fillText('לבד אתה חזק – ביחד אנחנו שרשרת', 540, 1170);
-  const url = shareUrl().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const url = shareUrl('').replace(/^https?:\/\//, '').replace(/\/$/, '');
   if (url) {
     g.direction = 'ltr';
     g.font = '700 38px system-ui, sans-serif';
@@ -3413,14 +5430,15 @@ function cardCanvas() {
   }
   return c;
 }
-if (statsEl) globalThis.__chainCard = () => cardCanvas().toDataURL('image/png'); // for checking the card while tuning
-async function share() {
-  const text = `הבאתי ${game.best.maxScore.toLocaleString('he-IL')} אנשים לשרשרת ב-${NAME}${
-    game.best.hands ? ` והחזקתי ידיים עם ${game.best.hands}` : ''
-  } 🔗 ביחד אנחנו שרשרת – נראה אתכם:`;
+if (statsEl) {
+  // For checking things while tuning on a phone (and for automated checks): the share card, and the game state.
+  globalThis.__chainCard = () => cardCanvas().toDataURL('image/png');
+  globalThis.__chain = { game, me, maps };
+}
+async function shareText(text, card) {
   const url = shareUrl();
   try {
-    const blob = await new Promise((res) => cardCanvas().toBlob(res, 'image/png'));
+    const blob = card ? await new Promise((res) => card.toBlob(res, 'image/png')) : null;
     const file = blob ? new File([blob], `${SLUG}.png`, { type: 'image/png' }) : null;
     if (file && navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], text: `${text} ${url}` });
@@ -3442,6 +5460,19 @@ async function share() {
     $('share-text').select();
   }
 }
+function share() {
+  const where = mapName(game.world?.city || maps.current);
+  shareText(
+    `הבאתי ${game.best.maxScore.toLocaleString('he-IL')} אנשים לשרשרת ב-${NAME}${where ? ` ב${where}` : ''}${
+      game.best.hands ? ` והחזקתי ידיים עם ${game.best.hands}` : ''
+    } 🔗 ביחד אנחנו שרשרת – נראה אתכם:`,
+    cardCanvas(),
+  );
+}
+$('waiting-share').addEventListener('click', () => {
+  const where = mapName(maps.current);
+  shareText(`בואו לשחק איתי ב-${NAME}${where ? ` ב${where}` : ''} – אוספים אנשים ברחובות ונותנים יד 🔗`, null);
+});
 
 // ------------------------------------------------------------------------------------------------ boot
 /** The small human chain above the logo: five people of different colours holding hands. */
@@ -3467,18 +5498,30 @@ function drawMark() {
   );
   drawFlag(g, pts[0][0] - hp * 0.26, pts[0][1] - hand, hp * 0.95, COLORS[9], -1, 0.6);
 }
-function renderName() {
-  $('name').textContent = game.name;
-}
-$('reroll').addEventListener('click', () => {
-  game.name = randomName();
-  saveName(game.name);
-  renderName();
-});
 $('play').addEventListener('click', play);
-$('again').addEventListener('click', play);
+$('again').addEventListener('click', () => (game.mode === 'story' ? (hide('over'), startStory()) : play()));
+$('to-menu').addEventListener('click', toMenu);
 $('share').addEventListener('click', share);
 $('share-close').addEventListener('click', () => hide('share-fallback'));
+$('story-btn').addEventListener('click', () => {
+  $('story-title').textContent = 'הדרך לממשלה';
+  $('story-intro').hidden = false;
+  openStory();
+});
+$('story-go').addEventListener('click', () => startStory());
+$('story-reset').addEventListener('click', () => {
+  saveProgress({ i: 0, mandates: 0 });
+  $('story-title').textContent = 'הדרך לממשלה';
+  $('story-intro').hidden = false;
+  renderStory();
+});
+for (const b of document.querySelectorAll('.sheet .close')) {
+  b.addEventListener('click', () => {
+    const sheet = b.closest('.sheet');
+    sheet.hidden = true;
+    if (sheet.id === 'story' && !game.running) toMenu();
+  });
+}
 if (CFG.brand) $('brand').textContent = CFG.brand;
 else $('brand').hidden = true;
 if (CFG.publisher) {
@@ -3490,69 +5533,111 @@ document.addEventListener('visibilitychange', () => {
 });
 renderName();
 renderSound();
+renderToggles();
+renderSkinButton();
 resize();
 drawMark();
 requestAnimationFrame((t) => {
   last = t;
   requestAnimationFrame(frame);
 });
+loadSuppliedSkins(CFG.skins).then(() => renderSkinButton());
 
-// The cities, and this hour's city for offline play and the start screen.
-loadCityIndex(CFG.maps)
-  .then((cities) => {
-    maps.cities = cities;
-    maps.soloCity ||= hourCity();
-    cityMap(maps.soloCity);
-    updateCityLine();
+// The maps: the big ones and the towns. A ?map= link (an invitation) picks its map.
+const linked = new URLSearchParams(location.search).get('map') || '';
+loadMapIndex(CFG.maps)
+  .then(({ regions, cities }) => {
+    maps.list = [...regions.map((m) => ({ ...m, kind: 'region' })), ...cities.map((m) => ({ ...m, kind: m.kind || 'city' }))];
+    for (const m of maps.list) maps.byId.set(m.id, m);
+    const saved = pref('map');
+    const start = [linked, saved, game.net?.home, 'israel', maps.list[0]?.id].find((id) => id && maps.byId.has(id));
+    chooseMap(start, { save: !!linked });
   })
   .catch(() => {
     /* no maps: plain ground */
   });
-function updateCityLine() {
-  const id = game.net?.world?.city || maps.soloCity;
-  const name = cityName(id);
-  $('city').textContent = name ? `📍 משחקים עכשיו ב${name}` : '';
-}
 
-// Online play when a server is configured (or when this page is served by the game server itself).
-const serverUrl =
-  CFG.server || (location.protocol.startsWith('http') && CFG.sameOrigin ? `${location.origin.replace(/^http/, 'ws')}/ws` : '');
+// Online play when a server is configured (or when this page is served by the game server itself). With several
+// servers, each map lives on one of them (the same for everyone).
+const sameOriginUrl = location.protocol.startsWith('http') && CFG.sameOrigin ? `${location.origin.replace(/^http/, 'ws')}/ws` : '';
+const SERVERS = (Array.isArray(CFG.servers) && CFG.servers.length ? CFG.servers : [CFG.server || sameOriginUrl]).filter((u) =>
+  /^wss?:\/\//.test(u),
+);
+function serverFor(map) {
+  if (SERVERS.length <= 1) return SERVERS[0] || '';
+  let h = 0;
+  for (const ch of map || '') h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return SERVERS[h % SERVERS.length];
+}
 function netStatusText(status, online) {
   if (status === 'online') {
     return online > 1 ? `🟢 ${online.toLocaleString('he-IL')} מחוברים עכשיו – משחקים עם אנשים אמיתיים` : '🟢 מחובר – משחקים עם אנשים אמיתיים';
   }
-  if (status === 'connecting') return 'מעיר את השרת… אפשר כבר לשחק עם בוטים';
-  if (status === 'full') return 'השרת מלא כרגע – משחקים עם בוטים';
-  return 'השרת לא זמין כרגע – משחקים עם בוטים';
+  if (status === 'connecting') return 'מעיר את השרת… אפשר כבר לשחק לבד';
+  if (status === 'full') return 'השרת מלא כרגע – משחקים לבד בינתיים';
+  return 'השרת לא זמין כרגע – משחקים לבד בינתיים';
 }
-if (serverUrl) {
-  game.net = connectOnline(serverUrl, {
+function ensureNet() {
+  const url = serverFor(maps.current);
+  if (!url || game.netUrl === url) return;
+  game.net?.close();
+  game.netUrl = url;
+  game.net = connectOnline(url, {
     onStatus(status, info) {
       for (const id of ['net-status', 'over-net']) {
         $(id).textContent = netStatusText(status, info.online);
         $(id).dataset.state = status;
       }
-      if (status === 'online' && game.mode === 'solo' && game.alive && !game.toldOnline) {
-        game.toldOnline = true;
-        toast('השרת מחובר – מהסיבוב הבא משחקים עם אנשים אמיתיים', 3500);
-      }
+    },
+    onHello(m) {
+      if (!pref('map') && !linked && m.home && maps.byId.has(m.home) && m.home !== maps.current) chooseMap(m.home, { save: false });
+    },
+    onLobby(lobby, online) {
+      if (SERVERS.length <= 1) maps.lobby = lobby;
+      maps.online = online;
+      renderMapRow();
+      if (!$('maps').hidden) renderMapList();
     },
     onWorld(world) {
-      // The room's city: offline rounds follow it too, so everyone sees the same streets.
-      if (world.city) {
-        maps.soloCity = world.city;
-        cityMap(world.city);
-      }
-      updateCityLine();
+      if (world.city) cityMap(world.city);
+    },
+    onBusy() {
+      clearTimeout(game.joinTimer);
+      if (!game.joining) return;
+      game.joining = false;
+      setButtonsBusy(false);
+      startSolo('השרת עמוס כרגע – משחקים לבד בינתיים');
     },
     onJoined,
     onLost,
   });
-  game.net.watch(viewExtents());
-} else {
-  $('net-status').textContent = 'משחק מקומי עם בוטים';
+  game.net.watch(viewExtents(), maps.current);
+}
+if (SERVERS.length) ensureNet();
+else {
+  $('net-status').textContent = 'משחק מקומי';
   $('net-status').dataset.state = 'solo';
 }
+// Where people play, for the lobby: every few seconds while the menu is up (from each server when there are several).
+setInterval(() => {
+  if (!$('start').hidden || !$('maps').hidden) {
+    if (SERVERS.length > 1) {
+      Promise.all(
+        SERVERS.map((u) =>
+          fetch(u.replace(/^ws/, 'http').replace(/\/ws$/, '/lobby'), { cache: 'no-store' })
+            .then((r) => r.json())
+            .catch(() => null),
+        ),
+      ).then((all) => {
+        const merged = {};
+        for (const r of all) for (const [id, n] of Object.entries(r?.maps || {})) merged[id] = (merged[id] || 0) + (n | 0);
+        maps.lobby = merged;
+        renderMapRow();
+        if (!$('maps').hidden) renderMapList();
+      });
+    } else game.net?.askLobby();
+  }
+}, 5000);
 
 return {  };
 })();

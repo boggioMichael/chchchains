@@ -1,12 +1,14 @@
 // Load test: N simulated players join, steer and rejoin, like people on phones.
-//   node scripts/loadtest.mjs ws://127.0.0.1:3000/ws 40 60      (url, players, seconds)
-// Prints what each player receives per second and the server's tick time from /healthz.
-const [url = 'ws://127.0.0.1:3000/ws', nArg = '40', secsArg = '60'] = process.argv.slice(2);
+//   node scripts/loadtest.mjs ws://127.0.0.1:3000/ws 40 60 israel,tel-aviv    (url, players, seconds, maps)
+// Players are spread over the maps given (default: the one the server suggests). Prints what each player receives
+// per second and the server's tick time, rooms and memory from /healthz.
+const [url = 'ws://127.0.0.1:3000/ws', nArg = '40', secsArg = '60', mapsArg = ''] = process.argv.slice(2);
+const MAPS = mapsArg.split(',').filter(Boolean);
 const N = Number(nArg);
 const SECS = Number(secsArg);
 const health = url.replace(/^ws/, 'http').replace(/\/ws$/, '/healthz');
 const NAMES = ['ניצוץ זריז', 'כוכב אמיץ', 'גל מהנגב', 'נר שקט', 'ברק מהעמק', 'פנס עליז'];
-const totals = { bytes: 0, snaps: 0, deaths: 0, joins: 0, closed: 0, full: 0 };
+const totals = { bytes: 0, snaps: 0, deaths: 0, joins: 0, closed: 0, full: 0, busy: 0 };
 
 function player(i) {
   const ws = new WebSocket(url);
@@ -14,13 +16,17 @@ function player(i) {
   let angle = Math.random() * Math.PI * 2;
   let alive = false;
   let timer = 0;
-  const join = () => ws.send(JSON.stringify({ t: 'join', name: NAMES[i % NAMES.length], vw: 420, vh: 860 }));
+  let map = MAPS.length ? MAPS[i % MAPS.length] : '';
+  const join = () => ws.send(JSON.stringify({ t: 'join', map, name: NAMES[i % NAMES.length], skin: `a${i % 16}`, vw: 420, vh: 860 }));
   ws.onmessage = (e) => {
     if (typeof e.data === 'string') {
       totals.bytes += e.data.length;
       const m = JSON.parse(e.data);
-      if (m.t === 'hello') join();
-      else if (m.t === 'full') totals.full++;
+      if (m.t === 'hello') {
+        map ||= m.home;
+        join();
+      } else if (m.t === 'full') totals.full++;
+      else if (m.t === 'busy') totals.busy++;
       else if (m.t === 'joined') {
         alive = true;
         totals.joins++;
@@ -66,7 +72,8 @@ const every = setInterval(async () => {
   console.log(
     `${Math.round((now - t0) / 1000)}s  per player ${((totals.bytes - last.bytes) / 1024 / secs / N).toFixed(1)} KB/s, ` +
       `${((totals.snaps - last.snaps) / secs / N).toFixed(1)} snapshots/s · server: ${h.online} online, ${h.rooms} rooms, ` +
-      `tick ${h.tickMs} ms · joins ${totals.joins}, deaths ${totals.deaths}, closed ${totals.closed}, full ${totals.full}`,
+      `tick ${h.tickMs} ms, ${h.rssMb} MB · joins ${totals.joins}, deaths ${totals.deaths}, closed ${totals.closed}, ` +
+      `full ${totals.full}, busy ${totals.busy}`,
   );
   last = { bytes: totals.bytes, snaps: totals.snaps, at: now };
 }, 10_000);

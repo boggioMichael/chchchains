@@ -125,6 +125,9 @@ export class World {
     this.sparkTarget = opts.sparkTarget ?? C.sparkTarget;
     // Where people turn up (e.g. along a city's streets); without it, anywhere in the arena.
     this.spawnPoint = opts.spawnPoint ?? null;
+    // The playing area: a map's city limits (arena.js), or else the circle of radius R.
+    const r2 = this.R * this.R;
+    this.inside = opts.inside ?? ((x, y) => x * x + y * y <= r2);
     this.snakes = new Map();
     this.sparks = new Map();
     this.teams = new Map();
@@ -161,17 +164,31 @@ export class World {
     this.sparkGrid.remove(s.x, s.y, s);
     this.sparkLog?.removed.push(s.id);
   }
-  /** A random place for people: on the streets when the world has a map, else anywhere inside the arena. */
+  /** Inside the arena, and at least `margin` from its edge (checked in four directions). */
+  roomy(x, y, margin) {
+    const inside = this.inside;
+    return inside(x, y) && (margin <= 0 || (inside(x + margin, y) && inside(x - margin, y) && inside(x, y + margin) && inside(x, y - margin)));
+  }
+  /**
+   * A random place for people: on the streets when the world has a map, else anywhere inside the arena. `reach`
+   * keeps it off the edge: 1 − reach of 600 metres (0.97 → 18 m, 0.72 → 170 m).
+   */
   somewhere(reach = 0.97) {
+    const margin = (1 - reach) * 600;
     if (this.spawnPoint) {
-      for (let k = 0; k < 4; k++) {
+      for (let k = 0; k < 6; k++) {
         const p = this.spawnPoint();
-        if (Math.hypot(p.x, p.y) < this.R * reach) return p;
+        if (p && this.roomy(p.x, p.y, margin)) return p;
       }
     }
-    const rr = this.R * reach * Math.sqrt(Math.random());
-    const a = Math.random() * TAU;
-    return { x: Math.cos(a) * rr, y: Math.sin(a) * rr };
+    for (let k = 0; k < 40; k++) {
+      const rr = this.R * Math.sqrt(Math.random());
+      const a = Math.random() * TAU;
+      const x = Math.cos(a) * rr;
+      const y = Math.sin(a) * rr;
+      if (this.roomy(x, y, k < 30 ? margin : 0)) return { x, y };
+    }
+    return { x: 0, y: 0 };
   }
 
   spawnNaturalSpark() {
@@ -183,7 +200,9 @@ export class World {
       for (let i = 0; i < n; i++) {
         const ra = Math.random() * TAU;
         const rd = 12 + Math.random() * 50;
-        this.addSpark(cx + Math.cos(ra) * rd, cy + Math.sin(ra) * rd, 1, 4.5 + Math.random() * 2, color);
+        const x = cx + Math.cos(ra) * rd;
+        const y = cy + Math.sin(ra) * rd;
+        if (this.inside(x, y)) this.addSpark(x, y, 1, 4.5 + Math.random() * 2, color);
       }
       return;
     }
@@ -211,13 +230,14 @@ export class World {
     return best;
   }
 
-  addSnake({ name = randomName(), color, bot = false, mass = C.startMass } = {}) {
+  addSnake({ name = randomName(), color, bot = false, mass = C.startMass, skin = '' } = {}) {
     const id = this.nextId++;
     const { x, y } = this.safeSpawnPoint();
     const a = Math.atan2(-y, -x) + (Math.random() - 0.5) * 1.2; // face inwards
     const s = {
       id,
       name,
+      skin,
       color: color ?? (id - 1) % COLORS.length,
       bot,
       mass,
@@ -447,7 +467,7 @@ export class World {
    */
   collision(s) {
     const r = radiusFor(s.mass);
-    if (Math.hypot(s.x, s.y) > this.R - r * 0.6) return 0;
+    if (!this.inside(s.x + Math.cos(s.a) * r * 0.4, s.y + Math.sin(s.a) * r * 0.4)) return 0; // off the map
     let killer = null;
     this.bodyGrid.query(s.x, s.y, r + 40, (i) => {
       const owner = this.bpOwner[i];
@@ -532,7 +552,7 @@ export class World {
   // --------------------------------------------------------------------------------------------- bots
   /** Is a point dangerous for snake s (another body or a head about to be there, or the edge)? Returns 0 or 1. */
   hazard(s, x, y, pad, heads) {
-    if (Math.hypot(x, y) > this.R - pad - 30) return 1;
+    if (!this.roomy(x, y, pad + 30)) return 1;
     for (const h of heads) {
       const lim = pad + h.r + 26;
       if ((h.x - x) ** 2 + (h.y - y) ** 2 < lim * lim) return 1;
@@ -555,9 +575,8 @@ export class World {
     const r = radiusFor(s.mass);
     let tx;
     let ty;
-    const fromCenter = Math.hypot(s.x, s.y);
     let chasing = 0;
-    if (fromCenter > this.R * 0.84) {
+    if (!this.roomy(s.x, s.y, 260)) {
       tx = 0;
       ty = 0;
     } else {

@@ -9,7 +9,7 @@ process.env.TRUST_PROXY = '1';
 process.env.MAX_PER_IP = '4';
 process.env.MAX_CLIENTS = '12';
 process.env.ALLOWED_ORIGINS = 'https://game.example,https://chains*.example.org';
-process.env.BOT_FILL = '6';
+process.env.MAX_ROOMS = '6';
 const { start, stop, _internals } = await import('../server.mjs');
 const { decodeSnapshot, FLAG_FULL } = await import('../src/protocol.js');
 
@@ -148,63 +148,80 @@ test('serves the page with a CSP that matches its inline code, and a health chec
   assert.equal(headRes.status, 200);
 });
 
-test('a whole round over a real socket: watch, join, steer, break, leave', async () => {
+test('a whole round over a real socket: an empty map, join, steer, break, leave', async () => {
   const c = await connect({ ip: '10.0.0.1' });
   assert.equal(c.status, 101);
   assert.ok(c.acceptOk, 'correct Sec-WebSocket-Accept');
   const hello = await c.text('hello');
-  assert.equal(hello.v, 2);
-  c.send({ t: 'watch', vw: 500, vh: 900 });
+  assert.equal(hello.v, 3);
+  const map = hello.home;
+  assert.ok(_internals.MAPS.has(map), 'a newcomer is pointed at a real map');
+  c.send({ t: 'watch', map, vw: 500, vh: 900 });
+  assert.equal((await c.text('noroom')).map, map, 'nobody plays there yet: nothing to watch');
+  c.send({ t: 'join', map, name: 'מגדלור שובב', skin: 'a3', vw: 500, vh: 900 });
   const room = await c.text('room');
-  assert.ok(room.R > 1000);
-  const watched = await c.wait(() => c.snaps.find((s) => s.focus && s.snakes.some((d) => d.id === s.focus)));
-  assert.equal(watched.me, 0, 'watching: no chain of my own');
-  c.send({ t: 'join', name: 'מגדלור שובב', vw: 500, vh: 900 });
+  assert.ok(room.R > 500 && room.map === map && room.cap >= 2);
   const joined = await c.text('joined');
   assert.equal(joined.name, 'מגדלור שובב');
+  assert.equal(joined.skin, 'a3');
   const first = await c.wait(() => c.snaps.find((s) => s.me === joined.id));
   const mine = first.snakes.find((d) => d.id === joined.id);
   assert.ok(mine && mine.flags & FLAG_FULL && mine.count === mine.len, 'my whole body arrives first');
   const later = await c.wait(() => c.snaps.filter((s) => s.me === joined.id)[3]);
   assert.ok(later.snakes.find((d) => d.id === joined.id).count < 10, 'then only what is new');
-  assert.ok(c.texts.some((m) => m.t === 'names' && m.list.some(([id, name]) => id === joined.id && name === 'מגדלור שובב')));
+  assert.ok(c.texts.some((m) => m.t === 'names' && m.list.some(([id, name, , skin]) => id === joined.id && name === 'מגדלור שובב' && skin === 'a3')));
   const board = await c.text('lb', 2500);
-  assert.ok(board.rank >= 1 && board.total >= 2 && board.top.length >= 1);
-  const srvRoom = [..._internals.rooms][0];
+  assert.equal(board.rank, 1);
+  assert.equal(board.total, 1, 'no bots: alone on the map');
+  assert.equal(board.here, 1);
+  const radar = await c.wait(() => c.texts.find((m) => m.t === 'lb' && m.radar), 3500);
+  assert.deepEqual(radar.radar.map((r) => r[0]), [joined.id], 'the minimap shows everyone');
+  c.send({ t: 'lobby' });
+  assert.equal((await c.text('lobby')).maps[map], 1);
+  assert.equal((await (await fetch(`${base}/lobby`)).json()).maps[map], 1);
+  const srvRoom = [..._internals.rooms].find((r) => r.world.snakes.has(joined.id));
   const snake = srvRoom.world.snakes.get(joined.id);
   c.send({ t: 'in', a: 1.25, b: 0 });
   await waitFor(() => Math.abs(snake.ta - 1.25) < 1e-9);
   c.send({ t: 'in', a: 'x', b: 'y', vw: 1e9 });
   await new Promise((r) => setTimeout(r, 60));
   assert.ok(Number.isFinite(snake.ta), 'junk input is ignored');
-  // Out of the arena: the chain breaks and the player hears so.
+  // Out of the map: the chain breaks and the player hears so.
   snake.x = srvRoom.world.R + 50;
   const dead = await c.text('dead');
   assert.equal(dead.edge, true);
+  // Someone else can now watch that map.
+  const w = await connect({ ip: '10.0.0.2' });
+  await w.text('hello');
+  w.send({ t: 'watch', map });
+  assert.equal((await w.text('room')).map, map);
   c.send({ t: 'idle' });
   await new Promise((r) => setTimeout(r, 150));
   const n = c.snaps.length;
   await new Promise((r) => setTimeout(r, 300));
   assert.equal(c.snaps.length, n, 'idle: nothing more is sent');
   c.sock.destroy();
+  w.sock.destroy();
   await settle();
 });
 
 test('two people hold hands over the network', async () => {
   const a = await connect({ ip: '10.0.1.1' });
   const b = await connect({ ip: '10.0.1.2' });
-  a.send({ t: 'join', name: 'כוכב אמיץ' });
-  b.send({ t: 'join', name: 'גל מהנגב' });
+  const map = (await a.text('hello')).home;
+  a.send({ t: 'join', map, name: 'כוכב אמיץ' });
+  b.send({ t: 'join', map, name: 'גל מהנגב' });
   const ja = await a.text('joined');
   const jb = await b.text('joined');
   const room = [..._internals.rooms].find((r) => r.world.snakes.has(ja.id));
   assert.ok(room.world.snakes.has(jb.id), 'same room');
   const sa = room.world.snakes.get(ja.id);
   const sb = room.world.snakes.get(jb.id);
-  // Side by side in the middle, both heading the same way; no bots nearby.
-  for (const s of [...room.world.snakes.values()]) if (s.bot) room.world.removeSnake(s.id);
-  place(sa, 0, 0, 0);
-  place(sb, 0, 60, 0);
+  // Side by side somewhere well inside the map, both heading the same way.
+  let spot = { x: 0, y: 0 };
+  for (let k = 0; k < 200 && !room.world.roomy(spot.x, spot.y, 400); k++) spot = room.world.somewhere(0.3);
+  place(sa, spot.x, spot.y, 0);
+  place(sb, spot.x, spot.y + 60, 0);
   a.send({ t: 'hand' });
   const offer = await b.wait(() => b.texts.find((m) => m.t === 'ev' && m.k === 'offer'));
   assert.equal(offer.id, ja.id);
@@ -219,6 +236,45 @@ test('two people hold hands over the network', async () => {
   a.sock.destroy();
   b.sock.destroy();
   await settle();
+});
+
+test('a map holds as many people as it says, then opens another room; too many rooms is "busy"', async () => {
+  const ids = [..._internals.MAPS.keys()];
+  const map = _internals.MAPS.get(ids[0]);
+  const cap = map.capacity;
+  map.capacity = 2;
+  for (const r of [..._internals.rooms]) r.close(); // rooms stay open a minute after the last person leaves
+  try {
+    const people = [];
+    for (let i = 0; i < 3; i++) {
+      const c = await connect({ ip: `10.0.5.${i}` });
+      await c.text('hello');
+      c.send({ t: 'join', map: map.id, name: `שחקן ${i}`, skin: 'no-such-skin' });
+      const j = await c.text('joined');
+      assert.equal(j.skin, '', 'unknown skins are dropped');
+      people.push(c);
+    }
+    const onMap = [..._internals.rooms].filter((r) => r.map?.id === map.id);
+    assert.deepEqual(onMap.map((r) => r.playing()).sort(), [1, 2], 'two in the first room, the third in a second one');
+    assert.equal(_internals.lobby()[map.id], 3);
+    for (const c of people) c.sock.destroy();
+    await settle();
+    for (const r of [..._internals.rooms]) r.close();
+    // Six rooms at most (MAX_ROOMS in this test): the seventh map to open is refused politely.
+    const more = [];
+    for (let i = 0; i < 7 && i < ids.length; i++) {
+      const c = await connect({ ip: `10.0.6.${i}` });
+      await c.text('hello');
+      c.send({ t: 'join', map: ids[i] });
+      more.push(c);
+    }
+    if (ids.length >= 7) await more[6].text('busy');
+    for (const c of more) c.sock.destroy();
+    await settle();
+  } finally {
+    map.capacity = cap;
+    for (const r of [..._internals.rooms]) r.close();
+  }
 });
 
 test('refuses other paths, other websites, crowds from one address, and a full house', async () => {
@@ -267,7 +323,7 @@ test('drops connections that break the protocol or flood', async () => {
   junk.frame(1, Buffer.from('null'));
   junk.send({ t: 'join', name: '<img src=x onerror=alert(1)>' });
   const joined = await junk.text('joined');
-  assert.ok(_internals.VALID_NAMES.has(joined.name), 'made-up names are replaced by generated ones');
+  assert.ok(_internals.VALID_NAMES.has(joined.name), 'names that are not clean are replaced by generated ones');
   for (const c of [...open]) c.sock.destroy();
   await settle();
 });

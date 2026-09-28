@@ -1,14 +1,19 @@
 // Ch-ch-chain-ges — multiplayer game server. Zero dependencies: Node's http + a small RFC 6455 WebSocket implementation.
-// Serves the game page and runs authoritative rooms (the same simulation as the browser), each topped up with
-// labelled bots while few people are playing. No accounts, cookies or stored personal data: IP addresses are used
-// only in memory for connection limits and are never logged.
+// Serves the game page and runs authoritative rooms (the same simulation as the browser). Every room plays on one
+// map (a city, the whole country, or the promise) and holds as many people as that map does; a full room opens a
+// second one on the same map. There are no bots: someone alone in a room walks the streets until others come.
+// No accounts, cookies or stored personal data: IP addresses are used only in memory for connection limits and
+// are never logged.
 //
 //   PORT=3000 node server.mjs          (see README.md for every setting)
 import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { World, C, COLORS, SPARK_COLORS, NOUNS, ADJS, PLACES, scoreOf, botName } from './src/sim.js';
+import { World, C, COLORS, SPARK_COLORS, NOUNS, ADJS, scoreOf } from './src/sim.js';
 import { streetSpawner } from './src/streets.js';
+import { arenaOf } from './src/arena.js';
+import { cleanName as checkName } from './src/names.js';
+import { AVATAR_IDS } from './src/avatars.js';
 import {
   encodeSnapshot,
   FLAG_BOOST,
@@ -24,9 +29,9 @@ const num = (v, d) => (v !== undefined && v !== '' && Number.isFinite(Number(v))
 const PORT = num(env.PORT, 3000);
 const HOST = env.HOST || '0.0.0.0';
 const TRUST_PROXY = env.TRUST_PROXY === '1' || env.TRUST_PROXY === 'true' || !!env.RENDER;
-const ROOM_CLIENTS = num(env.ROOM_CLIENTS, 40); // people per room (players and watchers)
-const BOT_FILL = num(env.BOT_FILL, 18); // a room keeps this many chains alive, adding bots while people are few
-const MAX_CLIENTS = num(env.MAX_CLIENTS, 300); // whole server; beyond this new visitors play offline with bots
+const ROOM_CLIENTS = num(env.ROOM_CLIENTS, 50); // the most people any room holds (a map may hold fewer)
+const MAX_CLIENTS = num(env.MAX_CLIENTS, 300); // whole server; beyond this new visitors play offline
+const MAX_ROOMS = num(env.MAX_ROOMS, 16); // rooms open at once (each one ticks 30 times a second)
 const MAX_PER_IP = num(env.MAX_PER_IP, 60); // generous: mobile carriers put many people behind one address
 // Pages allowed to connect, e.g. "https://chchchains*.onrender.com,https://example.org" (* = letters, digits, -).
 const ALLOWED_ORIGINS = (env.ALLOWED_ORIGINS || '')
@@ -34,14 +39,16 @@ const ALLOWED_ORIGINS = (env.ALLOWED_ORIGINS || '')
   .map((s) => s.trim().replace(/\/+$/, ''))
   .filter(Boolean)
   .map((s) => new RegExp(`^${s.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[a-z0-9-]*')}$`, 'i'));
-const ARENA = num(env.ARENA_RADIUS, 3000); // the same size and spark density as offline play
+const ARENA = num(env.ARENA_RADIUS, 3000); // rooms without a map are a plain circle this big
 const SPARKS = num(env.SPARK_TARGET, 850);
 const TICK = 1 / 30;
 const TICK_MS = TICK * 1000;
 const SNAPSHOT_EVERY = 2; // ticks: 15 snapshots per second
+const BOARD_EVERY = 30; // ticks: the leaderboard once a second
+const RADAR_EVERY = 60; // ticks: everyone's position for the minimap every two seconds
 const PALETTE = [...COLORS, ...SPARK_COLORS];
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'; // RFC 6455 §1.3
-const VERSION = 2;
+const VERSION = 3;
 
 const QUIET = env.LOG === 'off';
 const log = (msg, fields = {}) => {
@@ -57,20 +64,33 @@ const STATIC = {
   'apple-touch-icon.png': 'image/png',
   'manifest.webmanifest': 'application/manifest+json',
 };
+const TYPES = {
+  json: 'application/json',
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  ogg: 'audio/ogg',
+};
 
 function loadPage() {
   const raw = readFileSync(new URL('index.html', DOCS), 'utf8');
   // Served by this server: the page talks to this same origin, and this response carries its own CSP header.
+  let tiles = '';
   const html = raw
     .replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/, '')
     .replace(/window\.CHAIN_CONFIG = (\{.*?\});/, (_, json) => {
       const cfg = JSON.parse(json);
       cfg.server = '';
+      cfg.servers = [];
       cfg.sameOrigin = true;
       if (env.CHAIN_BRAND !== undefined) cfg.brand = env.CHAIN_BRAND;
       if (env.CHAIN_PUBLISHER !== undefined) cfg.publisher = env.CHAIN_PUBLISHER;
       if (env.CHAIN_JOIN_URL !== undefined) cfg.joinUrl = env.CHAIN_JOIN_URL;
       if (env.CHAIN_SHARE_URL !== undefined) cfg.shareUrl = env.CHAIN_SHARE_URL;
+      tiles = /^https:\/\/[a-z0-9.-]+/i.exec(cfg.satellite?.tiles || '')?.[0] ?? '';
       return `window.CHAIN_CONFIG = ${JSON.stringify(cfg).replace(/</g, '\\u003c')};`;
     });
   const hashes = { script: [], style: [] };
@@ -80,7 +100,8 @@ function loadPage() {
     "default-src 'self'",
     `script-src ${hashes.script.map((h) => `'sha256-${h}'`).join(' ')}`,
     `style-src ${hashes.style.map((h) => `'sha256-${h}'`).join(' ')}`,
-    "img-src 'self' data: blob:",
+    `img-src 'self' data: blob:${tiles ? ` ${tiles}` : ''}`,
+    "media-src 'self' blob:",
     "connect-src 'self'",
     "manifest-src 'self'",
     "base-uri 'none'",
@@ -94,45 +115,87 @@ function sha256(text) {
 }
 let page = loadPage();
 
-// ------------------------------------------------------------------------------------------------ cities
-// Each room plays in a city (docs/maps, built by tools/map/build.py): people turn up along its real streets.
-// A new room takes the city of the hour, the same one offline players see.
-function loadCities() {
-  try {
-    const index = JSON.parse(readFileSync(new URL('maps/index.json', DOCS), 'utf8'));
-    return index.cities
-      .map((c) => {
-        try {
-          const data = JSON.parse(readFileSync(new URL(`maps/${c.id}.json`, DOCS), 'utf8'));
-          const spawn = streetSpawner(data.roads, data.R);
-          return spawn ? { id: c.id, R: data.R, spawn } : null;
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean);
-  } catch {
-    return []; // no maps: rooms are plain circles
-  }
+// ------------------------------------------------------------------------------------------------ maps
+// docs/maps (built by tools/map/build.py): the big maps and the local authorities, each with how many people it
+// holds. A map's streets and outline are read when a room opens on it and let go when its last room closes.
+function readJson(rel) {
+  return JSON.parse(readFileSync(new URL(rel, DOCS), 'utf8'));
 }
-const CITIES = env.CITIES === 'off' ? [] : loadCities();
-function hourCity() {
-  return CITIES.length ? CITIES[Math.floor(Date.now() / 3_600_000) % CITIES.length] : null;
+function loadMaps() {
+  const maps = new Map();
+  if (env.CITIES === 'off' || env.MAPS === 'off') return maps;
+  try {
+    const index = readJson('maps/index.json');
+    const add = (m, kind) => {
+      if (typeof m?.id !== 'string' || !/^[a-z0-9-]+$/.test(m.id)) return;
+      if (!existsSync(new URL(`maps/${m.id}.json`, DOCS))) return;
+      maps.set(m.id, { id: m.id, he: m.he || m.id, kind, capacity: Math.max(2, Math.min(ROOM_CLIENTS, m.capacity || 20)) });
+    };
+    for (const m of index.regions || []) add(m, 'region');
+    for (const m of index.cities || []) add(m, 'city');
+  } catch {
+    /* no maps: rooms are plain circles */
+  }
+  return maps;
+}
+const MAPS = loadMaps();
+const mapCache = new Map(); // id → { R, inside, spawn, sparks }
+function mapData(id) {
+  let m = mapCache.get(id);
+  if (!m) {
+    const data = readJson(`maps/${id}.json`);
+    const arena = arenaOf(data, ARENA);
+    const spawn = streetSpawner(data.roads, arena.R, Math.random, { inside: arena.inside, hubs: data.hubs });
+    let cells = 0;
+    if (arena.mask) for (let i = 0; i < arena.mask.length; i++) cells += arena.mask[i];
+    const areaUnits = arena.mask ? (cells * arena.cell * arena.cell) / 1e6 : (Math.PI * arena.R * arena.R) / 1e6;
+    // People on the streets: fewer in a small town, never too few to play; the big maps are always busy.
+    const sparks = data.kind === 'region' ? 1100 : Math.round(Math.max(380, Math.min(1000, areaUnits * 45)));
+    m = { R: arena.R, inside: arena.inside, spawn, sparks };
+    mapCache.set(id, m);
+  }
+  return m;
+}
+/** The map a newcomer lands on: wherever most people play (with room to spare), else the whole country. */
+function defaultMap() {
+  let best = null;
+  for (const r of rooms) {
+    if (r.closed || !r.map || r.playing() >= r.capacity) continue;
+    if (!best || r.playing() > best.playing()) best = r;
+  }
+  if (best?.playing()) return best.map.id;
+  if (MAPS.has('israel')) return 'israel';
+  const ids = [...MAPS.keys()];
+  return ids.length ? ids[Math.floor(Date.now() / 3_600_000) % ids.length] : '';
+}
+function mapId(v) {
+  return typeof v === 'string' && MAPS.has(v) ? v : MAPS.size ? defaultMap() : '';
 }
 
-// ------------------------------------------------------------------------------------------------ names
-const VALID_NAMES = new Set();
-for (const n of NOUNS) {
-  for (const a of ADJS) VALID_NAMES.add(`${n} ${a}`);
-  for (const p of PLACES) VALID_NAMES.add(`${n} ${p}`);
-}
-/** Players pick among generated names only, so there is nothing offensive to moderate. */
-function cleanName(name) {
-  if (typeof name === 'string' && VALID_NAMES.has(name)) return name;
+// ------------------------------------------------------------------------------------------------ names, skins
+const VALID_NAMES = new Set(); // the generated names (the page offers these; any clean name of one's own works too)
+for (const n of NOUNS) for (const a of ADJS) VALID_NAMES.add(`${n} ${a}`);
+function generatedName() {
   return `${NOUNS[Math.floor(Math.random() * NOUNS.length)]} ${ADJS[Math.floor(Math.random() * ADJS.length)]}`;
 }
-function label(s) {
-  return s.bot ? `🤖 ${s.name}` : s.name;
+function cleanName(name) {
+  return checkName(name) || generatedName();
+}
+// Skins: the original avatars, plus pictures supplied in docs/skins/index.json.
+function loadSkins() {
+  const ids = new Set(AVATAR_IDS);
+  try {
+    for (const s of readJson('skins/index.json').skins || []) {
+      if (typeof s?.id === 'string' && /^[a-z0-9-]{1,40}$/.test(s.id)) ids.add(s.id);
+    }
+  } catch {
+    /* no supplied skins */
+  }
+  return ids;
+}
+const SKINS = loadSkins();
+function cleanSkin(skin) {
+  return typeof skin === 'string' && SKINS.has(skin) ? skin : '';
 }
 
 // ------------------------------------------------------------------------------------------------ rooms
@@ -142,16 +205,24 @@ const metrics = { joins: 0, links: 0, peakOnline: 0, connections: 0, refused: 0,
 
 function onlineCount() {
   let n = 0;
-  for (const r of rooms) n += r.players();
+  for (const r of rooms) n += r.clients.size;
   return n;
+}
+/** How many people play on each map right now: { id: people }. */
+function lobby() {
+  const out = {};
+  for (const r of rooms) if (r.map && r.playing()) out[r.map.id] = (out[r.map.id] || 0) + r.playing();
+  return out;
 }
 
 class Room {
-  constructor() {
+  constructor(map) {
     this.id = randomBytes(3).toString('hex');
-    this.city = hourCity();
-    this.world = this.city
-      ? new World({ arenaRadius: this.city.R, sparkTarget: num(env.SPARK_TARGET, 900), spawnPoint: this.city.spawn })
+    this.map = map; // null: a plain circle (no maps on this server)
+    this.capacity = Math.min(ROOM_CLIENTS, map?.capacity ?? ROOM_CLIENTS);
+    const md = map ? mapData(map.id) : null;
+    this.world = md
+      ? new World({ arenaRadius: md.R, sparkTarget: md.sparks, spawnPoint: md.spawn ?? undefined, inside: md.inside })
       : new World({ arenaRadius: ARENA, sparkTarget: SPARKS });
     this.clients = new Set();
     this.bySnake = new Map(); // snake id → client
@@ -161,26 +232,25 @@ class Room {
     this.closed = false;
     this.bounds = new Map(); // snake id → [minX, minY, maxX, maxY], refreshed before each round of snapshots
     this.leader = null;
-    for (let i = 0; i < BOT_FILL; i++) this.world.addSnake({ bot: true, name: botName(), mass: 12 + Math.random() * 60 });
-    for (let i = 0; i < 60; i++) {
-      this.world.step(TICK);
-      this.world.events.length = 0;
-    }
-    this.world.sparkLog = { added: [], removed: [] }; // sparks that came and went since the last snapshots
+    this.world.sparkLog = { added: [], removed: [] }; // people who came and went since the last snapshots
     this.snapN = 0;
     this.next = performance.now();
     this.timer = setTimeout(() => this.loop(), 0);
     rooms.add(this);
-    log('room.open', { room: this.id, city: this.city?.id ?? '', rooms: rooms.size });
+    log('room.open', { room: this.id, map: map?.id ?? '', rooms: rooms.size });
   }
-  /** People here right now: playing, between rounds or watching. */
-  players() {
-    return this.clients.size;
+  /** People playing here (or between rounds); watchers are not counted against the capacity. */
+  playing() {
+    let n = 0;
+    for (const c of this.clients) if (c.mode === 'play') n++;
+    return n;
   }
   close() {
     this.closed = true;
     clearTimeout(this.timer);
     rooms.delete(this);
+    const id = this.map?.id;
+    if (id && ![...rooms].some((r) => r.map?.id === id)) mapCache.delete(id);
     log('room.close', { room: this.id, rooms: rooms.size });
   }
   /** Fixed-step loop that keeps room time in step with the wall clock (catching up a few ticks when late). */
@@ -206,14 +276,13 @@ class Room {
     w.step(TICK);
     this.tickN++;
     this.handleEvents();
-    this.fillBots();
     if (this.tickN % SNAPSHOT_EVERY === 0) {
       this.prepareSnapshots();
       for (const c of this.clients) this.sendSnapshot(c);
       w.sparkLog.added.length = 0;
       w.sparkLog.removed.length = 0;
     }
-    if (this.tickN % 30 === 0) this.sendBoards();
+    if (this.tickN % BOARD_EVERY === 0) this.sendBoards(this.tickN % RADAR_EVERY === 0);
     if (this.clients.size) this.emptySince = Date.now();
     else if (Date.now() - this.emptySince > 60_000) this.close();
   }
@@ -226,7 +295,7 @@ class Room {
         const killer = e.killer ? w.snakes.get(e.killer) : null;
         const c = this.bySnake.get(e.id);
         if (c) {
-          c.send({ t: 'dead', at, killer: e.killer || 0, name: killer ? label(killer) : '', edge: e.killer === 0 });
+          c.send({ t: 'dead', at, killer: e.killer || 0, name: killer ? killer.name : '', edge: e.killer === 0 });
           this.bySnake.delete(e.id);
           c.snakeId = 0;
           if (s) {
@@ -235,44 +304,26 @@ class Room {
           }
         }
         const kc = e.killer ? this.bySnake.get(e.killer) : null;
-        if (kc && s) kc.send({ t: 'ev', k: 'broke', at, id: s.id, name: label(s) });
+        if (kc && s) kc.send({ t: 'ev', k: 'broke', at, id: s.id, name: s.name });
       } else if (e.t === 'link') {
         metrics.links++;
         const a = w.snakes.get(e.a);
         const b = w.snakes.get(e.b);
-        this.bySnake.get(e.a)?.send({ t: 'ev', k: 'link', at, id: e.b, name: b ? label(b) : '' });
-        this.bySnake.get(e.b)?.send({ t: 'ev', k: 'link', at, id: e.a, name: a ? label(a) : '' });
+        this.bySnake.get(e.a)?.send({ t: 'ev', k: 'link', at, id: e.b, name: b ? b.name : '' });
+        this.bySnake.get(e.b)?.send({ t: 'ev', k: 'link', at, id: e.a, name: a ? a.name : '' });
       } else if (e.t === 'offer') {
         const from = w.snakes.get(e.from);
         const to = w.snakes.get(e.to);
-        this.bySnake.get(e.to)?.send({ t: 'ev', k: 'offer', at, id: e.from, name: from ? label(from) : '' });
-        this.bySnake.get(e.from)?.send({ t: 'ev', k: 'offered', at, id: e.to, name: to ? label(to) : '' });
+        this.bySnake.get(e.to)?.send({ t: 'ev', k: 'offer', at, id: e.from, name: from ? from.name : '' });
+        this.bySnake.get(e.from)?.send({ t: 'ev', k: 'offered', at, id: e.to, name: to ? to.name : '' });
       }
     }
     w.events.length = 0;
-    // Broken chains leave the world a moment later (their sparks stay).
+    // Broken chains leave the world a moment later (their people stay in the street).
     for (const s of w.snakes.values()) {
       if (s.alive) continue;
       s.goneAt ??= w.time;
       if (w.time - s.goneAt > 1) w.removeSnake(s.id);
-    }
-  }
-  fillBots() {
-    const w = this.world;
-    let people = 0;
-    let bots = 0;
-    for (const s of w.snakes.values()) {
-      if (!s.alive) continue;
-      if (s.bot) bots++;
-      else people++;
-    }
-    const want = Math.max(0, BOT_FILL - people);
-    if (bots < want && this.tickN % 20 === 0) w.addSnake({ bot: true, name: botName() });
-    if (bots > want + 2 && this.tickN % 90 === 0) {
-      // More bots than the people here need: retire the smallest one.
-      let smallest = null;
-      for (const s of w.snakes.values()) if (s.bot && s.alive && (!smallest || s.mass < smallest.mass)) smallest = s;
-      if (smallest) w.kill(smallest, null);
     }
   }
   prepareSnapshots() {
@@ -295,8 +346,7 @@ class Room {
         else if (y > y1) y1 = y;
       }
       this.bounds.set(s.id, [x0, y0, x1, y1]);
-      // Watchers follow the longest person (or the longest chain while only bots are around).
-      if (!leader || (leader.bot && !s.bot) || (leader.bot === s.bot && s.mass > leader.mass)) leader = s;
+      if (!leader || s.mass > leader.mass) leader = s; // watchers follow the longest chain
     }
     this.leader = leader;
   }
@@ -304,7 +354,7 @@ class Room {
     const sock = c.ws.socket;
     if (sock.writableLength > 1024 * 1024) return c.ws.close(1008, 'too slow');
     if (sock.writableLength > 128 * 1024) {
-      c.needFull = true; // slow connection: skip a frame rather than queue it, and resync sparks after
+      c.needFull = true; // slow connection: skip a frame rather than queue it, and resync the people after
       return;
     }
     const w = this.world;
@@ -368,12 +418,12 @@ class Room {
       } else c.known.set(s.id, { seq: s.seq, gen });
       if (!c.names.has(s.id)) {
         c.names.add(s.id);
-        fresh.push([s.id, s.name, s.bot ? 1 : 0]);
+        fresh.push([s.id, s.name, s.bot ? 1 : 0, s.skin || '']);
       }
     }
     for (const [id, k] of c.known) if (k.gen !== gen) c.known.delete(id); // left the view: full body next time
-    // Sparks: a full sweep of the view every fourth snapshot (or after a jump); in between only the sparks that
-    // appeared or disappeared since the last round. The view margin covers what the camera can travel meanwhile.
+    // People in the street: a full sweep of the view every fourth snapshot (or after a jump); in between only the
+    // ones who appeared or left since the last round. The view margin covers what the camera can travel meanwhile.
     const newSparks = [];
     const goneSparks = [];
     const inner = [c.vw + 160, c.vh + 160];
@@ -427,39 +477,60 @@ class Room {
       }),
     );
   }
-  sendBoards() {
+  sendBoards(withRadar) {
     const w = this.world;
     const alive = [];
     for (const s of w.snakes.values()) if (s.alive) alive.push(s);
     alive.sort((a, b) => b.mass - a.mass);
     const top = alive.slice(0, 5).map((s) => [s.id, s.name, scoreOf(s.mass), s.color, s.bot ? 1 : 0]);
-    let people = 0;
-    for (const s of alive) if (!s.bot) people++;
     const online = onlineCount();
+    const here = this.playing();
+    // The minimap: every chain's head, to 10 units.
+    const radar = withRadar ? alive.map((s) => [s.id, Math.round(s.x / 10), Math.round(s.y / 10), s.color, scoreOf(s.mass), s.team]) : null;
     for (const c of this.clients) {
       if (c.mode === 'idle') continue;
       const me = c.snakeId ? w.snakes.get(c.snakeId) : null;
-      c.send({
+      const msg = {
         t: 'lb',
         top,
         rank: me ? alive.indexOf(me) + 1 : 0,
         total: alive.length,
-        people,
-        bots: alive.length - people,
+        here,
+        cap: this.capacity,
         online,
         hands: me ? me.hands.size : 0,
-      });
+      };
+      if (radar) msg.radar = radar;
+      c.send(msg);
     }
   }
 }
 
-function pickRoom() {
+/** A room on the map with space for one more player: the fullest one, or a new one (null if too many are open). */
+function pickRoom(id) {
+  const map = id ? MAPS.get(id) : null;
   let best = null;
   for (const r of rooms) {
-    const n = r.clients.size;
-    if (!r.closed && n < ROOM_CLIENTS && (!best || n > best.clients.size)) best = r;
+    if (r.closed || (r.map?.id ?? '') !== (map?.id ?? '') || r.playing() >= r.capacity) continue;
+    if (!best || r.playing() > best.playing()) best = r;
   }
-  return best ?? new Room();
+  if (best) return best;
+  if (rooms.size >= MAX_ROOMS) return null;
+  try {
+    return new Room(map);
+  } catch (e) {
+    log('room.error', { map: id, error: String(e?.message || e) });
+    return null;
+  }
+}
+/** The busiest room already open on a map (for watching), or null. */
+function watchRoom(id) {
+  let best = null;
+  for (const r of rooms) {
+    if (r.closed || (r.map?.id ?? '') !== id) continue;
+    if (!best || r.playing() > best.playing()) best = r;
+  }
+  return best;
 }
 
 // ------------------------------------------------------------------------------------------------ clients
@@ -470,12 +541,12 @@ class Client {
     this.ws = ws;
     this.ip = ip;
     this.room = null;
-    this.mode = 'idle'; // 'idle' (not in a room) | 'watch' (spectating the room's leader) | 'play'
+    this.mode = 'idle'; // 'idle' (not in a room) | 'watch' (following a room's leader) | 'play'
     this.snakeId = 0;
     this.known = new Map(); // snake id → { seq, gen }: path points this client already has
     this.sparks = new Map(); // spark id → gen
     this.needFull = true;
-    this.phase = Math.floor(Math.random() * 4); // spreads full spark sweeps across snapshot rounds
+    this.phase = Math.floor(Math.random() * 4); // spreads full sweeps across snapshot rounds
     this.focusId = 0;
     this.names = new Set();
     this.vw = 700;
@@ -525,14 +596,14 @@ class Client {
         break;
       case 'join':
         this.view(m);
-        this.join(m.name);
+        this.join(m);
         break;
       case 'watch':
         this.view(m);
-        if (this.mode !== 'play' || !this.snakeId) {
-          this.enterRoom();
-          this.mode = 'watch';
-        }
+        this.watch(m.map);
+        break;
+      case 'lobby':
+        this.send({ t: 'lobby', maps: lobby(), online: onlineCount() });
         break;
       case 'idle':
         this.leaveRoom();
@@ -540,34 +611,56 @@ class Client {
       default: // 'hb' and anything unknown: only counts as activity
     }
   }
-  enterRoom() {
-    if (this.room) return;
-    this.room = pickRoom();
-    this.room.clients.add(this);
+  enterRoom(room) {
+    if (this.room === room) return;
+    this.leaveRoom();
+    this.room = room;
+    room.clients.add(this);
     this.known.clear();
     this.sparks.clear();
     this.names.clear();
     this.needFull = true;
-    this.send({ t: 'room', R: this.room.world.R, city: this.room.city?.id ?? '' });
+    this.send({ t: 'room', R: room.world.R, map: room.map?.id ?? '', city: room.map?.id ?? '', cap: room.capacity });
   }
-  join(name) {
+  /** Follow the busiest room on a map; with nobody there, say so (the page shows the empty map itself). */
+  watch(id) {
+    if (this.mode === 'play' && this.snakeId) return;
+    const map = mapId(id);
+    const room = watchRoom(map);
+    if (!room) {
+      this.leaveRoom();
+      this.send({ t: 'noroom', map });
+      return;
+    }
+    this.enterRoom(room);
+    this.mode = 'watch';
+  }
+  join(m) {
     if (this.snakeId && this.room?.world.snakes.get(this.snakeId)?.alive) return;
-    this.enterRoom();
-    const s = this.room.world.addSnake({ name: cleanName(name) });
+    const map = mapId(m.map);
+    const same = this.room && !this.room.closed && (this.room.map?.id ?? '') === map;
+    let room = same && (this.mode === 'play' || this.room.playing() < this.room.capacity) ? this.room : null;
+    room ??= pickRoom(map);
+    if (!room) {
+      this.send({ t: 'busy', map });
+      return;
+    }
+    this.enterRoom(room);
+    const s = room.world.addSnake({ name: cleanName(m.name), skin: cleanSkin(m.skin) });
     this.snakeId = s.id;
     this.mode = 'play';
-    this.room.bySnake.set(s.id, this);
+    room.bySnake.set(s.id, this);
     this.lastX = s.x;
     this.lastY = s.y;
     metrics.joins++;
-    this.send({ t: 'joined', id: s.id, name: s.name, color: s.color });
+    this.send({ t: 'joined', id: s.id, name: s.name, color: s.color, skin: s.skin, map, here: room.playing(), cap: room.capacity });
     metrics.peakOnline = Math.max(metrics.peakOnline, onlineCount());
   }
   leaveRoom() {
     const r = this.room;
     if (r) {
       const s = this.snakeId ? r.world.snakes.get(this.snakeId) : null;
-      if (s?.alive) r.world.kill(s, null); // nobody steers it any more: it breaks into sparks for everyone else
+      if (s?.alive) r.world.kill(s, null); // nobody steers it any more: its people go back to the street
       r.bySnake.delete(this.snakeId);
       r.clients.delete(this);
     }
@@ -734,14 +827,14 @@ function upgrade(req, socket) {
   );
   client = new Client(ws, ip);
   if (clients.size >= MAX_CLIENTS) {
-    // Full: say so politely; the page falls back to playing with bots.
+    // Full: say so politely; the page plays offline meanwhile.
     client.send({ t: 'full' });
     ws.close(1013, 'full');
     metrics.refused++;
     return;
   }
   clients.add(client);
-  client.send({ t: 'hello', v: VERSION, online: onlineCount() });
+  client.send({ t: 'hello', v: VERSION, online: onlineCount(), maps: lobby(), home: MAPS.size ? defaultMap() : '' });
 }
 
 // Keepalive: ping everyone every 20 s; drop dead connections, and people who stopped playing or watching.
@@ -765,6 +858,7 @@ const metricsTimer = setInterval(() => {
     online: onlineCount(),
     connected: clients.size,
     rooms: rooms.size,
+    maps: lobby(),
     joins: metrics.joins,
     links: metrics.links,
     peakOnline: metrics.peakOnline,
@@ -785,6 +879,10 @@ const COMMON = {
   'referrer-policy': 'strict-origin-when-cross-origin',
   'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()',
 };
+function json(res, req, obj) {
+  res.writeHead(200, { ...COMMON, 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' });
+  res.end(req.method === 'HEAD' ? undefined : JSON.stringify(obj));
+}
 const server = createServer((req, res) => {
   const url = new URL(req.url || '/', 'http://x');
   const path = url.pathname;
@@ -809,24 +907,27 @@ const server = createServer((req, res) => {
     return;
   }
   if (path === '/healthz') {
-    res.writeHead(200, {
-      ...COMMON,
-      'content-type': 'application/json',
-      'cache-control': 'no-store',
-      'access-control-allow-origin': '*',
+    json(res, req, {
+      status: 'ok',
+      v: VERSION,
+      online: onlineCount(),
+      rooms: rooms.size,
+      tickMs: Number(metrics.tickMs.toFixed(3)),
+      rssMb: Math.round(process.memoryUsage().rss / 1e6),
     });
-    res.end(
-      JSON.stringify({ status: 'ok', v: VERSION, online: onlineCount(), rooms: rooms.size, tickMs: Number(metrics.tickMs.toFixed(3)) }),
-    );
+    return;
+  }
+  if (path === '/lobby') {
+    // Where people play, for the map picker (and for pages that spread maps over several servers).
+    json(res, req, { v: VERSION, online: onlineCount(), maps: lobby() });
     return;
   }
   const file = path.slice(1);
-  const mapFile = /^maps\/[a-z0-9-]+\.(json|jpg)$/.exec(file);
-  if (Object.hasOwn(STATIC, file) || mapFile) {
+  const asset = /^(maps|skins|music)\/[a-z0-9-]+\.(json|jpg|png|webp|svg|mp3|m4a|ogg)$/.exec(file);
+  if (Object.hasOwn(STATIC, file) || asset) {
     const src = new URL(file, DOCS);
     if (existsSync(src)) {
-      const type = mapFile ? (mapFile[1] === 'json' ? 'application/json' : 'image/jpeg') : STATIC[file];
-      res.writeHead(200, { ...COMMON, 'content-type': type, 'cache-control': 'public, max-age=3600' });
+      res.writeHead(200, { ...COMMON, 'content-type': asset ? TYPES[asset[2]] : STATIC[file], 'cache-control': 'public, max-age=3600' });
       res.end(req.method === 'HEAD' ? undefined : readFileSync(src));
       return;
     }
@@ -842,7 +943,7 @@ server.requestTimeout = 20_000;
 export function start(port = PORT, host = HOST) {
   return new Promise((resolve) => {
     server.listen(port, host, () => {
-      log('listening', { port: server.address().port, rooms: rooms.size });
+      log('listening', { port: server.address().port, maps: MAPS.size, skins: SKINS.size });
       resolve(server);
     });
   });
@@ -858,7 +959,7 @@ export function reloadPage() {
   page = loadPage();
 }
 /** For tests only. */
-export const _internals = { rooms, clients, metrics, pickRoom, Room, Client, cleanName, VALID_NAMES, CITIES };
+export const _internals = { rooms, clients, metrics, pickRoom, Room, Client, cleanName, VALID_NAMES, MAPS, SKINS, lobby, defaultMap };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   await start();

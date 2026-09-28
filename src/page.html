@@ -4,13 +4,14 @@
 <style>
 :root {
   --paper: #f3efe6;
-  --card: rgba(255, 255, 255, 0.9);
+  --card: rgba(255, 255, 255, 0.92);
   --line: rgba(35, 32, 27, 0.12);
   --ink: #23201b;
   --ink-2: rgba(35, 32, 27, 0.62);
   --blue: #0038b8;
   --gold: #b07c0a;
   --danger: #e5484d;
+  --ok: #1f7a38;
   --font: system-ui, -apple-system, 'Segoe UI', 'Noto Sans Hebrew', 'Arial Hebrew', Arial, sans-serif;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -21,8 +22,9 @@ html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink
   overflow: hidden; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 body { touch-action: none; user-select: none; -webkit-user-select: none; }
 #game { position: fixed; inset: 0; display: block; }
-button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 button:disabled { opacity: 0.55; cursor: progress; }
 [hidden] { display: none !important; }
 a { color: inherit; }
@@ -35,7 +37,7 @@ a { color: inherit; }
 .unit { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
 #rank { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
 #rank:empty { display: none; }
-.hud-board { position: absolute; top: calc(var(--safe-t) + 10px); left: 10px; width: min(48vw, 210px);
+.hud-board { position: absolute; top: calc(var(--safe-t) + 10px); left: 10px; width: min(46vw, 210px);
   background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; box-shadow: var(--shadow); }
 #leaderboard { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; }
 #leaderboard li { display: grid; grid-template-columns: 8px 1fr auto; gap: 6px; align-items: center; color: var(--ink-2); }
@@ -47,9 +49,9 @@ a { color: inherit; }
 #boost { pointer-events: auto; position: absolute; left: 16px; bottom: calc(var(--safe-b) + 22px); width: 72px; height: 72px;
   border-radius: 50%; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow);
   font-size: 28px; display: grid; place-items: center; touch-action: none; }
-#boost.on { background: var(--ink); }
-#minimap { position: absolute; right: 14px; bottom: calc(var(--safe-b) + 22px); width: 96px; height: 96px; border-radius: 50%;
-  box-shadow: var(--shadow); }
+#boost.on { background: #f59e0b; border-color: #d98a06; }
+#minimap { position: absolute; right: 12px; bottom: calc(var(--safe-b) + 22px); border-radius: 14px; box-shadow: var(--shadow);
+  pointer-events: none; }
 #hand { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 112px);
   border: 0; border-radius: 999px; padding: 14px 22px; min-height: 52px; max-width: 86vw; background: var(--blue); color: #fff;
   font-weight: 800; font-size: 16px; box-shadow: 0 6px 22px rgba(0, 56, 184, 0.35); display: flex; align-items: center; gap: 8px;
@@ -57,14 +59,29 @@ a { color: inherit; }
 #hand span { overflow: hidden; text-overflow: ellipsis; }
 #hand.pulse { animation: pulse 0.9s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: translateX(-50%) scale(1.06); } }
-#sound-hud { pointer-events: auto; position: absolute; right: 12px; top: calc(var(--safe-t) + 104px); width: 40px; height: 40px;
-  border-radius: 50%; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); font-size: 17px;
-  display: grid; place-items: center; padding: 0; }
+.side { position: absolute; right: 12px; top: calc(var(--safe-t) + 104px); display: grid; gap: 8px; pointer-events: auto; }
+.round { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow);
+  font-size: 17px; display: grid; place-items: center; padding: 0; }
+.round:not(.sound)[aria-pressed='true'] { background: var(--ink); color: #fff; }
+#green-btn { font-size: 10px; line-height: 1; font-weight: 900; color: #16823c; }
+#green-btn[aria-pressed='true'] { background: #16823c; color: #fff; }
 .sound-text { justify-self: center; border: 0; background: none; font-size: 13px; font-weight: 700; color: var(--ink-2);
   padding: 4px 10px; border-radius: 999px; }
 #osm { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 3px);
   font-size: 10px; color: var(--ink-2); text-decoration: none; background: rgba(255, 255, 255, 0.7); padding: 1px 6px;
-  border-radius: 6px; direction: ltr; white-space: nowrap; }
+  border-radius: 6px; direction: ltr; white-space: nowrap; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
+#waiting { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 74px); pointer-events: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 6px 5px 12px; box-shadow: var(--shadow);
+  font-size: 12px; font-weight: 700; display: flex; gap: 8px; align-items: center; white-space: nowrap; max-width: 92vw; }
+#waiting button { border: 0; border-radius: 999px; background: var(--blue); color: #fff; font-weight: 800; font-size: 12px; padding: 5px 10px; }
+#mission { position: absolute; left: 10px; top: calc(var(--safe-t) + 10px); width: min(54vw, 250px); box-sizing: border-box;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 7px 10px; box-shadow: var(--shadow); text-align: right; }
+#mission small { display: block; font-size: 11px; color: var(--blue); font-weight: 800; margin-top: 3px; }
+#hud.story .hud-board { display: none; }
+#mission b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#mission span { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { height: 5px; background: rgba(35, 32, 27, 0.1); border-radius: 99px; margin-top: 5px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--blue); border-radius: 99px; transition: width 0.3s; }
 #toast { position: fixed; top: calc(var(--safe-t) + 124px); left: 50%; transform: translate(-50%, -10px); opacity: 0;
   background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; box-shadow: var(--shadow);
   font-size: 14px; font-weight: 600; max-width: min(90vw, 460px); text-align: center; direction: rtl;
@@ -78,35 +95,54 @@ a { color: inherit; }
 /* ------------------------------------------------------------------ screens */
 .screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; direction: rtl; z-index: 4;
   background: rgba(243, 239, 230, 0.5); overflow-y: auto; }
-.card { width: min(400px, 100%); text-align: center; display: grid; gap: 13px; padding: 20px 18px;
+.sheet { z-index: 6; background: rgba(35, 32, 27, 0.28); }
+.card { width: min(400px, 100%); text-align: center; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px 16px;
   background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); box-sizing: border-box; }
+.sheet .card { max-height: calc(100dvh - 32px); }
+.sheet .card.lists { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.sheet h2 { margin: 0; font-size: 19px; font-weight: 900; text-align: center; }
 #mark { width: 230px; height: 70px; justify-self: center; margin-bottom: -8px; }
 .logo { font-size: clamp(27px, 9.2vw, 54px); font-weight: 900; line-height: 1.05; margin: 0; letter-spacing: -1.5px;
   direction: ltr; white-space: nowrap; color: var(--ink); }
 .logo .st { color: rgba(35, 32, 27, 0.3); }
 .brand { margin: -8px 0 0; font-size: 17px; font-weight: 800; color: var(--blue); }
-#city { margin: -4px 0 0; font-size: 14px; font-weight: 700; color: var(--ink); }
-#city:empty { display: none; }
-.tag { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); margin: 0; text-wrap: balance; }
+.map-row { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 6px 6px 6px 12px; text-align: right; }
+.map-row div { flex: 1; min-width: 0; }
+.map-row b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-row small { display: block; font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-row small.live { color: var(--ok); font-weight: 700; }
+.pill { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 8px 12px; font-weight: 800; font-size: 13px;
+  white-space: nowrap; }
+.tag { font-size: 14.5px; line-height: 1.45; color: var(--ink-2); margin: 0; text-wrap: balance; }
 .tag strong { color: var(--ink); }
-.name-row { display: flex; gap: 8px; justify-content: center; align-items: center; }
-.name-chip { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; font-weight: 800; }
-.name-chip small { color: var(--ink-2); font-weight: 500; margin-inline-end: 6px; }
-#reroll { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 18px; }
-.primary { border: 0; border-radius: 16px; min-height: 60px; font-size: 21px; font-weight: 900; color: #fff; background: var(--blue);
+.me-row { display: flex; gap: 8px; align-items: center; }
+#skin-btn { width: 54px; height: 54px; border-radius: 50%; border: 1px solid var(--line); background: #fff; padding: 0; flex: none;
+  display: grid; place-items: center; }
+#skin-btn canvas { width: 48px; height: 48px; }
+.name-box { flex: 1; min-width: 0; display: grid; text-align: right; gap: 1px; }
+.name-box label { font-size: 11px; color: var(--ink-2); }
+#name { border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; font-weight: 800; font-size: 16px; background: #fff;
+  min-width: 0; direction: rtl; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+#name.bad { border-color: var(--danger); }
+#name-note { font-size: 11px; color: var(--danger); }
+#name-note:empty { display: none; }
+#reroll { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 18px; flex: none; }
+.primary { border: 0; border-radius: 16px; min-height: 58px; font-size: 21px; font-weight: 900; color: #fff; background: var(--blue);
   box-shadow: 0 8px 24px rgba(0, 56, 184, 0.3); }
 .primary:active { transform: scale(0.98); }
-.secondary { border: 1px solid var(--line); border-radius: 16px; min-height: 56px; font-size: 18px; font-weight: 800;
-  background: #fff; }
+.secondary { border: 1px solid var(--line); border-radius: 16px; min-height: 50px; font-size: 16px; font-weight: 800; background: #fff; }
 .foot { font-size: 12px; color: var(--ink-2); line-height: 1.6; margin: 0; }
 .foot a { text-decoration: none; }
 .foot bdi { direction: ltr; }
 #net-status, #over-net { font-size: 12.5px; color: var(--ink-2); margin: 0; }
-#net-status[data-state='online'], #over-net[data-state='online'] { color: #1f7a38; }
+#net-status[data-state='online'], #over-net[data-state='online'] { color: var(--ok); }
 .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.how div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 9px 6px; font-size: 12.5px;
-  color: var(--ink-2); line-height: 1.35; }
-.how b { display: block; font-size: 20px; margin-bottom: 3px; }
+.how div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px 6px; font-size: 12px;
+  color: var(--ink-2); line-height: 1.3; }
+.how b { display: block; font-size: 19px; margin-bottom: 2px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2:has(> [hidden]) { grid-template-columns: 1fr; }
 #over-title { font-size: 22px; font-weight: 900; margin: 0; text-wrap: balance; }
 .big { font-size: 64px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
 .big-label { color: var(--ink-2); font-size: 14px; margin-top: -6px; }
@@ -114,10 +150,43 @@ a { color: inherit; }
 .stats div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 4px; }
 .stats b { display: block; font-size: 21px; font-variant-numeric: tabular-nums; }
 .stats span { font-size: 12px; color: var(--ink-2); }
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 #join-link { color: var(--blue); font-weight: 800; font-size: 15px; }
 #share-text { width: 100%; min-height: 110px; background: #fff; color: var(--ink); border: 1px solid var(--line);
   border-radius: 12px; padding: 10px; font: 15px var(--font); direction: rtl; box-sizing: border-box; }
+
+/* sheets: maps, skins, music */
+.search { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 15px; background: #fff; direction: rtl;
+  user-select: text; -webkit-user-select: text; touch-action: manipulation; width: 100%; box-sizing: border-box; }
+.list { overflow-y: auto; display: grid; gap: 6px; align-content: start; padding: 2px; touch-action: pan-y; }
+.list h3 { margin: 8px 2px 0; font-size: 12px; color: var(--ink-2); font-weight: 800; text-align: right; }
+.item { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: #fff; border-radius: 12px;
+  padding: 9px 12px; text-align: right; width: 100%; box-sizing: border-box; }
+.item.on { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0, 56, 184, 0.25) inset; }
+.item div { flex: 1; min-width: 0; }
+.item b { display: block; font-size: 15px; }
+.item small { display: block; font-size: 12px; color: var(--ink-2); }
+.item em { font-style: normal; font-size: 12px; font-weight: 800; color: var(--ok); white-space: nowrap; }
+.grid { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; align-content: start;
+  padding: 2px; touch-action: pan-y; }
+.skin { border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 6px 4px; display: grid; justify-items: center; gap: 2px; }
+.skin.on { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0, 56, 184, 0.25) inset; }
+.skin canvas { width: 56px; height: 56px; }
+.skin span { font-size: 11.5px; font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note { font-size: 12.5px; color: var(--ink-2); margin: 0; line-height: 1.5; }
+.file { display: flex; gap: 6px; align-items: center; justify-content: center; border: 1px dashed rgba(35, 32, 27, 0.3); border-radius: 16px;
+  min-height: 50px; font-weight: 800; font-size: 15px; background: #fff; cursor: pointer; }
+.file input { display: none; }
+
+/* story */
+.mandates { display: grid; gap: 4px; }
+.mandates .bar { height: 12px; position: relative; overflow: visible; }
+.mandates .bar i { background: linear-gradient(90deg, var(--blue), #3d6fd8); }
+.mandates .bar s { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--danger); right: calc(61 / 80 * 100%); }
+.mandates small { font-size: 12px; color: var(--ink-2); }
+.mission-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; text-align: right; }
+.mission-card small { font-size: 12px; color: var(--blue); font-weight: 800; }
+.mission-card b { display: block; font-size: 18px; margin: 2px 0 4px; }
+.mission-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { #hand.pulse { animation: none; } #toast { transition: none; } }
 @media (min-width: 900px) { #score { font-size: 36px; } .hud-board { width: 240px; } #leaderboard { font-size: 13px; } }
 </style>
@@ -127,9 +196,15 @@ a { color: inherit; }
 <div id="hud" hidden>
   <div class="hud-score"><div id="score">0</div><div class="unit">אנשים בשרשרת</div><div id="rank"></div></div>
   <div class="hud-board"><ol id="leaderboard" aria-label="טבלת המובילים"></ol><div id="players"></div></div>
-  <button id="boost" type="button" aria-label="ריצה (החזיקו)">⚡</button>
+  <div id="mission" hidden><b id="mission-title"></b><span id="mission-text"></span><div class="bar"><i id="mission-bar"></i></div><small id="mission-mandates"></small></div>
+  <div id="waiting" hidden><span>👀 לבד במפה – מחכים לעוד אנשים</span><button id="waiting-share" type="button">הזמינו</button></div>
+  <button id="boost" type="button" aria-label="ריצה (החזיקו, או אצבע שנייה על המסך)">⚡</button>
   <button id="hand" type="button" hidden>🤝 <span>תנו יד</span></button>
-  <button id="sound-hud" class="sound" type="button" aria-label="מוסיקה">🔊</button>
+  <div class="side">
+    <button id="sound-hud" class="round sound" type="button" aria-label="מוסיקה">🔊</button>
+    <button id="sat-btn" class="round" type="button" aria-label="תצוגת לוויין" aria-pressed="false">🛰️</button>
+    <button id="green-btn" class="round" type="button" aria-label="הקו הירוק" aria-pressed="false" hidden>קו<br>ירוק</button>
+  </div>
   <canvas id="minimap" aria-hidden="true"></canvas>
   <a id="osm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
 </div>
@@ -141,21 +216,32 @@ a { color: inherit; }
     <canvas id="mark" aria-hidden="true"></canvas>
     <h1 id="logo" class="logo"><span class="st">Ch-ch-</span>chain<span class="st">-ges</span></h1>
     <p id="brand" class="brand">המשחק של עמך ישראל</p>
-    <p id="city"></p>
-    <p class="tag">אוספים אנשים ברחובות, נותנים יד ומתארכים.<br><strong>לבד אתה חזק – ביחד אנחנו שרשרת.</strong></p>
+    <div class="map-row">
+      <div><b id="map-name">…</b><small id="map-live">בוחרים מפה</small></div>
+      <button id="map-btn" class="pill" type="button">החלפת מפה</button>
+    </div>
+    <p class="tag">אוספים אנשים ברחובות, נותנים יד ומתארכים. <strong>לבד אתה חזק – ביחד אנחנו שרשרת.</strong></p>
     <div class="how" aria-label="איך משחקים">
       <div><b>👆</b>גוררים אצבע לכיוון</div>
-      <div><b>⚡</b>מחזיקים כדי לרוץ</div>
+      <div><b>✌️</b>אצבע שנייה: ריצה</div>
       <div><b>🤝</b>נותנים יד ומתחברים</div>
     </div>
-    <div class="name-row">
-      <div class="name-chip"><small>השם שלך:</small><span id="name"></span></div>
+    <div class="me-row">
+      <button id="skin-btn" type="button" aria-label="בחירת דמות"><canvas id="skin-face" width="96" height="96"></canvas></button>
+      <div class="name-box">
+        <label for="name">השם שלך</label>
+        <input id="name" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+        <span id="name-note" aria-live="polite"></span>
+      </div>
       <button id="reroll" type="button" aria-label="שם אחר">🔄</button>
     </div>
     <button id="play" class="primary" type="button">שחקו עכשיו</button>
+    <div class="row2">
+      <button id="story-btn" class="secondary" type="button">📖 הדרך לממשלה</button>
+      <button id="music-btn" class="secondary" type="button">🎵 מוסיקה</button>
+    </div>
     <p id="net-status" aria-live="polite"></p>
-    <button class="sound sound-text" type="button">🔊 מוסיקה</button>
-    <p class="foot">בלי הרשמה · בלי עוגיות · 🤖 מסמן בוט<br>מפה: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
+    <p class="foot">בלי הרשמה · בלי עוגיות · רק אנשים אמיתיים<br>מפה: <a id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
   </div>
 </section>
 
@@ -172,13 +258,58 @@ a { color: inherit; }
       <button id="again" class="primary" type="button">עוד סיבוב</button>
       <button id="share" class="secondary" type="button">שתפו</button>
     </div>
+    <button id="to-menu" class="sound-text" type="button">לתפריט</button>
     <a id="join-link" href="#" target="_blank" rel="noopener" hidden>רוצים להיות חוליה אמיתית? הצטרפו להתנדבות</a>
     <p id="over-net" class="foot" aria-live="polite"></p>
-    <button class="sound sound-text" type="button">🔊 מוסיקה</button>
   </div>
 </section>
 
-<section id="share-fallback" class="screen" hidden aria-label="שיתוף">
+<section id="maps" class="screen sheet" hidden aria-labelledby="maps-title">
+  <div class="card lists">
+    <h2 id="maps-title">איפה משחקים?</h2>
+    <input id="map-search" class="search" type="search" placeholder="חיפוש עיר…" autocomplete="off" aria-label="חיפוש עיר">
+    <div id="map-list" class="list"></div>
+    <button class="secondary close" type="button">סגירה</button>
+  </div>
+</section>
+
+<section id="skins" class="screen sheet" hidden aria-labelledby="skins-title">
+  <div class="card lists">
+    <h2 id="skins-title">הדמות שלך</h2>
+    <input id="skin-search" class="search" type="search" placeholder="חיפוש לפי שם…" autocomplete="off" aria-label="חיפוש דמות לפי שם">
+    <div id="skin-list" class="grid"></div>
+    <button class="secondary close" type="button">סגירה</button>
+  </div>
+</section>
+
+<section id="music" class="screen sheet" hidden aria-labelledby="music-title">
+  <div class="card">
+    <h2 id="music-title">מוסיקה</h2>
+    <p class="note">רצועות מקוריות שנכתבו למשחק, או שיר משלכם מהטלפון: הוא מתנגן רק אצלכם ולא עולה לשום מקום.</p>
+    <div id="track-list" class="list"></div>
+    <div class="row2">
+      <label class="file">🎧 שיר מהטלפון<input id="music-file" type="file" accept="audio/*"></label>
+      <button class="secondary sound" type="button">🔊 מוסיקה</button>
+    </div>
+    <button class="secondary close" type="button">סגירה</button>
+  </div>
+</section>
+
+<section id="story" class="screen sheet" hidden aria-labelledby="story-title">
+  <div class="card">
+    <h2 id="story-title">הדרך לממשלה</h2>
+    <p id="story-intro" class="note">יש לכם תנועה וחלום, ואף מנדט. יוצאים לרחובות, אוספים אנשים, תולים דגלים ומגיעים למקומות שחשובים. כל משימה מביאה מנדטים, ו־61 מהם מביאים ניצחון בבחירות והקמת ממשלה. סיפור בדיוני; ההתקדמות נשמרת רק בטלפון שלכם.</p>
+    <div class="mandates"><div class="bar"><i id="mandates-bar"></i><s></s></div><small id="mandates-text">0 מנדטים מתוך 61</small></div>
+    <div class="mission-card"><small id="story-chapter"></small><b id="story-mission"></b><p id="story-brief"></p></div>
+    <button id="story-go" class="primary" type="button">יוצאים לדרך</button>
+    <div class="row2">
+      <button id="story-reset" class="secondary" type="button">מההתחלה</button>
+      <button class="secondary close" type="button">סגירה</button>
+    </div>
+  </div>
+</section>
+
+<section id="share-fallback" class="screen sheet" hidden aria-label="שיתוף">
   <div class="card">
     <p class="tag">העתיקו ושלחו:</p>
     <textarea id="share-text" readonly></textarea>
