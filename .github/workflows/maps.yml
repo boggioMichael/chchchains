@@ -25,6 +25,8 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main # the newest maps, so a queued run skips what the one before it built
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -36,11 +38,18 @@ jobs:
       - name: Check the builder
         run: python tools/map/test_build.py
       - name: Build the maps
+        id: build
         env:
           ONLY: ${{ inputs.only }}
-        run: python tools/map/build.py $ONLY 2>&1 | tee tools/map/last-build.log
+        run: |
+          set +e
+          python -u tools/map/build.py $ONLY > tools/map/last-build.log 2>&1
+          code=$?
+          echo "exit code $code" >> tools/map/last-build.log
+          tail -n 60 tools/map/last-build.log
+          echo "code=$code" >> "$GITHUB_OUTPUT"
       - name: Commit
-        if: always()
+        # The log goes in with the maps, so a failed build can be read from the repository.
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898699+github-actions[bot]@users.noreply.github.com'
@@ -49,3 +58,6 @@ jobs:
           git commit -m 'Update the maps from OpenStreetMap, SRTM and Sentinel-2'
           git pull --rebase origin main
           git push
+      - name: Result
+        if: steps.build.outputs.code != '0'
+        run: exit 1
