@@ -1,0 +1,20 @@
+[    0.0s 67/0MB] to build ['jerusalem', 'tel-aviv', 'haifa', 'rishon-lezion', 'petah-tikva', 'ashdod', 'netanya', 'beer-sheva', 'bnei-brak', 'holon', 'ramat-gan', 'rehovot', 'ashkelon', 'bat-yam', 'beit-shemesh', 'kfar-saba', 'herzliya', 'hadera', 'modiin', 'nazareth', 'lod', 'ramla', 'raanana', 'rosh-haayin', 'modiin-illit', 'rahat', 'hod-hasharon', 'beitar-illit', 'givatayim', 'kiryat-ata', 'nahariya', 'kiryat-gat', 'umm-al-fahm', 'eilat', 'afula', 'yavne', 'akko', 'karmiel', 'nes-ziona', 'tiberias', 'maale-adumim', 'or-yehuda', 'kiryat-motzkin', 'kiryat-bialik', 'kiryat-yam', 'safed', 'dimona', 'netivot', 'tayibe', 'shfaram', 'ofakim', 'sderot', 'kiryat-shmona', 'ariel', 'zichron-yaakov'] ['israel', 'promise']
+[    0.0s 67/0MB] download https://download.geofabrik.de/asia/israel-and-palestine-latest.osm.pbf
+[   25.1s 71/0MB] $ osmium tags-filter -O /home/runner/work/chchchains/chchchains/.mapwork/israel.osm.pbf r/boundary=administrative n/place=city,town -o /home/runner/work/chchchains/chchchains/.mapwork/admin.osm.pbf
+[   28.5s 71/1893MB] $ osmium export -O -f geojsonseq -x print_record_separator=false /home/runner/work/chchchains/chchchains/.mapwork/admin.osm.pbf -o /home/runner/work/chchchains/chchchains/.mapwork/admin.geojsonseq
+[   29.1s 126/1893MB] resolved 55 missing []
+[   29.1s 126/1893MB] $ osmium extract -O -c /home/runner/work/chchchains/chchchains/.mapwork/extracts.json /home/runner/work/chchchains/chchchains/.mapwork/israel.osm.pbf
+Out of memory. Read the MEMORY USAGE section of the osmium(1) manpage.
+Traceback (most recent call last):
+  File "/home/runner/work/chchchains/chchchains/tools/map/build.py", line 1093, in <module>
+    main(sys.argv)
+  File "/home/runner/work/chchchains/chchchains/tools/map/build.py", line 1054, in main
+    extract_all(pbf, cities)
+  File "/home/runner/work/chchchains/chchchains/tools/map/build.py", line 404, in extract_all
+    run(['osmium', 'extract', '-O', '-c', cfg, pbf])
+  File "/home/runner/work/chchchains/chchchains/tools/map/build.py", line 426, in run
+    subprocess.run(cmd, check=True)
+  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['osmium', 'extract', '-O', '-c', '/home/runner/work/chchchains/chchchains/.mapwork/extracts.json', '/home/runner/work/chchchains/chchchains/.mapwork/israel.osm.pbf']' returned non-zero exit status 1.
+exit code 1
