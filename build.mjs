@@ -77,7 +77,7 @@ const csp = [
 ].join('; ');
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const title = cfg.brand ? `Ch-ch-chains – ${cfg.brand}` : 'Ch-ch-chains';
-const description = 'משחק רשת בטלפון: אוספים ניצוצות, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.';
+const description = 'משחק רשת בטלפון ברחובות האמיתיים של תל אביב, ירושלים וחיפה: אוספים אנשים, נותנים יד ומתארכים. לבד אתה חזק – ביחד אנחנו שרשרת. בלי הרשמה.';
 const meta = [
   `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
   '<link rel="manifest" href="manifest.webmanifest">',
