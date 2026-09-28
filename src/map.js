@@ -553,7 +553,7 @@ export class CityMap {
     }
     // Named places, like a street map: an icon (and its name, closer in), at most one per patch of the screen, the
     // most useful kinds first.
-    if (this.pois.length && zoom >= 0.36) {
+    if (this.pois.length && zoom >= 0.3) {
       const vis = [];
       for (let r = this.cell(vy0); r <= this.cell(vy1); r++) {
         for (let c = this.cell(vx0); c <= this.cell(vx1); c++) {
@@ -564,26 +564,26 @@ export class CityMap {
       vis.sort((a, b) => a.rank - b.rank);
       const boxes = []; // what is already drawn, in screen pixels: [x0, y0, x1, y1]
       const free = (b) => boxes.every((o) => b[2] < o[0] || b[0] > o[2] || b[3] < o[1] || b[1] > o[3]);
-      const named = zoom >= 0.52;
+      const named = zoom >= 0.44;
       let shown = 0;
       for (const p of vis) {
         const x = (p.x - cx) * zoom + W / 2;
         const y = (p.y - cy) * zoom + H / 2;
-        const iconBox = [x - 12, y - 12, x + 12, y + 12];
+        const iconBox = [x - 11, y - 11, x + 11, y + 11];
         if (!free(iconBox)) continue;
         const icon = this.poiIcon(p.cat, dpr);
         ctx.drawImage(icon, x - icon.width / dpr / 2, y - icon.height / dpr / 2, icon.width / dpr, icon.height / dpr);
-        boxes.push(iconBox);
         if (named) {
           const img = this.label(p.name, `poi:${p.cat}`, dpr);
           const w = img.width / dpr;
           const h = img.height / dpr;
-          const nameBox = [x - w / 2, y + 7, x + w / 2, y + 7 + h];
+          const nameBox = [x - w / 2, y + 9, x + w / 2, y + 7 + h];
           if (free(nameBox)) {
-            ctx.drawImage(img, nameBox[0], nameBox[1], w, h);
+            ctx.drawImage(img, nameBox[0], y + 7, w, h);
             boxes.push(nameBox);
           }
         }
+        boxes.push(iconBox);
         if (++shown >= 60) break;
       }
     }
