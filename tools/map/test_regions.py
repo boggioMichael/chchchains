@@ -32,7 +32,8 @@ def main():
             feature({'type': 'LineString', 'coordinates': [ll(100, -600), ll(100, 600)]}, adm0_left='Israel', adm0_right='Palestine'),
             feature({'type': 'LineString', 'coordinates': [ll(-300, 500), ll(600, 500)]}, adm0_left='Israel', adm0_right='Lebanon'),
         ],
-        'ne_10m_admin_0_countries': [],
+        # The West Bank of this made-up country, which OSM keeps apart: x in [600, 900].
+        'ne_10m_admin_0_countries': [feature({'type': 'Polygon', 'coordinates': box(600, -400, 900, 300)}, ADM0_A3='PSX', ADMIN='Palestine')],
         'ne_10m_populated_places': [],
         'ne_10m_roads': [],
     }
@@ -54,11 +55,13 @@ def main():
     picture = lambda lon, lat: np.stack([np.full(np.shape(lon), 90.0), np.full(np.shape(lon), 120.0), np.full(np.shape(lon), 60.0)], -1)  # noqa: E731
     entry = regions.build_region(region, ne, osm, bounds, elevation=hill, satellite=picture)
     data = json.load(open(os.path.join(build.OUT, 'test-region.json'), encoding='utf-8'))
-    # The arena is the country on land: x from -300 (the coast) to 600, y from -700 to 500 → 900 × 1200 units.
+    # The arena is the country on land: x from -300 (the coast) to 600, y from -700 to 500 → 900 × 1200 units, and
+    # the West Bank beside it: 300 × 700.
     area_units = sum(data['arena']['rle'][1::2]) * data['arena']['cell'] ** 2
-    assert abs(area_units - 900 * 1200) / (900 * 1200) < 0.05, area_units
+    want = 900 * 1200 + 300 * 700
+    assert abs(area_units - want) / want < 0.05, area_units
     assert sum(data['arena']['rle']) == data['arena']['n'] ** 2
-    assert abs(data['area'] - 900 * 1200 * 50 * 50 / 1e6) < 150, data['area']
+    assert abs(data['area'] - want * 50 * 50 / 1e6) < 170, data['area']
     assert entry['capacity'] == 50 and entry['kind'] == 'region' and entry['sat'] and data['satellite']['image'] == 'test-region-sat.jpg'
     assert data['sea'] and data['water'] and data['rivers'] and data['rail'] and data['roads'][0] and data['roads'][1]
     assert [lab[4] for lab in data['labels']][:1] == ['כביש 6'], data['labels']

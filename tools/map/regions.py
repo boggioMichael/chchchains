@@ -23,7 +23,7 @@ from skimage import measure
 
 import build as B
 
-BUILD = 1  # bump to rebuild the big maps
+BUILD = 2  # bump to rebuild the big maps
 NE_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/{}.geojson'
 TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
 GIBS_URLS = [  # NASA Blue Marble (a cloud-free picture of the whole Earth, 500 m per pixel), Web Mercator tiles
@@ -68,6 +68,8 @@ REGIONS = [
          names=[(33.3, 34.3, 'הים התיכון', 0), (31.1, 30.75, 'הנילוס', 1), (40.4, 35.05, 'נהר פרת', 1),
                 (35.62, 32.25, 'הירדן', 1), (33.7, 30.2, 'סיני', 0)]),
 ]
+# Where to write a country's name when its own label point is off the map (lon, lat).
+OFF_SQUARE = {'EGY': (31.0, 29.6), 'SAU': (38.6, 29.2), 'TUR': (37.2, 37.4), 'IRQ': (42.6, 32.6)}
 COUNTRIES = {  # Hebrew names for the countries on the region map, by Natural Earth's ADM0_A3
     'EGY': 'מצרים', 'JOR': 'ירדן', 'LBN': 'לבנון', 'SYR': 'סוריה', 'IRQ': 'עיראק', 'SAU': 'ערב הסעודית',
     'TUR': 'טורקיה', 'CYP': 'קפריסין', 'ISR': 'ישראל',
@@ -258,8 +260,9 @@ def split_where(pts, keep):
 
 
 # ----------------------------------------------------------------------------------------------- the maps
-def country_outline(bounds):
-    """Israel and the Palestinian areas from OpenStreetMap's national boundaries (lon/lat polygons), or None."""
+def country_outline(bounds, ne_countries=()):
+    """The land between the sea and the Jordan, with the Golan: Israel's national boundary from OpenStreetMap, and
+    the West Bank and Gaza from Natural Earth (OSM keeps them apart). Lon/lat polygons, or None."""
     seen, polys = set(), []
     for entries in bounds.values():
         for level, p in entries:
@@ -271,13 +274,17 @@ def country_outline(bounds):
             clat = sum(q[1] for q in ring) / len(ring)
             if 34.0 <= clon <= 36.0 and 29.3 <= clat <= 33.5:  # the country itself, not a neighbour
                 polys += p
+    for f in ne_countries:
+        props = f['properties']
+        if props.get('adm0_a3') in ('PSX', 'PSE') or 'Palestin' in str(props.get('admin') or props.get('name') or ''):
+            polys += polys_of(f['geometry'])
     return polys or None
 
 
 def osm_country_features(pbf):
     """The country's main roads, rail, rivers and towns from the OSM file, as GeoJSON features."""
     base = os.path.join(B.WORK, 'country')
-    B.run(['osmium', 'tags-filter', '-O', pbf, 'w/highway=motorway,trunk,primary,secondary,tertiary', 'w/railway=rail',
+    B.run(['osmium', 'tags-filter', '-O', pbf, 'w/highway=motorway,trunk,primary,secondary', 'w/railway=rail',
            'w/waterway=river', 'n/place=city,town', '-o', base + '.osm.pbf'])
     B.run(['osmium', 'export', '-O', '-f', 'geojsonseq', '-x', 'print_record_separator=false', base + '.osm.pbf',
            '-o', base + '.geojsonseq'])
@@ -302,7 +309,7 @@ def build_region(region, ne, osm=None, bounds=None, elevation=None, satellite=No
     if region.get('polygon'):
         outline, source = [[list(region['polygon'])]], 'polygon'
     else:
-        outline, source = (country_outline(bounds or {}), 'osm')
+        outline, source = (country_outline(bounds or {}, ne.get('ne_10m_admin_0_countries', [])), 'osm+ne')
         if not outline:
             outline, source = [[list(ISRAEL_FALLBACK)]], 'fallback'
     B.log('region', rid, 'outline from', source)
@@ -403,7 +410,7 @@ def build_region(region, ne, osm=None, bounds=None, elevation=None, satellite=No
     places = []
     hubs = []
     if osm:
-        cls_of = {'motorway': 0, 'trunk': 0, 'primary': 0, 'secondary': 1, 'tertiary': 2}
+        cls_of = {'motorway': 0, 'trunk': 0, 'primary': 0, 'secondary': 1}  # tertiary roads are too fine at this scale
         for f in osm:
             tags = f.get('properties') or {}
             geom = f.get('geometry') or {}
@@ -412,7 +419,7 @@ def build_region(region, ne, osm=None, bounds=None, elevation=None, satellite=No
                 ref = str(tags.get('ref') or '').split(';')[0].strip()
                 for line in lines_of(geom):
                     for part in B.clip_line([sc.xy(p[0], p[1]) for p in line], E):
-                        pts = B.simplify(part, 1.2 if cls == 0 else 2.0)
+                        pts = B.simplify(part, 1.5 if cls == 0 else 2.5)
                         if len(pts) >= 2:
                             roads[cls].append(B.flat(pts))
                             if cls == 0 and ref.isdigit():
@@ -453,7 +460,7 @@ def build_region(region, ne, osm=None, bounds=None, elevation=None, satellite=No
             p = f['properties']
             name = p.get('name_he') or ''
             g = f['geometry'] or {}
-            if not B.hebrew(name) or g.get('type') != 'Point' or int(p.get('scalerank') or 99) > 6:
+            if not B.hebrew(name) or g.get('type') != 'Point' or int(p.get('scalerank') or 99) > 8:
                 continue
             x, y = sc.xy(*g['coordinates'])
             if not inside(x, y, near):
@@ -487,13 +494,19 @@ def build_region(region, ne, osm=None, bounds=None, elevation=None, satellite=No
                     borders.append(B.flat(B.simplify(part, 1.5)))
     countries = []
     if region.get('polygon'):
+        seen_codes = set()
         for f in ne['ne_10m_admin_0_countries']:
             p = f['properties']
             code = p.get('adm0_a3')
             if code not in COUNTRIES or p.get('label_x') is None:
                 continue
             x, y = sc.xy(float(p['label_x']), float(p['label_y']))
-            if abs(x) < E and abs(y) < E:
+            if abs(x) < E * 0.95 and abs(y) < E * 0.95:
+                countries.append([int(round(x)), int(round(y)), COUNTRIES[code]])
+                seen_codes.add(code)
+        for code, (lon_, lat_) in OFF_SQUARE.items():
+            if code not in seen_codes:
+                x, y = sc.xy(lon_, lat_)
                 countries.append([int(round(x)), int(round(y)), COUNTRIES[code]])
     big_names = []
     for lon_, lat_, name, size in region.get('names', []):
@@ -526,7 +539,7 @@ def build_region(region, ne, osm=None, bounds=None, elevation=None, satellite=No
         'contours': {'step': step, 'lines': contours},
         'labels': road_labels,
         'places': places,
-        'pois': [[x, y, 'city', name] for x, y, rank, name in places if rank <= 1],
+        'pois': [[x, y, 'city', name] for x, y, rank, name in places],
         'hubs': hubs,
         'names': big_names + [[x, y, name, 0] for x, y, name in countries],
         'lines': {'green': green, 'borders': borders},
