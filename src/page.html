@@ -57,6 +57,11 @@ a { color: inherit; }
 #hand span { overflow: hidden; text-overflow: ellipsis; }
 #hand.pulse { animation: pulse 0.9s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: translateX(-50%) scale(1.06); } }
+#sound-hud { pointer-events: auto; position: absolute; right: 12px; top: calc(var(--safe-t) + 104px); width: 40px; height: 40px;
+  border-radius: 50%; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); font-size: 17px;
+  display: grid; place-items: center; padding: 0; }
+.sound-text { justify-self: center; border: 0; background: none; font-size: 13px; font-weight: 700; color: var(--ink-2);
+  padding: 4px 10px; border-radius: 999px; }
 #osm { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 3px);
   font-size: 10px; color: var(--ink-2); text-decoration: none; background: rgba(255, 255, 255, 0.7); padding: 1px 6px;
   border-radius: 6px; direction: ltr; white-space: nowrap; }
@@ -124,6 +129,7 @@ a { color: inherit; }
   <div class="hud-board"><ol id="leaderboard" aria-label="טבלת המובילים"></ol><div id="players"></div></div>
   <button id="boost" type="button" aria-label="ריצה (החזיקו)">⚡</button>
   <button id="hand" type="button" hidden>🤝 <span>תנו יד</span></button>
+  <button id="sound-hud" class="sound" type="button" aria-label="מוסיקה">🔊</button>
   <canvas id="minimap" aria-hidden="true"></canvas>
   <a id="osm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
 </div>
@@ -148,6 +154,7 @@ a { color: inherit; }
     </div>
     <button id="play" class="primary" type="button">שחקו עכשיו</button>
     <p id="net-status" aria-live="polite"></p>
+    <button class="sound sound-text" type="button">🔊 מוסיקה</button>
     <p class="foot">בלי הרשמה · בלי עוגיות · 🤖 מסמן בוט<br>מפה: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
   </div>
 </section>
@@ -167,6 +174,7 @@ a { color: inherit; }
     </div>
     <a id="join-link" href="#" target="_blank" rel="noopener" hidden>רוצים להיות חוליה אמיתית? הצטרפו להתנדבות</a>
     <p id="over-net" class="foot" aria-live="polite"></p>
+    <button class="sound sound-text" type="button">🔊 מוסיקה</button>
   </div>
 </section>
 

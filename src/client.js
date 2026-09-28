@@ -5,6 +5,7 @@ import { connectOnline } from './net.js';
 import { loadCity, loadCityIndex, MAP_STYLE } from './map.js';
 import { streetSpawner } from './streets.js';
 import { figure, drawFlag, FIG } from './people.js';
+import { createAudio } from './audio.js';
 
 const CFG = Object.assign(
   { server: '', brand: 'המשחק של עמך ישראל', publisher: '', joinUrl: '', shareUrl: '', maps: 'maps/' },
@@ -84,6 +85,35 @@ function me() {
   return game.world?.snakes.get(game.meId) || null;
 }
 
+// ------------------------------------------------------------------------------------------------ sound
+const audio = createAudio({ muted: loadMuted() });
+function loadMuted() {
+  try {
+    return localStorage.getItem('chain:muted') === '1';
+  } catch {
+    return false;
+  }
+}
+function renderSound() {
+  for (const b of document.querySelectorAll('.sound')) {
+    b.textContent = b.id === 'sound-hud' ? (audio.muted ? '🔇' : '🔊') : audio.muted ? '🔇 בלי מוסיקה' : '🔊 מוסיקה';
+    b.setAttribute('aria-pressed', String(!audio.muted));
+  }
+}
+for (const b of document.querySelectorAll('.sound')) {
+  b.addEventListener('click', () => {
+    audio.unlock();
+    audio.setMuted(!audio.muted);
+    try {
+      localStorage.setItem('chain:muted', audio.muted ? '1' : '0');
+    } catch {
+      /* storage unavailable */
+    }
+    renderSound();
+  });
+}
+document.addEventListener('visibilitychange', () => audio.pause(document.hidden));
+
 // ------------------------------------------------------------------------------------------------ city maps
 const maps = { cities: [], loaded: new Map(), soloCity: '' };
 /** Resolves to the CityMap for `id` (loading it once), or null when it cannot be loaded. */
@@ -146,6 +176,8 @@ function beginRound(s) {
   game.handIds = new Set();
   game.refusedAt.clear();
   game.lastColor = s.color;
+  game.lastScore = scoreOf(s.mass);
+  audio.setScene('play');
   cam.x = s.x;
   cam.y = s.y;
   show('hud');
@@ -164,6 +196,7 @@ function setButtonsBusy(busy) {
 /** Online when the server is there (people + bots), otherwise at once with bots on this phone. */
 function play() {
   if (game.joining) return;
+  audio.unlock(); // a tap: browsers allow sound from here on
   const net = game.net;
   if (net?.ready() && net.join(game.name, viewExtents())) {
     game.joining = true;
@@ -199,6 +232,8 @@ function onDeath(e) {
   const killer = e.killer ? w.snakes.get(e.killer) : null;
   game.deathInfo = { killer: e.name || (killer ? displayName(killer) : null), edge: !!e.edge || e.killer === 0 };
   navigator.vibrate?.(120);
+  audio.sfx('break');
+  audio.setScene('over');
   setTimeout(showOver, 1100);
 }
 
@@ -207,6 +242,7 @@ function onLost() {
   if (game.alive) {
     game.alive = false;
     game.deathInfo = { lost: true };
+    audio.setScene('over');
     showOver();
   }
   game.world = null; // the background goes back to the start-screen view
@@ -386,6 +422,14 @@ function frame(now) {
     updateCamera(dt);
     render(now / 1000);
     updateHud();
+    const s = me();
+    if (s?.alive && game.alive) {
+      // A blip for every person who joins; the music follows the chain.
+      const score = scoreOf(s.mass);
+      if (score > game.lastScore) audio.sfx('pick');
+      game.lastScore = score;
+      audio.setIntensity({ size: score, running: input.boost && s.mass > C.minBoostMass, linked: !!s.team });
+    }
   } else {
     renderIdle(now / 1000, dt);
   }
@@ -412,17 +456,20 @@ function handleEvents(w) {
     else if (e.t === 'death' && e.killer === my && game.alive) {
       const name = e.name || nameOf(w, e.id);
       if (name) toast(`${name} נתקל בשרשרת שלך`);
+      audio.sfx('broke');
     } else if (e.t === 'link' && (e.a === my || e.b === my) && game.alive) {
       const other = e.a === my ? e.b : e.a;
       game.handIds.add(other);
       game.refusedAt.delete(other);
       toast(`🤝 ${e.name || nameOf(w, other)} ואתה שרשרת אחת! עוברים זה דרך זה ואוספים פי 1.5 כשקרובים`, 4200);
       navigator.vibrate?.([40, 60, 40]);
+      audio.sfx('link');
       game.best.hands = Math.max(game.best.hands, game.handIds.size, handsOf(me()));
       game.hintStage = Math.max(game.hintStage, 3);
     } else if (e.t === 'offer' && e.to === my && game.alive) {
       const name = e.name || nameOf(w, e.from);
       if (name) toast(`${name} מושיט לך יד – לחצו 🤝`, 4000);
+      audio.sfx('offer');
     } else if (e.t === 'offered' && game.alive) {
       toast(`הושטת יד ל${e.name || nameOf(w, e.to)}…`);
       game.refusedAt.set(e.to, w.time + 5.2);
@@ -998,6 +1045,7 @@ document.addEventListener('visibilitychange', () => {
   last = performance.now();
 });
 renderName();
+renderSound();
 resize();
 drawMark();
 requestAnimationFrame((t) => {

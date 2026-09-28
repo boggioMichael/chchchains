@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- Renders the game music to a WAV file (tools/art/music.mjs screenshots nothing; it saves the audio). -->
+<script type="module">
+import { createAudio } from '../../src/audio.js';
+const secs = Number(new URLSearchParams(location.search).get('secs') || 34);
+const rate = 44100;
+const ctx = new OfflineAudioContext(2, rate * secs, rate);
+const audio = createAudio({ context: ctx });
+audio.unlock();
+audio.setScene('play');
+audio.setIntensity({ size: 40, running: false, linked: false });
+// Hands held for the second half, running for a few bars, and a few people joining.
+audio.renderUntil(secs);
+const buf = await ctx.startRendering();
+// 16-bit PCM WAV
+const ch = [buf.getChannelData(0), buf.getChannelData(1)];
+const n = buf.length;
+const out = new DataView(new ArrayBuffer(44 + n * 4));
+const w = (o, s) => [...s].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+w(0, 'RIFF'); out.setUint32(4, 36 + n * 4, true); w(8, 'WAVE'); w(12, 'fmt ');
+out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 2, true); out.setUint32(24, rate, true);
+out.setUint32(28, rate * 4, true); out.setUint16(32, 4, true); out.setUint16(34, 16, true); w(36, 'data'); out.setUint32(40, n * 4, true);
+let peak = 0;
+for (let i = 0; i < n; i++) for (let c = 0; c < 2; c++) {
+  const v = Math.max(-1, Math.min(1, ch[c][i]));
+  peak = Math.max(peak, Math.abs(v));
+  out.setInt16(44 + i * 4 + c * 2, v * 32767, true);
+}
+const bytes = new Uint8Array(out.buffer);
+let bin = '';
+for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+document.body.dataset.peak = String(peak);
+document.body.dataset.wav = btoa(bin);
+</script>
