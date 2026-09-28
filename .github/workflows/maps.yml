@@ -55,7 +55,6 @@ jobs:
             done
           ) &
           beat=$!
-          ulimit -v 12000000 # 12 GB: running out of memory fails the build instead of the runner
           python -u tools/map/build.py $ONLY > tools/map/last-build.log 2>&1
           code=$?
           kill $beat

@@ -387,21 +387,15 @@ def resolve(auth, bounds, places):
     return dict(id=aid, he=he, lon=center[0], lat=center[1], boundary=boundary)
 
 
-def extract_all(pbf, cities, per_pass=5):
-    """Cuts a small extract around every city, a few cities per pass over the country file (each extract in a pass
-    keeps its own index of the objects it takes, and fifty of them at once need more memory than CI has)."""
-    for k in range(0, len(cities), per_pass):
-        extracts = []
-        for c in cities[k:k + per_pass]:
-            proj = Projection(c['lat'], c['lon'])
-            E = R_MAX + MARGIN + 200
-            lon0, lat0 = proj.lonlat(-E, E)
-            lon1, lat1 = proj.lonlat(E, -E)
-            extracts.append({'output': c['id'] + '.osm.pbf', 'output_format': 'pbf', 'bbox': [lon0, lat0, lon1, lat1]})
-        cfg = os.path.join(WORK, 'extracts.json')
-        with open(cfg, 'w') as f:
-            json.dump({'directory': WORK, 'extracts': extracts}, f)
-        run(['osmium', 'extract', '-O', '-c', cfg, pbf])
+def extract_all(pbf, cities):
+    """Cuts a small extract around every city, one osmium pass each (an extract keeps an index of every object it
+    takes, and several at once need more memory than CI has)."""
+    for c in cities:
+        proj = Projection(c['lat'], c['lon'])
+        E = R_MAX + MARGIN + 200
+        lon0, lat0 = proj.lonlat(-E, E)
+        lon1, lat1 = proj.lonlat(E, -E)
+        run(['osmium', 'extract', '-O', '-b', f'{lon0},{lat0},{lon1},{lat1}', '-o', os.path.join(WORK, c['id'] + '.osm.pbf'), pbf])
 
 
 def osm_features(city):
