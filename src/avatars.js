@@ -1,6 +1,8 @@
 // Ch-ch-chain-ges — skins: the face the leader of your chain wears, drawn big (a bobblehead on the paper-doll body).
-// Sixteen original cartoon faces are drawn here; more can be added as pictures in docs/skins (see README.md) and
-// are picked the same way, by name. The server only needs AVATAR_IDS, so nothing here touches the page on import.
+// Sixteen original cartoon faces are drawn here, the party's candidates as portraits (portraits.js), and more can be
+// added as pictures in docs/skins (see README.md), all picked the same way, by name. The server only needs
+// AVATAR_IDS, so nothing here touches the page on import.
+import { PEOPLE, PEOPLE_IDS, drawPortrait } from './portraits.js';
 
 const TONES = ['#f7dcc0', '#efc49c', '#dba471', '#b97d4e', '#8e5b3b', '#5f3b27'];
 const HAIR = {
@@ -33,7 +35,7 @@ export const AVATARS = [
   { id: 'a14', name: 'כיפה', tone: 2, hair: 'short', color: 'black', extras: ['kippah', 'beard'] },
   { id: 'a15', name: 'ורוד', tone: 1, hair: 'bun', color: 'pink', extras: ['shades'] },
 ];
-export const AVATAR_IDS = AVATARS.map((a) => a.id);
+export const AVATAR_IDS = [...PEOPLE_IDS, ...AVATARS.map((a) => a.id)];
 
 const SIZE = 128;
 const cache = new Map();
@@ -58,12 +60,16 @@ export async function loadSuppliedSkins(base = 'skins/') {
   }
 }
 
-/** Everything a player can pick: [{ id, name }], the supplied pictures first. */
+/** Everything a player can pick: [{ id, name, group }]: the candidates ('list'), supplied pictures, then the faces. */
 export function allSkins() {
-  return [...[...supplied].map(([id, s]) => ({ id, name: s.name })), ...AVATARS.map(({ id, name }) => ({ id, name }))];
+  return [
+    ...PEOPLE.filter((p) => p.ready).map(({ id, n, name }) => ({ id, name, n, group: 'list' })),
+    ...[...supplied].map(([id, s]) => ({ id, name: s.name, group: 'pictures' })),
+    ...AVATARS.map(({ id, name }) => ({ id, name, group: 'faces' })),
+  ];
 }
 export function skinName(id) {
-  return supplied.get(id)?.name ?? AVATARS.find((a) => a.id === id)?.name ?? '';
+  return PEOPLE.find((p) => p.id === id)?.name ?? supplied.get(id)?.name ?? AVATARS.find((a) => a.id === id)?.name ?? '';
 }
 
 /** The face for a skin as a 128 × 128 canvas with a white cut-out edge, or null (unknown, or its picture is loading). */
@@ -71,8 +77,13 @@ export function avatar(id) {
   if (!id) return null;
   let c = cache.get(id);
   if (c) return c;
+  const person = PEOPLE.find((p) => p.id === id && p.ready);
   const spec = AVATARS.find((a) => a.id === id);
-  if (spec) c = drawFace(spec);
+  if (person) {
+    c = canvas();
+    drawPortrait(c, person, SIZE);
+    ring(c);
+  } else if (spec) c = drawFace(spec);
   else {
     const s = supplied.get(id);
     if (!s) return null;
@@ -97,6 +108,16 @@ function canvas() {
   const c = document.createElement('canvas');
   c.width = c.height = SIZE;
   return c;
+}
+
+/** A white ring around a round picture. */
+function ring(c) {
+  const g = c.getContext('2d');
+  g.lineWidth = 6;
+  g.strokeStyle = '#ffffff';
+  g.beginPath();
+  g.arc(SIZE / 2, SIZE / 2, SIZE / 2 - 5, 0, Math.PI * 2);
+  g.stroke();
 }
 
 /** A picture cropped to a circle, with a white ring. */

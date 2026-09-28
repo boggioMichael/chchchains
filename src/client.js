@@ -1998,29 +1998,38 @@ function drawSkinInto(c, id) {
 function renderSkinButton() {
   drawSkinInto($('skin-face'), game.skin);
 }
+const SKIN_GROUPS = { list: () => `הרשימה של ${CFG.party || 'עמך ישראל'}`, pictures: () => 'תמונות', faces: () => 'דמויות' };
 function renderSkinList() {
   const q = $('skin-search').value.trim();
   const list = allSkins().filter((s) => !q || s.name.includes(q));
-  $('skin-list').replaceChildren(
-    ...list.map((s) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = `skin${s.id === game.skin ? ' on' : ''}`;
-      const c = document.createElement('canvas');
-      c.width = c.height = 112;
-      drawSkinInto(c, s.id);
-      const label = document.createElement('span');
-      label.textContent = s.name;
-      b.append(c, label);
-      b.addEventListener('click', () => {
-        game.skin = s.id;
-        setPref('skin', s.id);
-        renderSkinButton();
-        hide('skins');
-      });
-      return b;
-    }),
-  );
+  const items = [];
+  let group = '';
+  for (const s of list) {
+    if (s.group !== group) {
+      group = s.group;
+      const h = document.createElement('h3');
+      h.className = 'skin-group';
+      h.textContent = SKIN_GROUPS[group]?.() ?? '';
+      items.push(h);
+    }
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `skin${s.id === game.skin ? ' on' : ''}`;
+    const c = document.createElement('canvas');
+    c.width = c.height = 112;
+    drawSkinInto(c, s.id);
+    const label = document.createElement('span');
+    label.textContent = s.n ? `${s.n}. ${s.name}` : s.name;
+    b.append(c, label);
+    b.addEventListener('click', () => {
+      game.skin = s.id;
+      setPref('skin', s.id);
+      renderSkinButton();
+      hide('skins');
+    });
+    items.push(b);
+  }
+  $('skin-list').replaceChildren(...items);
 }
 $('skin-btn').addEventListener('click', () => {
   $('skin-search').value = '';
