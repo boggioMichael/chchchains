@@ -60,8 +60,35 @@ def main():
         features.append({'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': ll(-600 + i * 900, -1200)},
                          'properties': {'place': place, 'name': name}})
 
-    stats = build.build_city(city, features, (grid, E))
+    # Places the story sends players to: a city hall, a square drawn as an area, a station, a market that appears
+    # twice, one with only an English name, and one outside the city limits.
+    def poi(props, geometry):
+        features.append({'type': 'Feature', 'geometry': geometry, 'properties': props})
+    poi({'amenity': 'townhall', 'name': 'עיריית בדיקה'}, {'type': 'Point', 'coordinates': ll(300, 200)})
+    sq = [ll(x, y) for x, y in [(900, 900), (1100, 900), (1100, 1100), (900, 1100), (900, 900)]]
+    poi({'place': 'square', 'name:he': 'כיכר המדינה', 'name': 'State Square'}, {'type': 'Polygon', 'coordinates': [sq]})
+    poi({'railway': 'station', 'name': 'תחנת מרכז'}, {'type': 'Point', 'coordinates': ll(-200, 40)})
+    poi({'amenity': 'marketplace', 'name': 'שוק העיר'}, {'type': 'Point', 'coordinates': ll(600, -300)})
+    poi({'amenity': 'marketplace', 'name': 'שוק העיר'}, {'type': 'Point', 'coordinates': ll(650, -320)})
+    poi({'tourism': 'museum', 'name': 'Museum'}, {'type': 'Point', 'coordinates': ll(100, 100)})
+    poi({'tourism': 'attraction', 'name': 'מצפה רחוק'}, {'type': 'Point', 'coordinates': ll(3000, 3000)})
+
+    # Satellite imagery: a made-up picture, bright in the north-east.
+    sat_n = int(round(2 * E / build.SAT_GRID)) + 1
+    ramp = np.linspace(40, 220, sat_n, dtype=np.float32)
+    rgb = np.stack([ramp[None, :].repeat(sat_n, 0), ramp[::-1, None].repeat(sat_n, 1), np.full((sat_n, sat_n), 90.0, np.float32)], -1)
+    sat = (build.enhance(rgb, np.ones((sat_n, sat_n), bool)), {'date': '2025-05-02', 'credit': 'Contains modified Copernicus Sentinel data 2025'})
+    assert sat[0].dtype == np.uint8 and sat[0][0, -1, 0] > sat[0][0, 0, 0], 'the picture keeps its shape'
+
+    stats = build.build_city(city, features, (grid, E), sat)
     data = json.load(open(os.path.join(tmp, 'test-city.json'), encoding='utf-8'))
+    pois = {p[3]: p for p in data['pois']}
+    assert set(pois) == {'עיריית בדיקה', 'כיכר המדינה', 'תחנת מרכז', 'שוק העיר', 'גן'}, sorted(pois)
+    assert pois['כיכר המדינה'][2] == 'square' and abs(pois['כיכר המדינה'][0] - 1000) < 3 and abs(pois['כיכר המדינה'][1] - 1000) < 3
+    assert pois['עיריית בדיקה'][2] == 'hall' and pois['גן'][2] == 'park' and pois['תחנת מרכז'][2] == 'station'
+    assert [p[2] for p in data['pois']][0] == 'hall', 'city hall first'
+    assert data['satellite'] == {'image': 'test-city-sat.jpg', 'date': '2025-05-02', 'credit': 'Contains modified Copernicus Sentinel data 2025'}
+    assert os.path.getsize(os.path.join(tmp, 'test-city-sat.jpg')) > 5000
     # The arena is the city limits: 20 km², so it holds 40 people, and its mask agrees with its outline.
     assert abs(data['area'] - 20) < 0.6, data['area']
     assert data['capacity'] == 40
@@ -95,6 +122,21 @@ def main():
     found = build.resolve(('test-city', 'עיר בדיקה', []), bounds, places)
     assert found and found['boundary'] == [[ring]] and abs(found['lat'] - 32.07) < 1e-9
     assert build.resolve(('nowhere', 'אין כזאת', []), bounds, places) is None
+    # Resampling a scene: a 3-band raster sampled half-way between pixels, and nothing outside it.
+    bands = np.zeros((3, 4, 4), np.uint8)
+    bands[:, :, :2] = 100
+    bands[:, :, 2:] = 200
+    out, ok = build.resample(bands, np.array([[1.0, 1.0, 1.0]]), np.array([[0.0, 1.5, 9.0]]))
+    assert np.allclose(out[0, 0], 100) and np.allclose(out[0, 1], 150) and ok.tolist() == [[True, True, False]]
+    # Picking scenes: a clear one covering the whole map beats a newer cloudy one and a clear one that misses a corner.
+    square = lambda x0, y0, x1, y1: {'type': 'Polygon', 'coordinates': [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]}  # noqa: E731
+    item = lambda name, cloud, geom: {'id': name, 'properties': {'eo:cloud_cover': cloud}, 'geometry': geom,  # noqa: E731
+                                      'assets': {'visual': {'href': name + '.tif'}}}
+    corners = [(34.7, 32.0), (34.9, 32.0), (34.7, 32.2), (34.9, 32.2)]
+    items = [item('cloudy', 40, square(34, 31, 36, 33)), item('partial', 0.5, square(34.8, 31, 36, 33)),
+             item('clear', 0.4, square(34, 31, 36, 33)), item('nohref', 0, square(34, 31, 36, 33))]
+    items[3]['assets'] = {}
+    assert [it['id'] for it in build.scene_order(items, corners)] == ['clear', 'partial', 'cloudy']
     print('ok', json.dumps(stats, ensure_ascii=False))
 
 

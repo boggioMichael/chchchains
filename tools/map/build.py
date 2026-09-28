@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the Ch-ch-chains maps, one per local authority, from OpenStreetMap and SRTM elevation.
+"""Builds the Ch-ch-chain-ges maps, one per local authority, from OpenStreetMap and SRTM elevation.
 
 Runs in GitHub Actions (.github/workflows/maps.yml), which has the network access and the osmium tool:
 
@@ -20,6 +20,7 @@ import math
 import os
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 
 import numpy as np
@@ -109,6 +110,26 @@ GREEN = {('leisure', 'park'), ('leisure', 'garden'), ('leisure', 'nature_reserve
 PLACE_RANK = {'suburb': 0, 'quarter': 1, 'neighbourhood': 2}
 SKIP_PLACES = {'מזרח ירושלים', 'מערב ירושלים'}  # whole regions, not neighbourhoods
 HEBREW = range(0x0590, 0x0600)
+# Named places the story missions send players to: kind, how many a map keeps (the biggest, then the most central),
+# and the test on the OSM tags. The first kind that matches wins.
+POI_KINDS = [
+    ('hall', 4, lambda t: t.get('amenity') == 'townhall'),
+    ('gov', 10, lambda t: bool(t.get('government')) or t.get('office') == 'government'),
+    ('square', 16, lambda t: t.get('place') == 'square'),
+    ('station', 20, lambda t: t.get('railway') == 'station'),
+    ('market', 8, lambda t: t.get('amenity') == 'marketplace'),
+    ('uni', 8, lambda t: t.get('amenity') in ('university', 'college')),
+    ('stadium', 5, lambda t: t.get('leisure') == 'stadium'),
+    ('beach', 10, lambda t: t.get('natural') == 'beach'),
+    ('sight', 20, lambda t: t.get('tourism') in ('attraction', 'museum', 'viewpoint', 'zoo')
+     or t.get('historic') in ('monument', 'archaeological_site', 'castle', 'city_gate', 'fort', 'ruins')),
+    ('park', 20, lambda t: t.get('leisure') in ('park', 'garden', 'nature_reserve')),
+]
+# Bump to rebuild every map; otherwise a run only builds maps that are missing, older, or lack satellite imagery.
+BUILD = 3
+UA = 'chchchain-ges-map-build (github.com/boggioMichael/chchchains)'
+STAC_URL = 'https://earth-search.aws.element84.com/v1/search'
+SAT_GRID = 10  # Sentinel-2 true colour is 10 m per pixel
 
 
 def log(*a):
@@ -266,7 +287,7 @@ def download(url, path):
         return path
     log('download', url)
     tmp = path + '.part'
-    req = urllib.request.Request(url, headers={'User-Agent': 'chchchains-map-build (github.com/boggioMichael/chchchains)'})
+    req = urllib.request.Request(url, headers={'User-Agent': UA})
     with urllib.request.urlopen(req, timeout=300) as r, open(tmp, 'wb') as f:
         while True:
             chunk = r.read(1 << 20)
@@ -380,8 +401,10 @@ def osm_features(city):
     run([
         'osmium', 'tags-filter', '-O', base + '.osm.pbf',
         'w/highway', 'w/railway', 'w/waterway', 'w/natural=coastline', 'nwr/natural=water,beach,wood,scrub', 'nwr/water',
-        'nwr/leisure=park,garden,nature_reserve', 'nwr/landuse=grass,recreation_ground,forest,meadow,village_green,cemetery',
-        'n/place=suburb,quarter,neighbourhood',
+        'nwr/leisure=park,garden,nature_reserve,stadium', 'nwr/landuse=grass,recreation_ground,forest,meadow,village_green,cemetery',
+        'n/place=suburb,quarter,neighbourhood', 'nwr/place=square', 'nwr/railway=station',
+        'nwr/amenity=townhall,marketplace,university,college', 'nwr/government', 'nwr/office=government',
+        'nwr/tourism=attraction,museum,viewpoint,zoo', 'nwr/historic=monument,archaeological_site,castle,city_gate,fort,ruins',
         '-o', base + '.filtered.osm.pbf',
     ])
     run(['osmium', 'export', '-O', '-f', 'geojsonseq', '-x', 'print_record_separator=false',
@@ -465,6 +488,161 @@ def sea_from_coastline(coast, E, cell):
     return ndimage.binary_closing(sea | (wall & ndimage.binary_dilation(sea)), iterations=1)
 
 
+def ring_centroid(pts):
+    """Area-weighted centroid and area of a closed ring of (x, y)."""
+    a = cx = cy = 0.0
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1]):
+        cross = x0 * y1 - x1 * y0
+        a += cross
+        cx += (x0 + x1) * cross
+        cy += (y0 + y1) * cross
+    if abs(a) < 1e-9:
+        return (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)), 0.0
+    return (cx / (3 * a), cy / (3 * a)), abs(a) / 2
+
+
+def poi_of(feature, proj):
+    """(kind, name, x, y, area) for a named place a mission can send players to, or None."""
+    tags = feature.get('properties') or {}
+    name = tags.get('name:he') or tags.get('name')
+    if not hebrew(name):
+        return None
+    kind = next((k for k, _limit, test in POI_KINDS if test(tags)), None)
+    if not kind:
+        return None
+    geom = feature.get('geometry') or {}
+    gtype = geom.get('type')
+    if gtype == 'Point':
+        (x, y), area = proj.xy(*geom['coordinates']), 0.0
+    elif gtype == 'LineString':
+        pts = [proj.xy(lon, lat) for lon, lat in geom['coordinates']]
+        (x, y), area = pts[len(pts) // 2], 0.0
+    elif gtype in ('Polygon', 'MultiPolygon'):
+        polys = [geom['coordinates']] if gtype == 'Polygon' else geom['coordinates']
+        best = max((ring_centroid([proj.xy(lon, lat) for lon, lat in rings[0]]) for rings in polys), key=lambda c: c[1])
+        (x, y), area = best
+    else:
+        return None
+    return kind, name.strip(), x, y, area
+
+
+def pick_pois(cands):
+    """Per kind, the biggest then the most central; one of each name. [[x, y, kind, name], …]"""
+    limits = {k: limit for k, limit, _test in POI_KINDS}
+    order = {k: i for i, (k, _l, _t) in enumerate(POI_KINDS)}
+    cands = sorted(cands, key=lambda c: (order[c[0]], -c[4], math.hypot(c[2], c[3])))
+    out, seen, count = [], set(), {}
+    for kind, name, x, y, _area in cands:
+        if name in seen or count.get(kind, 0) >= limits[kind]:
+            continue
+        seen.add(name)
+        count[kind] = count.get(kind, 0) + 1
+        out.append([int(round(x)), int(round(y)), kind, name])
+    return out
+
+
+# ----------------------------------------------------------------------------------------------- satellite
+def stac_search(bbox):
+    """Sentinel-2 scenes (Earth Search STAC, AWS open data) over bbox [lon0, lat0, lon1, lat1], newest first."""
+    body = {'collections': ['sentinel-2-l2a'], 'bbox': bbox, 'datetime': '2024-06-01T00:00:00Z/..', 'limit': 100,
+            'query': {'eo:cloud_cover': {'lt': 5}}, 'sortby': [{'field': 'properties.datetime', 'direction': 'desc'}]}
+    for attempt in (body, {k: v for k, v in body.items() if k not in ('query', 'sortby')}):
+        req = urllib.request.Request(STAC_URL, data=json.dumps(attempt).encode(),
+                                     headers={'Content-Type': 'application/json', 'User-Agent': UA})
+        try:
+            with urllib.request.urlopen(req, timeout=90) as r:
+                items = json.load(r).get('features', [])
+            return sorted(items, key=lambda it: (it.get('properties') or {}).get('datetime', ''), reverse=True)
+        except urllib.error.HTTPError as e:
+            log('stac', e.code, 'retrying without extensions' if attempt is body else '')
+    return []
+
+
+def scene_order(items, corners):
+    """The scenes to read, best first: clear ones that cover the whole map (newest first), then the clearest others."""
+    def polys_of_item(it):
+        g = it.get('geometry') or {}
+        return [g['coordinates']] if g.get('type') == 'Polygon' else g.get('coordinates', []) if g.get('type') == 'MultiPolygon' else []
+
+    usable = [it for it in items if ((it.get('assets') or {}).get('visual') or {}).get('href')]
+    cloud = lambda it: float((it.get('properties') or {}).get('eo:cloud_cover', 100))  # noqa: E731
+    covering = [it for it in usable if cloud(it) < 2 and all(in_polys(lon, lat, polys_of_item(it)) for lon, lat in corners)]
+    rest = sorted((it for it in usable if it not in covering), key=cloud)
+    return covering[:2] + rest
+
+
+def resample(bands, rows, cols):
+    """Bilinear samples of (3, h, w) bands at fractional (rows, cols); returns (rgb float32 (…, 3), valid mask)."""
+    coords = np.array([rows.ravel(), cols.ravel()])
+    rgb = np.stack([ndimage.map_coordinates(b.astype(np.float32), coords, order=1, mode='constant', cval=0.0)
+                    for b in bands], axis=-1).reshape(rows.shape + (3,))
+    have = ndimage.map_coordinates((bands.max(axis=0) > 0).astype(np.float32), coords, order=1, mode='constant', cval=0.0)
+    return rgb, have.reshape(rows.shape) > 0.999
+
+
+def enhance(rgb, valid):
+    """A gentle stretch and a little more colour for the (rather flat) true-colour product."""
+    v = rgb[valid]
+    lo, hi = (float(np.percentile(v, 0.5)), float(np.percentile(v, 99.6))) if v.size else (0.0, 255.0)
+    x = np.clip((rgb - lo) / max(1.0, hi - lo), 0, 1) ** 0.88
+    grey = x.mean(axis=-1, keepdims=True)
+    x = np.clip(grey + (x - grey) * 1.18, 0, 1)
+    x[~valid] = (0.953, 0.937, 0.902)  # paper where no scene reaches
+    return (x * 255 + 0.5).astype(np.uint8)
+
+
+def satellite_image(city, proj, E):
+    """True-colour Sentinel-2 imagery over [-E, E]², SAT_GRID m per pixel (row 0 = north). Returns (rgb, meta) or None."""
+    import rasterio
+    from rasterio.warp import transform as warp
+    from rasterio.windows import Window
+
+    n = int(round(2 * E / SAT_GRID)) + 1
+    xs = -E + np.arange(n) * SAT_GRID
+    X, Y = np.meshgrid(xs, xs)
+    lon, lat = proj.lonlat(X, Y)
+    corners = [proj.lonlat(x, y) for x in (-E, E) for y in (-E, E)] + [proj.lonlat(0, 0)]
+    bbox = [float(lon.min()), float(lat.min()), float(lon.max()), float(lat.max())]
+    order = scene_order(stac_search(bbox), corners)
+    out = np.zeros((n, n, 3), np.float32)
+    have = np.zeros((n, n), bool)
+    used = []
+    env = dict(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR', CPL_VSIL_CURL_ALLOWED_EXTENSIONS='.tif', GDAL_HTTP_MAX_RETRY='4',
+               GDAL_HTTP_RETRY_DELAY='2', AWS_NO_SIGN_REQUEST='YES')
+    with rasterio.Env(**env):
+        for item in order[:5]:
+            try:
+                with rasterio.open(item['assets']['visual']['href']) as src:
+                    ux, uy = warp('EPSG:4326', src.crs, lon.ravel().tolist(), lat.ravel().tolist())
+                    t = src.transform
+                    cols = (np.asarray(ux).reshape(n, n) - t.c) / t.a
+                    rows = (np.asarray(uy).reshape(n, n) - t.f) / t.e
+                    c0 = max(0, int(math.floor(cols.min())) - 2)
+                    r0 = max(0, int(math.floor(rows.min())) - 2)
+                    c1 = min(src.width, int(math.ceil(cols.max())) + 3)
+                    r1 = min(src.height, int(math.ceil(rows.max())) + 3)
+                    if c1 <= c0 or r1 <= r0:
+                        continue
+                    bands = src.read([1, 2, 3], window=Window(c0, r0, c1 - c0, r1 - r0))
+                rgb, ok = resample(bands, rows - r0, cols - c0)
+            except Exception as e:  # a scene that will not read: try the next one
+                log('satellite: skipped a scene', city['id'], repr(e))
+                continue
+            fill = ok & ~have
+            if fill.any():
+                out[fill] = rgb[fill]
+                have |= fill
+                used.append(item)
+            if have.mean() > 0.998:
+                break
+    if have.mean() < 0.9:
+        log('satellite: not enough coverage', city['id'], round(float(have.mean()), 3))
+        return None
+    dates = sorted({(it.get('properties') or {}).get('datetime', '')[:10] for it in used})
+    meta = {'date': dates[-1] if dates else '', 'credit': f"Contains modified Copernicus Sentinel data {dates[-1][:4] if dates else ''}".strip()}
+    return enhance(out, have), meta
+
+
 def arena_of(city, proj, E, n):
     """The playing area on the GRID: the municipal boundary (or a circle), within R_MAX of the centre, in one piece."""
     rr, cc = np.mgrid[0:n, 0:n]
@@ -500,7 +678,8 @@ def rle(mask):
     return ([0] + runs) if flat_m[0] else runs
 
 
-def build_city(city, features, elev):
+def build_city(city, features, elev, sat=None):
+    """Writes the city's map files. sat: (rgb over [-E, E]², meta) from satellite_image, or None."""
     proj = Projection(city['lat'], city['lon'])
     grid, E = elev
     n = grid.shape[0]
@@ -619,10 +798,14 @@ def build_city(city, features, elev):
             if out:
                 target.append(out)
 
+    poi_cands = []
     for f in features:
         tags = f.get('properties') or {}
         geom = f.get('geometry') or {}
         gtype = geom.get('type')
+        poi = poi_of(f, proj)
+        if poi and in_arena(poi[2], poi[3], arena):
+            poi_cands.append(poi)
         if gtype == 'Point':
             if tags.get('place') in PLACE_RANK:
                 name = tags.get('name:he') or tags.get('name')
@@ -676,6 +859,13 @@ def build_city(city, features, elev):
             add_polygon(green, geom, 2500)
 
     labels = [lab for lab in place_road_labels(names) if in_arena(lab[0], lab[1])]
+    pois = pick_pois(poi_cands)
+    satellite = None
+    if sat is not None:
+        rgb, meta = sat
+        Image.fromarray(rgb).resize((1024, 1024), Image.BICUBIC).save(
+            os.path.join(OUT, city['id'] + '-sat.jpg'), quality=80, optimize=True, progressive=True)
+        satellite = {'image': city['id'] + '-sat.jpg', 'date': meta.get('date', ''), 'credit': meta.get('credit', '')}
     places.sort(key=lambda p: p[2])
     places = thin_points(places, [900, 650, 450])
 
@@ -702,7 +892,10 @@ def build_city(city, features, elev):
         'contours': {'step': step, 'lines': contours},
         'labels': labels,
         'places': places,
+        'pois': pois,
     }
+    if satellite:
+        data['satellite'] = satellite
     path = os.path.join(OUT, city['id'] + '.json')
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
@@ -720,6 +913,8 @@ def build_city(city, features, elev):
         'contours': len(contours),
         'labels': len(labels),
         'places': len(places),
+        'pois': len(pois),
+        'sat': bool(satellite),
         'green': len(green),
         'water': len(water),
     }
@@ -812,15 +1007,28 @@ def thin_points(points, spacing):
 
 
 def main(argv):
+    """Builds the maps named on the command line, or else every map that is missing, out of date or lacks imagery."""
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(WORK, exist_ok=True)
     wanted = set(argv[1:])
+    index_path = os.path.join(OUT, 'index.json')
+    old = {}
+    if os.path.exists(index_path):
+        for c in json.load(open(index_path, encoding='utf-8')).get('cities', []):
+            old[c['id']] = c
+
+    def stale(aid):
+        e = old.get(aid)
+        return not e or e.get('build') != BUILD or not e.get('sat') or not os.path.exists(os.path.join(OUT, aid + '.json'))
+
+    todo = [a for a in AUTHORITIES if (a[0] in wanted if wanted else stale(a[0]))]
+    log('to build', [a[0] for a in todo])
+    if not todo:
+        return
     pbf = download(PBF_URL, os.path.join(WORK, 'israel.osm.pbf'))
     bounds, places = admin_index(pbf)
     cities, missing = [], []
-    for auth in AUTHORITIES:
-        if wanted and auth[0] not in wanted:
-            continue
+    for auth in todo:
         c = resolve(auth, bounds, places)
         if c:
             cities.append(c)
@@ -832,23 +1040,24 @@ def main(argv):
     for city in cities:
         try:
             proj = Projection(city['lat'], city['lon'])
-            results.append(build_city(city, osm_features(city), elevation_grid(city, proj)))
+            try:
+                sat = satellite_image(city, proj, R_MAX + MARGIN)
+            except Exception as e:  # imagery is a bonus: the map is built without it
+                log('satellite FAILED', city['id'], repr(e))
+                sat = None
+            results.append(build_city(city, osm_features(city), elevation_grid(city, proj), sat))
         except Exception as e:  # one bad town should not stop the rest
             log('FAILED', city['id'], repr(e))
     built = {r['id']: r for r in results}
     # Keep maps built earlier for authorities not rebuilt this time.
-    index_path = os.path.join(OUT, 'index.json')
-    old = {}
-    if os.path.exists(index_path):
-        for c in json.load(open(index_path, encoding='utf-8')).get('cities', []):
-            old[c['id']] = c
     entries = []
     for aid, he, _alts in AUTHORITIES:
         c = next((c for c in cities if c['id'] == aid), None)
         if aid in built and c:
             r = built[aid]
             entries.append({'id': aid, 'he': he, 'R': r['R'], 'area': r['area'], 'capacity': r['capacity'],
-                            'center': [round(c['lat'], 5), round(c['lon'], 5)]})
+                            'center': [round(c['lat'], 5), round(c['lon'], 5)], 'pois': r['pois'], 'sat': r['sat'],
+                            'build': BUILD})
         elif aid in old and os.path.exists(os.path.join(OUT, aid + '.json')):
             entries.append(old[aid])
     with open(index_path, 'w', encoding='utf-8') as f:
