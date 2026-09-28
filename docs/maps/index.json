@@ -1,33 +1,810 @@
 {
- "v": 1,
+ "v": 2,
  "attribution": "© OpenStreetMap contributors (ODbL) · גבהים: SRTM / NASA",
- "cities": [
+ "regions": [
   {
-   "id": "tel-aviv",
-   "he": "תל אביב",
-   "R": 3200,
+   "id": "israel",
+   "he": "כל הארץ",
+   "R": 4476,
+   "area": 22452,
+   "capacity": 50,
+   "kind": "region",
    "center": [
-    32.0705,
-    34.78
-   ]
+    31.42,
+    35.05
+   ],
+   "sat": true,
+   "pois": 7,
+   "subtitle": "מהחרמון עד אילת, מהים עד הירדן",
+   "build": 1
   },
+  {
+   "id": "promise",
+   "he": "גבולות ההבטחה",
+   "R": 4902,
+   "area": 375371,
+   "capacity": 50,
+   "kind": "region",
+   "center": [
+    33.1,
+    37.0
+   ],
+   "sat": true,
+   "pois": 11,
+   "subtitle": "״מִנְּהַר מִצְרַיִם עַד הַנָּהָר הַגָּדֹל נְהַר פְּרָת״ (בראשית ט״ו, י״ח)",
+   "build": 1
+  }
+ ],
+ "cities": [
   {
    "id": "jerusalem",
    "he": "ירושלים",
-   "R": 3200,
+   "R": 3610,
+   "area": 36.2,
+   "capacity": 50,
    "center": [
-    31.78,
-    35.215
-   ]
+    31.77885,
+    35.22579
+   ],
+   "pois": 84,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "tel-aviv",
+   "he": "תל אביב-יפו",
+   "R": 3610,
+   "area": 26.5,
+   "capacity": 50,
+   "center": [
+    32.0853,
+    34.78181
+   ],
+   "pois": 101,
+   "sat": true,
+   "build": 3
   },
   {
    "id": "haifa",
    "he": "חיפה",
-   "R": 3200,
+   "R": 3610,
+   "area": 37.0,
+   "capacity": 50,
    "center": [
-    32.805,
-    34.99
-   ]
+    32.81912,
+    34.99839
+   ],
+   "pois": 67,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "rishon-lezion",
+   "he": "ראשון לציון",
+   "R": 3610,
+   "area": 31.8,
+   "capacity": 50,
+   "center": [
+    31.96357,
+    34.81011
+   ],
+   "pois": 39,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "petah-tikva",
+   "he": "פתח תקווה",
+   "R": 3610,
+   "area": 31.0,
+   "capacity": 50,
+   "center": [
+    32.08776,
+    34.886
+   ],
+   "pois": 54,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "ashdod",
+   "he": "אשדוד",
+   "R": 3610,
+   "area": 31.7,
+   "capacity": 50,
+   "center": [
+    31.79773,
+    34.65299
+   ],
+   "pois": 52,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "netanya",
+   "he": "נתניה",
+   "R": 3610,
+   "area": 21.2,
+   "capacity": 42,
+   "center": [
+    32.32862,
+    34.85662
+   ],
+   "pois": 40,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "beer-sheva",
+   "he": "באר שבע",
+   "R": 3610,
+   "area": 40.7,
+   "capacity": 50,
+   "center": [
+    31.24574,
+    34.79252
+   ],
+   "pois": 50,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "bnei-brak",
+   "he": "בני ברק",
+   "R": 2709,
+   "area": 7.4,
+   "capacity": 15,
+   "center": [
+    32.08739,
+    34.83244
+   ],
+   "pois": 21,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "holon",
+   "he": "חולון",
+   "R": 3610,
+   "area": 19.1,
+   "capacity": 38,
+   "center": [
+    32.01931,
+    34.78041
+   ],
+   "pois": 39,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "ramat-gan",
+   "he": "רמת גן",
+   "R": 3610,
+   "area": 16.0,
+   "capacity": 32,
+   "center": [
+    32.06869,
+    34.82468
+   ],
+   "pois": 46,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "rehovot",
+   "he": "רחובות",
+   "R": 3610,
+   "area": 23.1,
+   "capacity": 46,
+   "center": [
+    31.89525,
+    34.81056
+   ],
+   "pois": 52,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "ashkelon",
+   "he": "אשקלון",
+   "R": 3610,
+   "area": 33.8,
+   "capacity": 50,
+   "center": [
+    31.66532,
+    34.56504
+   ],
+   "pois": 38,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "bat-yam",
+   "he": "בת ים",
+   "R": 2651,
+   "area": 9.5,
+   "capacity": 19,
+   "center": [
+    32.01546,
+    34.75053
+   ],
+   "pois": 41,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "beit-shemesh",
+   "he": "בית שמש",
+   "R": 3610,
+   "area": 22.6,
+   "capacity": 45,
+   "center": [
+    31.74621,
+    34.98868
+   ],
+   "pois": 22,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "kfar-saba",
+   "he": "כפר סבא",
+   "R": 3610,
+   "area": 13.5,
+   "capacity": 27,
+   "center": [
+    32.17735,
+    34.90746
+   ],
+   "pois": 31,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "herzliya",
+   "he": "הרצליה",
+   "R": 3610,
+   "area": 14.9,
+   "capacity": 30,
+   "center": [
+    32.16563,
+    34.8469
+   ],
+   "pois": 36,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "hadera",
+   "he": "חדרה",
+   "R": 2810,
+   "area": 24.6,
+   "capacity": 49,
+   "center": [
+    32.43699,
+    34.91983
+   ],
+   "pois": 26,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "modiin",
+   "he": "מודיעין-מכבים-רעות",
+   "R": 3610,
+   "area": 26.8,
+   "capacity": 50,
+   "center": [
+    31.90857,
+    35.00693
+   ],
+   "pois": 42,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "nazareth",
+   "he": "נצרת",
+   "R": 3610,
+   "area": 13.4,
+   "capacity": 27,
+   "center": [
+    32.70663,
+    35.30485
+   ],
+   "pois": 4,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "lod",
+   "he": "לוד",
+   "R": 3609,
+   "area": 14.8,
+   "capacity": 30,
+   "center": [
+    31.9489,
+    34.88849
+   ],
+   "pois": 22,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "ramla",
+   "he": "רמלה",
+   "R": 3610,
+   "area": 13.3,
+   "capacity": 27,
+   "center": [
+    31.928,
+    34.86235
+   ],
+   "pois": 12,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "raanana",
+   "he": "רעננה",
+   "R": 2984,
+   "area": 14.9,
+   "capacity": 30,
+   "center": [
+    32.18602,
+    34.86784
+   ],
+   "pois": 32,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "rosh-haayin",
+   "he": "ראש העין",
+   "R": 3610,
+   "area": 15.6,
+   "capacity": 31,
+   "center": [
+    32.09529,
+    34.95332
+   ],
+   "pois": 25,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "modiin-illit",
+   "he": "מודיעין עילית",
+   "R": 2810,
+   "area": 24.6,
+   "capacity": 49,
+   "center": [
+    31.93245,
+    35.04334
+   ],
+   "pois": 14,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "rahat",
+   "he": "רהט",
+   "R": 3610,
+   "area": 30.8,
+   "capacity": 50,
+   "center": [
+    31.39336,
+    34.75468
+   ],
+   "pois": 4,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "hod-hasharon",
+   "he": "הוד השרון",
+   "R": 3610,
+   "area": 18.0,
+   "capacity": 36,
+   "center": [
+    32.1562,
+    34.89304
+   ],
+   "pois": 18,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "beitar-illit",
+   "he": "ביתר עילית",
+   "R": 2810,
+   "area": 24.6,
+   "capacity": 49,
+   "center": [
+    31.69895,
+    35.11373
+   ],
+   "pois": 8,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "givatayim",
+   "he": "גבעתיים",
+   "R": 1685,
+   "area": 3.3,
+   "capacity": 8,
+   "center": [
+    32.07296,
+    34.81133
+   ],
+   "pois": 25,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "kiryat-ata",
+   "he": "קריית אתא",
+   "R": 3610,
+   "area": 19.7,
+   "capacity": 39,
+   "center": [
+    32.81159,
+    35.11637
+   ],
+   "pois": 7,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "nahariya",
+   "he": "נהריה",
+   "R": 3610,
+   "area": 12.6,
+   "capacity": 25,
+   "center": [
+    33.00631,
+    35.09456
+   ],
+   "pois": 4,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "kiryat-gat",
+   "he": "קריית גת",
+   "R": 3610,
+   "area": 21.1,
+   "capacity": 42,
+   "center": [
+    31.6094,
+    34.7712
+   ],
+   "pois": 18,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "umm-al-fahm",
+   "he": "אום אל-פחם",
+   "R": 3610,
+   "area": 20.9,
+   "capacity": 42,
+   "center": [
+    32.51584,
+    35.15249
+   ],
+   "pois": 1,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "eilat",
+   "he": "אילת",
+   "R": 3610,
+   "area": 31.0,
+   "capacity": 50,
+   "center": [
+    29.55693,
+    34.94979
+   ],
+   "pois": 32,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "afula",
+   "he": "עפולה",
+   "R": 3610,
+   "area": 18.8,
+   "capacity": 38,
+   "center": [
+    32.60756,
+    35.28909
+   ],
+   "pois": 17,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "yavne",
+   "he": "יבנה",
+   "R": 3610,
+   "area": 19.8,
+   "capacity": 40,
+   "center": [
+    31.87689,
+    34.7383
+   ],
+   "pois": 23,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "akko",
+   "he": "עכו",
+   "R": 3610,
+   "area": 16.1,
+   "capacity": 32,
+   "center": [
+    32.92817,
+    35.07564
+   ],
+   "pois": 45,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "karmiel",
+   "he": "כרמיאל",
+   "R": 3610,
+   "area": 17.8,
+   "capacity": 36,
+   "center": [
+    32.91591,
+    35.29343
+   ],
+   "pois": 31,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "nes-ziona",
+   "he": "נס ציונה",
+   "R": 3610,
+   "area": 14.2,
+   "capacity": 28,
+   "center": [
+    31.92956,
+    34.79906
+   ],
+   "pois": 31,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "tiberias",
+   "he": "טבריה",
+   "R": 3610,
+   "area": 15.4,
+   "capacity": 31,
+   "center": [
+    32.79385,
+    35.53286
+   ],
+   "pois": 13,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "maale-adumim",
+   "he": "מעלה אדומים",
+   "R": 3610,
+   "area": 21.5,
+   "capacity": 43,
+   "center": [
+    31.77062,
+    35.29845
+   ],
+   "pois": 8,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "or-yehuda",
+   "he": "אור יהודה",
+   "R": 3391,
+   "area": 7.7,
+   "capacity": 15,
+   "center": [
+    32.027,
+    34.86299
+   ],
+   "pois": 9,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "kiryat-motzkin",
+   "he": "קריית מוצקין",
+   "R": 3273,
+   "area": 3.8,
+   "capacity": 8,
+   "center": [
+    32.83637,
+    35.07521
+   ],
+   "pois": 13,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "kiryat-bialik",
+   "he": "קריית ביאליק",
+   "R": 3610,
+   "area": 7.3,
+   "capacity": 15,
+   "center": [
+    32.82858,
+    35.08449
+   ],
+   "pois": 13,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "kiryat-yam",
+   "he": "קריית ים",
+   "R": 3610,
+   "area": 11.6,
+   "capacity": 23,
+   "center": [
+    32.85022,
+    35.07032
+   ],
+   "pois": 13,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "safed",
+   "he": "צפת",
+   "R": 3610,
+   "area": 24.5,
+   "capacity": 49,
+   "center": [
+    32.96619,
+    35.49615
+   ],
+   "pois": 20,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "dimona",
+   "he": "דימונה",
+   "R": 3610,
+   "area": 37.4,
+   "capacity": 50,
+   "center": [
+    31.06866,
+    35.03665
+   ],
+   "pois": 14,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "netivot",
+   "he": "נתיבות",
+   "R": 3559,
+   "area": 13.1,
+   "capacity": 26,
+   "center": [
+    31.42135,
+    34.58843
+   ],
+   "pois": 7,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "tayibe",
+   "he": "טייבה",
+   "R": 3610,
+   "area": 18.2,
+   "capacity": 36,
+   "center": [
+    32.26712,
+    35.0089
+   ],
+   "pois": 2,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "shfaram",
+   "he": "שפרעם",
+   "R": 3610,
+   "area": 18.7,
+   "capacity": 37,
+   "center": [
+    32.80458,
+    35.17239
+   ],
+   "pois": 0,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "ofakim",
+   "he": "אופקים",
+   "R": 3610,
+   "area": 14.6,
+   "capacity": 29,
+   "center": [
+    31.31258,
+    34.62085
+   ],
+   "pois": 7,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "sderot",
+   "he": "שדרות",
+   "R": 3374,
+   "area": 10.7,
+   "capacity": 21,
+   "center": [
+    31.52647,
+    34.59697
+   ],
+   "pois": 22,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "kiryat-shmona",
+   "he": "קריית שמונה",
+   "R": 3610,
+   "area": 14.4,
+   "capacity": 29,
+   "center": [
+    33.20747,
+    35.57078
+   ],
+   "pois": 13,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "ariel",
+   "he": "אריאל",
+   "R": 3207,
+   "area": 5.6,
+   "capacity": 11,
+   "center": [
+    32.10608,
+    35.18514
+   ],
+   "pois": 21,
+   "sat": true,
+   "build": 3
+  },
+  {
+   "id": "zichron-yaakov",
+   "he": "זכרון יעקב",
+   "R": 3610,
+   "area": 22.5,
+   "capacity": 45,
+   "center": [
+    32.57116,
+    34.953
+   ],
+   "pois": 36,
+   "sat": true,
+   "build": 3
   }
  ]
 }
