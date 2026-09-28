@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Builds the Ch-ch-chains city maps from OpenStreetMap and SRTM elevation.
+"""Builds the Ch-ch-chains maps, one per local authority, from OpenStreetMap and SRTM elevation.
 
 Runs in GitHub Actions (.github/workflows/maps.yml), which has the network access and the osmium tool:
 
-    python tools/map/build.py              # all cities
-    python tools/map/build.py haifa        # one city
+    python tools/map/build.py              # every authority in AUTHORITIES
+    python tools/map/build.py haifa        # one
 
-For every city it writes docs/maps/<id>.json (vector layers in metres around the city centre, y pointing south)
-and docs/maps/<id>.jpg (the terrain: elevation tint and hill shading), plus docs/maps/index.json.
+Each map is the authority's own municipal boundary (from OSM), cut to at most R_MAX metres around the town centre,
+so the city limits are the edge of the arena. It writes docs/maps/<id>.json (vector layers in metres around the
+centre, y pointing south, plus the arena outline and a mask for "inside?"), docs/maps/<id>.jpg (the terrain: elevation
+tint and hill shading), and docs/maps/index.json (the list, with each map's area and how many people it holds).
 
 Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).
 Elevation: SRTM (NASA), from the AWS Terrain Tiles open dataset.
@@ -21,7 +23,7 @@ import sys
 import urllib.request
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from scipy import ndimage
 from skimage import measure
 
@@ -29,12 +31,67 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 OUT = os.path.join(ROOT, 'docs', 'maps')
 WORK = os.path.join(ROOT, '.mapwork')
 
-# Each city is a circle of radius R metres (the arena) around its centre; MARGIN more is drawn beyond the edge.
-CITIES = [
-    dict(id='tel-aviv', he='תל אביב', lat=32.0705, lon=34.7800, R=3200),
-    dict(id='jerusalem', he='ירושלים', lat=31.7800, lon=35.2150, R=3200),
-    dict(id='haifa', he='חיפה', lat=32.8050, lon=34.9900, R=3200),
+# Local authorities (Israel's cities and larger towns), roughly by population: id, the Hebrew name as in OSM, and
+# other spellings to try. Where OSM has no boundary, the arena is a circle of R_CIRCLE around the town's centre.
+AUTHORITIES = [
+    ('jerusalem', 'ירושלים', []),
+    ('tel-aviv', 'תל אביב-יפו', ['תל אביב יפו', 'תל־אביב–יפו', 'תל אביב–יפו', 'תל אביב']),
+    ('haifa', 'חיפה', []),
+    ('rishon-lezion', 'ראשון לציון', []),
+    ('petah-tikva', 'פתח תקווה', ['פתח תקוה']),
+    ('ashdod', 'אשדוד', []),
+    ('netanya', 'נתניה', []),
+    ('beer-sheva', 'באר שבע', []),
+    ('bnei-brak', 'בני ברק', []),
+    ('holon', 'חולון', []),
+    ('ramat-gan', 'רמת גן', []),
+    ('rehovot', 'רחובות', []),
+    ('ashkelon', 'אשקלון', []),
+    ('bat-yam', 'בת ים', []),
+    ('beit-shemesh', 'בית שמש', []),
+    ('kfar-saba', 'כפר סבא', []),
+    ('herzliya', 'הרצליה', []),
+    ('hadera', 'חדרה', []),
+    ('modiin', 'מודיעין-מכבים-רעות', ['מודיעין מכבים רעות', 'מודיעין–מכבים–רעות', 'מודיעין']),
+    ('nazareth', 'נצרת', []),
+    ('lod', 'לוד', []),
+    ('ramla', 'רמלה', []),
+    ('raanana', 'רעננה', []),
+    ('rosh-haayin', 'ראש העין', []),
+    ('modiin-illit', 'מודיעין עילית', []),
+    ('rahat', 'רהט', []),
+    ('hod-hasharon', 'הוד השרון', []),
+    ('beitar-illit', 'ביתר עילית', []),
+    ('givatayim', 'גבעתיים', []),
+    ('kiryat-ata', 'קריית אתא', ['קרית אתא']),
+    ('nahariya', 'נהריה', []),
+    ('kiryat-gat', 'קריית גת', ['קרית גת']),
+    ('umm-al-fahm', 'אום אל-פחם', ['אום אל פחם', 'אום אל־פחם']),
+    ('eilat', 'אילת', []),
+    ('afula', 'עפולה', []),
+    ('yavne', 'יבנה', []),
+    ('akko', 'עכו', []),
+    ('karmiel', 'כרמיאל', []),
+    ('nes-ziona', 'נס ציונה', []),
+    ('tiberias', 'טבריה', []),
+    ('maale-adumim', 'מעלה אדומים', []),
+    ('or-yehuda', 'אור יהודה', []),
+    ('kiryat-motzkin', 'קריית מוצקין', ['קרית מוצקין']),
+    ('kiryat-bialik', 'קריית ביאליק', ['קרית ביאליק']),
+    ('kiryat-yam', 'קריית ים', ['קרית ים']),
+    ('safed', 'צפת', []),
+    ('dimona', 'דימונה', []),
+    ('netivot', 'נתיבות', []),
+    ('tayibe', 'טייבה', []),
+    ('shfaram', 'שפרעם', []),
+    ('ofakim', 'אופקים', []),
+    ('sderot', 'שדרות', []),
+    ('kiryat-shmona', 'קריית שמונה', ['קרית שמונה']),
+    ('ariel', 'אריאל', []),
+    ('zichron-yaakov', 'זכרון יעקב', []),
 ]
+R_MAX = 3600  # the arena never reaches further than this from the centre
+R_CIRCLE = 2800
 MARGIN = 300
 GRID = 10  # metres per elevation grid cell
 PBF_URL = 'https://download.geofabrik.de/asia/israel-and-palestine-latest.osm.pbf'
@@ -220,14 +277,106 @@ def download(url, path):
     return path
 
 
-def osm_features(city, proj):
-    """Extracts the city's OSM features with osmium and yields GeoJSON features (dicts)."""
-    pbf = download(PBF_URL, os.path.join(WORK, 'israel.osm.pbf'))
-    E = city['R'] + MARGIN + 200
-    lon0, lat0 = proj.lonlat(-E, E)
-    lon1, lat1 = proj.lonlat(E, -E)
+def read_seq(path):
+    with open(path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip().lstrip('\x1e')
+            if line:
+                yield json.loads(line)
+
+
+def admin_index(pbf):
+    """Administrative boundaries (GeoJSON polygons, lon/lat) and town centres, keyed by every name they carry."""
+    base = os.path.join(WORK, 'admin')
+    run(['osmium', 'tags-filter', '-O', pbf, 'r/boundary=administrative', 'n/place=city,town', '-o', base + '.osm.pbf'])
+    run(['osmium', 'export', '-O', '-f', 'geojsonseq', '-x', 'print_record_separator=false', base + '.osm.pbf',
+         '-o', base + '.geojsonseq'])
+    bounds, places = {}, {}
+    for f in read_seq(base + '.geojsonseq'):
+        tags = f.get('properties') or {}
+        g = f.get('geometry') or {}
+        names = {tags.get('name:he'), tags.get('name')} - {None}
+        if g.get('type') == 'Point' and tags.get('place') in ('city', 'town'):
+            for nm in names:
+                places.setdefault(nm, []).append((tags['place'], g['coordinates']))
+        elif g.get('type') in ('Polygon', 'MultiPolygon') and tags.get('boundary') == 'administrative':
+            polys = [g['coordinates']] if g['type'] == 'Polygon' else g['coordinates']
+            for nm in names:
+                bounds.setdefault(nm, []).append((tags.get('admin_level'), polys))
+    return bounds, places
+
+
+def in_ring(x, y, ring):
+    inside = False
+    j = len(ring) - 1
+    for i in range(len(ring)):
+        xi, yi = ring[i][0], ring[i][1]
+        xj, yj = ring[j][0], ring[j][1]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            inside = not inside
+        j = i
+    return inside
+
+
+def in_polys(x, y, polys):
+    return any(in_ring(x, y, rings[0]) and not any(in_ring(x, y, h) for h in rings[1:]) for rings in polys)
+
+
+def polys_area(polys):
+    total = 0.0
+    for rings in polys:
+        r = rings[0]
+        total += abs(sum(r[i][0] * r[i - 1][1] - r[i - 1][0] * r[i][1] for i in range(len(r)))) / 2
+    return total
+
+
+def resolve(auth, bounds, places):
+    """The authority's centre (its city/town node) and its municipal boundary, or None for either."""
+    aid, he, alts = auth
+    names = [he] + alts
+    center = None
+    for nm in names:
+        cands = sorted(places.get(nm, []), key=lambda c: 0 if c[0] == 'city' else 1)
+        if cands:
+            center = cands[0][1]
+            break
+    best = None
+    for nm in names:
+        for _level, polys in bounds.get(nm, []):
+            if center is not None and not in_polys(center[0], center[1], polys):
+                continue
+            area = polys_area(polys)
+            if best is None or area < best[0]:
+                best = (area, polys)
+        if best:
+            break
+    boundary = best[1] if best else None
+    if center is None and boundary:
+        ring = max((rings[0] for rings in boundary), key=len)
+        center = [sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)]
+    if center is None:
+        return None
+    return dict(id=aid, he=he, lon=center[0], lat=center[1], boundary=boundary)
+
+
+def extract_all(pbf, cities):
+    """One pass over the country file cuts a small extract around every city."""
+    extracts = []
+    for c in cities:
+        proj = Projection(c['lat'], c['lon'])
+        E = R_MAX + MARGIN + 200
+        lon0, lat0 = proj.lonlat(-E, E)
+        lon1, lat1 = proj.lonlat(E, -E)
+        extracts.append({'output': c['id'] + '.osm.pbf', 'output_format': 'pbf', 'bbox': [lon0, lat0, lon1, lat1]})
+    cfg = os.path.join(WORK, 'extracts.json')
+    with open(cfg, 'w') as f:
+        json.dump({'directory': WORK, 'extracts': extracts}, f)
+    run(['osmium', 'extract', '-O', '-c', cfg, pbf])
+
+
+def osm_features(city):
+    """The city's OSM features (from its extract) as GeoJSON features (dicts)."""
     base = os.path.join(WORK, city['id'])
-    run(['osmium', 'extract', '-O', '-b', f'{lon0},{lat0},{lon1},{lat1}', pbf, '-o', base + '.osm.pbf'])
     run([
         'osmium', 'tags-filter', '-O', base + '.osm.pbf',
         'w/highway', 'w/railway', 'w/waterway', 'w/natural=coastline', 'nwr/natural=water,beach,wood,scrub', 'nwr/water',
@@ -237,11 +386,7 @@ def osm_features(city, proj):
     ])
     run(['osmium', 'export', '-O', '-f', 'geojsonseq', '-x', 'print_record_separator=false',
          base + '.filtered.osm.pbf', '-o', base + '.geojsonseq'])
-    with open(base + '.geojsonseq', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip().lstrip('\x1e')
-            if line:
-                yield json.loads(line)
+    yield from read_seq(base + '.geojsonseq')
 
 
 def run(cmd):
@@ -251,7 +396,7 @@ def run(cmd):
 
 def elevation_grid(city, proj):
     """SRTM elevation resampled to a GRID-metre grid over [-E, E]² (row 0 = north). Returns (grid, E)."""
-    E = city['R'] + MARGIN
+    E = R_MAX + MARGIN
     n = int(round(2 * E / GRID)) + 1
     xs = -E + np.arange(n) * GRID
     ys = -E + np.arange(n) * GRID
@@ -320,13 +465,65 @@ def sea_from_coastline(coast, E, cell):
     return ndimage.binary_closing(sea | (wall & ndimage.binary_dilation(sea)), iterations=1)
 
 
+def arena_of(city, proj, E, n):
+    """The playing area on the GRID: the municipal boundary (or a circle), within R_MAX of the centre, in one piece."""
+    rr, cc = np.mgrid[0:n, 0:n]
+    dist = np.hypot(-E + cc * GRID, -E + rr * GRID)
+    if city.get('boundary'):
+        img = Image.new('L', (n, n), 0)
+        d = ImageDraw.Draw(img)
+        to_px = lambda lon, lat: tuple((v + E) / GRID for v in proj.xy(lon, lat))  # noqa: E731
+        for rings in city['boundary']:
+            d.polygon([to_px(p[0], p[1]) for p in rings[0]], fill=1)
+            for hole in rings[1:]:
+                d.polygon([to_px(p[0], p[1]) for p in hole], fill=0)
+        mask = np.array(img, dtype=bool)
+    else:
+        mask = dist <= R_CIRCLE
+    mask &= dist <= R_MAX
+    labels, count = ndimage.label(mask)
+    if count > 1:
+        c = n // 2
+        keep = labels[c, c] or (np.bincount(labels.ravel())[1:].argmax() + 1)
+        mask = labels == keep
+    mask = ndimage.binary_fill_holes(mask)
+    if mask.sum() * GRID * GRID < 1.5e6:  # a boundary this small is probably wrong: fall back to a circle
+        mask = dist <= R_CIRCLE
+    return mask, dist
+
+
+def rle(mask):
+    """Run lengths of a boolean array (row by row), starting with a run of False."""
+    flat_m = mask.ravel().astype(np.int8)
+    edges = np.flatnonzero(np.diff(flat_m)) + 1
+    runs = np.diff(np.concatenate([[0], edges, [flat_m.size]])).tolist()
+    return ([0] + runs) if flat_m[0] else runs
+
+
 def build_city(city, features, elev):
     proj = Projection(city['lat'], city['lon'])
-    R = city['R']
     grid, E = elev
     n = grid.shape[0]
     to_world = lambda r, c: (-E + c * GRID, -E + r * GRID)  # noqa: E731  (grid row/col → metres)
     features = list(features)
+    arena, dist = arena_of(city, proj, E, n)
+    R = int(math.ceil(float(dist[arena].max()) + GRID))
+    area_km2 = float(arena.sum()) * GRID * GRID / 1e6
+    capacity = int(max(8, min(50, round(area_km2 * 2))))
+    near_arena = ndimage.binary_dilation(arena, iterations=12)  # labels a little past the edge are fine
+
+    def in_arena(x, y, m=near_arena):
+        c = int(round((x + E) / GRID))
+        r = int(round((y + E) / GRID))
+        return 0 <= r < n and 0 <= c < n and bool(m[r, c])
+
+    arena_rings = []
+    soft = ndimage.gaussian_filter(arena.astype(np.float32), 0.8)
+    for cnt in measure.find_contours(np.pad(soft, 1, constant_values=0), 0.5):
+        pts = simplify([to_world(r - 1, c - 1) for r, c in cnt], 4.0)
+        if len(pts) >= 4 and ring_area(pts) > 20000:
+            arena_rings.append(flat(pts))
+    coarse = arena[::2, ::2]  # the "inside?" mask the game uses: 20 m cells
 
     # Sea: from the OSM coastline when the city has one (SRTM is coarse over the water), as smooth polygons drawn
     # with the even-odd rule; the land mask for contours and the terrain image follows it.
@@ -357,8 +554,7 @@ def build_city(city, features, elev):
     rough = grid[land] if land.any() else grid.ravel()
     flat_city = float(np.percentile(rough, 99) - np.percentile(rough, 1)) < 120
     smooth = ndimage.gaussian_filter(grid, 4.0 if flat_city else 2.2)  # flat cities: roofs dominate the noise
-    in_arena = np.hypot(-E + cc * GRID, -E + rr * GRID) <= R
-    vals = smooth[land & in_arena]
+    vals = smooth[land & arena]
     lo, hi = (float(np.percentile(vals, 1)), float(np.percentile(vals, 99))) if vals.size else (0.0, 1.0)
     relief = max(1.0, hi - lo)
     step = next(s for s in (5, 10, 20, 25, 50, 100, 200) if relief / s <= 24)
@@ -393,7 +589,7 @@ def build_city(city, features, elev):
     names = []  # (rank, name, polyline)
     rail, rivers = [], []
     water, green, beach, places = [], [], [], []
-    EXT = R + MARGIN
+    EXT = E
 
     def lines_of(geom):
         if geom['type'] == 'LineString':
@@ -432,7 +628,7 @@ def build_city(city, features, elev):
                 name = tags.get('name:he') or tags.get('name')
                 if hebrew(name) and name not in SKIP_PLACES:
                     x, y = proj.xy(*geom['coordinates'])
-                    if math.hypot(x, y) <= R + 150:
+                    if in_arena(x, y):
                         places.append([int(round(x)), int(round(y)), PLACE_RANK[tags['place']], name])
             continue
         hw = tags.get('highway')
@@ -479,7 +675,7 @@ def build_city(city, features, elev):
         elif any((k, tags.get(k)) in GREEN for k in ('leisure', 'landuse', 'natural')):
             add_polygon(green, geom, 2500)
 
-    labels = place_road_labels(names)
+    labels = [lab for lab in place_road_labels(names) if in_arena(lab[0], lab[1])]
     places.sort(key=lambda p: p[2])
     places = thin_points(places, [900, 650, 450])
 
@@ -490,6 +686,9 @@ def build_city(city, features, elev):
         'center': [city['lat'], city['lon']],
         'R': R,
         'extent': E,
+        'area': round(area_km2, 2),
+        'capacity': capacity,
+        'arena': {'cell': GRID * 2, 'n': int(coarse.shape[0]), 'rle': rle(coarse), 'rings': arena_rings},
         'terrain': city['id'] + '.jpg',
         'attribution': ATTRIBUTION,
         'elevation': [round(lo), round(hi)],
@@ -510,6 +709,10 @@ def build_city(city, features, elev):
     stats = {
         'id': city['id'],
         'kb': round(os.path.getsize(path) / 1024),
+        'boundary': bool(city.get('boundary')),
+        'area': round(area_km2, 1),
+        'capacity': capacity,
+        'R': R,
         'sea': round(sea_fraction, 3),
         'relief': [round(lo), round(hi), step],
         'roads': [len(r) for r in roads],
@@ -586,8 +789,6 @@ def place_road_labels(names):
     cands.sort()
     chosen, by_name = [], {}
     for cls, _neg, _k, x, y, ang, name in cands:
-        if math.hypot(x, y) > 3300:
-            continue
         near = False
         for cx, cy, *_ in chosen:
             if (cx - x) ** 2 + (cy - y) ** 2 < 170 ** 2:
@@ -614,21 +815,45 @@ def main(argv):
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(WORK, exist_ok=True)
     wanted = set(argv[1:])
-    results = []
-    for city in CITIES:
-        if wanted and city['id'] not in wanted:
+    pbf = download(PBF_URL, os.path.join(WORK, 'israel.osm.pbf'))
+    bounds, places = admin_index(pbf)
+    cities, missing = [], []
+    for auth in AUTHORITIES:
+        if wanted and auth[0] not in wanted:
             continue
-        proj = Projection(city['lat'], city['lon'])
-        elev = elevation_grid(city, proj)
-        results.append(build_city(city, osm_features(city, proj), elev))
-    index = {
-        'v': 1,
-        'attribution': ATTRIBUTION,
-        'cities': [{'id': c['id'], 'he': c['he'], 'R': c['R'], 'center': [c['lat'], c['lon']]} for c in CITIES],
-    }
-    with open(os.path.join(OUT, 'index.json'), 'w', encoding='utf-8') as f:
-        json.dump(index, f, ensure_ascii=False, indent=1)
-    log('done', json.dumps(results, ensure_ascii=False))
+        c = resolve(auth, bounds, places)
+        if c:
+            cities.append(c)
+        else:
+            missing.append(auth[0])
+    log('resolved', len(cities), 'missing', missing)
+    extract_all(pbf, cities)
+    results = []
+    for city in cities:
+        try:
+            proj = Projection(city['lat'], city['lon'])
+            results.append(build_city(city, osm_features(city), elevation_grid(city, proj)))
+        except Exception as e:  # one bad town should not stop the rest
+            log('FAILED', city['id'], repr(e))
+    built = {r['id']: r for r in results}
+    # Keep maps built earlier for authorities not rebuilt this time.
+    index_path = os.path.join(OUT, 'index.json')
+    old = {}
+    if os.path.exists(index_path):
+        for c in json.load(open(index_path, encoding='utf-8')).get('cities', []):
+            old[c['id']] = c
+    entries = []
+    for aid, he, _alts in AUTHORITIES:
+        c = next((c for c in cities if c['id'] == aid), None)
+        if aid in built and c:
+            r = built[aid]
+            entries.append({'id': aid, 'he': he, 'R': r['R'], 'area': r['area'], 'capacity': r['capacity'],
+                            'center': [round(c['lat'], 5), round(c['lon'], 5)]})
+        elif aid in old and os.path.exists(os.path.join(OUT, aid + '.json')):
+            entries.append(old[aid])
+    with open(index_path, 'w', encoding='utf-8') as f:
+        json.dump({'v': 2, 'attribution': ATTRIBUTION, 'cities': entries}, f, ensure_ascii=False, indent=1)
+    log('done', len(entries), 'maps;', json.dumps(results, ensure_ascii=False))
 
 
 if __name__ == '__main__':

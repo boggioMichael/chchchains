@@ -17,11 +17,13 @@ import build  # noqa: E402
 def main():
     tmp = tempfile.mkdtemp()
     build.OUT = tmp
-    city = dict(id='test-city', he='עיר בדיקה', lat=32.07, lon=34.78, R=3200)
+    city = dict(id='test-city', he='עיר בדיקה', lat=32.07, lon=34.78)
     proj = build.Projection(city['lat'], city['lon'])
+    # City limits: a 5 × 4 km rectangle around the centre (lon/lat, as OSM gives them).
+    city['boundary'] = [[[list(proj.lonlat(x, y)) for x, y in [(-2500, -2000), (2500, -2000), (2500, 2000), (-2500, 2000), (-2500, -2000)]]]]
 
     # Elevation: sea west of x = -1500 m, a 120 m hill around (1200, -800).
-    E = city['R'] + build.MARGIN
+    E = build.R_MAX + build.MARGIN
     n = int(round(2 * E / build.GRID)) + 1
     xs = -E + np.arange(n) * build.GRID
     X, Y = np.meshgrid(xs, xs)
@@ -45,7 +47,7 @@ def main():
     features.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': [ll(0, -3000), ll(0, 3000)]},
                      'properties': {'railway': 'light_rail'}})
     # The coastline runs north to south along x = -1500 with a small bump; walking it, land is on the left (east).
-    coast = [ll(-1500 + (200 if -300 < y < 300 else 0), y) for y in range(-3700, 3701, 100)]
+    coast = [ll(-1500 + (200 if -300 < y < 300 else 0), y) for y in range(-4200, 4201, 100)]
     features.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': coast},
                      'properties': {'natural': 'coastline'}})
     park = [ll(500 + 300 * math.cos(a / 10), 900 + 200 * math.sin(a / 10)) for a in range(63)]
@@ -60,6 +62,16 @@ def main():
 
     stats = build.build_city(city, features, (grid, E))
     data = json.load(open(os.path.join(tmp, 'test-city.json'), encoding='utf-8'))
+    # The arena is the city limits: 20 km², so it holds 40 people, and its mask agrees with its outline.
+    assert abs(data['area'] - 20) < 0.6, data['area']
+    assert data['capacity'] == 40
+    arena = data['arena']
+    assert sum(arena['rle']) == arena['n'] ** 2
+    inside = sum(arena['rle'][1::2]) * arena['cell'] ** 2 / 1e6
+    assert abs(inside - 20) < 0.8, inside
+    assert 3100 < data['R'] < 3300, data['R']
+    xs = [r[i] for r in arena['rings'] for i in range(0, len(r), 2)]
+    assert -2560 < min(xs) < -2440 and 2440 < max(xs) < 2560, (min(xs), max(xs))
     assert os.path.getsize(os.path.join(tmp, 'test-city.jpg')) > 5000
     assert 0.15 < stats['sea'] < 0.45, stats
     assert data['sea'] and all(len(r) >= 8 for r in data['sea'])
@@ -69,12 +81,20 @@ def main():
     heights = {h for h, _ in data['contours']['lines']}
     assert max(heights) >= 100 and min(heights) >= 5, heights
     assert len(data['roads'][0]) >= 4 and len(data['roads'][2]) == 13
-    assert all(abs(v) <= 3500 for road in data['roads'][2] for v in road), 'clipped to the square'
+    assert all(abs(v) <= E for road in data['roads'][2] for v in road), 'clipped to the square'
     assert len(data['rail']) == 1 and len(data['green']) == 1 and not data['water'], 'pools are skipped'
     names = [lab[4] for lab in data['labels']]
     assert names.count('דרך בדיקה') >= 2, 'the split main road is merged and labelled along its length'
     assert all(abs(lab[2]) <= 900 for lab in data['labels']), 'labels never upside down'
     assert sorted(p[3] for p in data['places']) == ['רובע ב', 'שכונה א'], 'only Hebrew names'
+    # Finding a town: its centre node and the boundary around it (not a same-named one elsewhere).
+    ring = city['boundary'][0][0]
+    far = [[lon + 1, lat] for lon, lat in ring]
+    bounds = {'עיר בדיקה': [('8', [[far]]), ('8', [[ring]])]}
+    places = {'עיר בדיקה': [('town', [34.78, 32.07])]}
+    found = build.resolve(('test-city', 'עיר בדיקה', []), bounds, places)
+    assert found and found['boundary'] == [[ring]] and abs(found['lat'] - 32.07) < 1e-9
+    assert build.resolve(('nowhere', 'אין כזאת', []), bounds, places) is None
     print('ok', json.dumps(stats, ensure_ascii=False))
 
 
