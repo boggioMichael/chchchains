@@ -31,6 +31,8 @@ const CFG = Object.assign(
     skins: 'skins/',
     satellite: null,
     music: [],
+    musicPicks: [],
+    playlist: {},
   },
   globalThis.CHAIN_CONFIG || {},
 );
@@ -2152,13 +2154,48 @@ function ownMusicLinks() {
   $('own-spotify').href = q ? `https://open.spotify.com/search/${encodeURIComponent(q)}` : 'https://open.spotify.com/';
   $('own-youtube').href = q ? `https://music.youtube.com/search?q=${encodeURIComponent(q)}` : 'https://music.youtube.com/';
 }
-$('own-q').addEventListener('input', ownMusicLinks);
+$('own-q').addEventListener('input', () => {
+  ownMusicLinks();
+  renderPicks();
+});
+// Quick searches (config musicPicks): a tap puts the search in the box; then Spotify or YouTube Music.
+function renderPicks() {
+  const q = $('own-q').value.trim();
+  const picks = (Array.isArray(CFG.musicPicks) ? CFG.musicPicks : []).filter((p) => typeof p === 'string' && p.trim()).slice(0, 12);
+  $('own-picks').replaceChildren(
+    ...picks.map((p) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = p;
+      b.className = p === q ? 'on' : '';
+      b.addEventListener('click', () => {
+        $('own-q').value = p;
+        ownMusicLinks();
+        renderPicks();
+      });
+      return b;
+    }),
+  );
+}
+renderPicks();
+// The game's own playlists, when set (config playlist, or CHAIN_PLAYLIST_SPOTIFY / CHAIN_PLAYLIST_YOUTUBE).
+{
+  const pl = CFG.playlist || {};
+  const ok = (u, host) => typeof u === 'string' && new RegExp(`^https://${host}/`).test(u);
+  const sp = ok(pl.spotify, 'open\\.spotify\\.com');
+  const yt = ok(pl.youtube, '(music\\.)?youtube\\.com');
+  if (sp) $('pl-spotify').href = pl.spotify;
+  if (yt) $('pl-youtube').href = pl.youtube;
+  $('pl-spotify').hidden = !sp;
+  $('pl-youtube').hidden = !yt;
+  $('own-playlist').hidden = !sp && !yt;
+}
 $('own-q').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') e.target.blur();
 });
-for (const id of ['own-spotify', 'own-youtube']) {
+for (const id of ['own-spotify', 'own-youtube', 'pl-spotify', 'pl-youtube']) {
   $(id).addEventListener('click', () => {
-    ownMusicLinks();
+    if (id.startsWith('own')) ownMusicLinks();
     if (!audio.muted) {
       audio.setMuted(true);
       setPref('muted', '1');

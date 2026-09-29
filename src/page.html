@@ -184,6 +184,9 @@ a { color: inherit; }
 .app { display: flex; gap: 8px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 14px; min-height: 48px;
   font-weight: 800; font-size: 15px; color: var(--ink); text-decoration: none; background: var(--paper); }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.picks button { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 11px; font-weight: 700; font-size: 13px; }
+.picks button.on { border-color: var(--blue); color: var(--blue); background: #fff; }
 .dot.spotify { background: #1db954; }
 .dot.youtube { background: #ff0033; }
 
@@ -336,6 +339,11 @@ a { color: inherit; }
       <div id="track-list" class="tracks"></div>
       <div class="own" aria-labelledby="own-title">
         <b id="own-title">🎧 המוסיקה שלכם</b>
+        <div id="own-playlist" class="row2" hidden>
+          <a id="pl-spotify" class="app" href="#" target="_blank" rel="noopener"><i class="dot spotify"></i>הפלייליסט בספוטיפיי</a>
+          <a id="pl-youtube" class="app" href="#" target="_blank" rel="noopener"><i class="dot youtube"></i>הפלייליסט ביוטיוב</a>
+        </div>
+        <div id="own-picks" class="picks" aria-label="חיפושים מהירים"></div>
         <input id="own-q" class="search" type="search" placeholder="שיר או אמן (לא חובה)" autocomplete="off" aria-label="שיר או אמן לחפש">
         <div class="row2">
           <a id="own-spotify" class="app" href="https://open.spotify.com/" target="_blank" rel="noopener"><i class="dot spotify"></i>בספוטיפיי</a>

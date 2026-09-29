@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-GYaTDexAm4aj3g6t/J96twjf1ewq750vuegRo5OpM7c='; style-src 'sha256-o7ct99op00wgBL3PHKxsnGigzFbby0TBs4iGpNXwRqA='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-J6HEaeMZnFBAITYslw8xL4Bp0bq+/D1D0aMSbxyTue4=' 'sha256-eRozD9B7GREICmfCEIIMfXlTOBM2AV7vZVTnQhOl4xI='; style-src 'sha256-plSiUcAFRoOI0Ge0PmpxhEhF/EI1y1Kg5cnZcabfKC4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -203,6 +203,9 @@ a { color: inherit; }
 .app { display: flex; gap: 8px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 14px; min-height: 48px;
   font-weight: 800; font-size: 15px; color: var(--ink); text-decoration: none; background: var(--paper); }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.picks button { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 11px; font-weight: 700; font-size: 13px; }
+.picks button.on { border-color: var(--blue); color: var(--blue); background: #fff; }
 .dot.spotify { background: #1db954; }
 .dot.youtube { background: #ff0033; }
 
@@ -356,6 +359,11 @@ a { color: inherit; }
       <div id="track-list" class="tracks"></div>
       <div class="own" aria-labelledby="own-title">
         <b id="own-title">🎧 המוסיקה שלכם</b>
+        <div id="own-playlist" class="row2" hidden>
+          <a id="pl-spotify" class="app" href="#" target="_blank" rel="noopener"><i class="dot spotify"></i>הפלייליסט בספוטיפיי</a>
+          <a id="pl-youtube" class="app" href="#" target="_blank" rel="noopener"><i class="dot youtube"></i>הפלייליסט ביוטיוב</a>
+        </div>
+        <div id="own-picks" class="picks" aria-label="חיפושים מהירים"></div>
         <input id="own-q" class="search" type="search" placeholder="שיר או אמן (לא חובה)" autocomplete="off" aria-label="שיר או אמן לחפש">
         <div class="row2">
           <a id="own-spotify" class="app" href="https://open.spotify.com/" target="_blank" rel="noopener"><i class="dot spotify"></i>בספוטיפיי</a>
@@ -393,7 +401,7 @@ a { color: inherit; }
     <button id="share-close" class="secondary" type="button">סגירה</button>
   </div>
 </section>
-<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","party":"עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[]};</script>
+<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","party":"עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[],"musicPicks":["Hamilton","Wicked","Bo Burnham Inside","David Bowie Changes","David Bowie Life on Mars","אביתר בנאי","יוסי בנאי"],"playlist":{"spotify":"","youtube":""}};</script>
 <script>
 (() => {
 'use strict';
@@ -5895,6 +5903,8 @@ const CFG = Object.assign(
     skins: 'skins/',
     satellite: null,
     music: [],
+    musicPicks: [],
+    playlist: {},
   },
   globalThis.CHAIN_CONFIG || {},
 );
@@ -8016,13 +8026,48 @@ function ownMusicLinks() {
   $('own-spotify').href = q ? `https://open.spotify.com/search/${encodeURIComponent(q)}` : 'https://open.spotify.com/';
   $('own-youtube').href = q ? `https://music.youtube.com/search?q=${encodeURIComponent(q)}` : 'https://music.youtube.com/';
 }
-$('own-q').addEventListener('input', ownMusicLinks);
+$('own-q').addEventListener('input', () => {
+  ownMusicLinks();
+  renderPicks();
+});
+// Quick searches (config musicPicks): a tap puts the search in the box; then Spotify or YouTube Music.
+function renderPicks() {
+  const q = $('own-q').value.trim();
+  const picks = (Array.isArray(CFG.musicPicks) ? CFG.musicPicks : []).filter((p) => typeof p === 'string' && p.trim()).slice(0, 12);
+  $('own-picks').replaceChildren(
+    ...picks.map((p) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = p;
+      b.className = p === q ? 'on' : '';
+      b.addEventListener('click', () => {
+        $('own-q').value = p;
+        ownMusicLinks();
+        renderPicks();
+      });
+      return b;
+    }),
+  );
+}
+renderPicks();
+// The game's own playlists, when set (config playlist, or CHAIN_PLAYLIST_SPOTIFY / CHAIN_PLAYLIST_YOUTUBE).
+{
+  const pl = CFG.playlist || {};
+  const ok = (u, host) => typeof u === 'string' && new RegExp(`^https://${host}/`).test(u);
+  const sp = ok(pl.spotify, 'open\\.spotify\\.com');
+  const yt = ok(pl.youtube, '(music\\.)?youtube\\.com');
+  if (sp) $('pl-spotify').href = pl.spotify;
+  if (yt) $('pl-youtube').href = pl.youtube;
+  $('pl-spotify').hidden = !sp;
+  $('pl-youtube').hidden = !yt;
+  $('own-playlist').hidden = !sp && !yt;
+}
 $('own-q').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') e.target.blur();
 });
-for (const id of ['own-spotify', 'own-youtube']) {
+for (const id of ['own-spotify', 'own-youtube', 'pl-spotify', 'pl-youtube']) {
   $(id).addEventListener('click', () => {
-    ownMusicLinks();
+    if (id.startsWith('own')) ownMusicLinks();
     if (!audio.muted) {
       audio.setMuted(true);
       setPref('muted', '1');

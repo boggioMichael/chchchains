@@ -55,6 +55,13 @@ function config() {
       : (fromFile.satellite ?? null),
     // Licensed songs in docs/music, e.g. [{ "title": "…", "url": "song.mp3", "credit": "…" }].
     music: fromFile.music ?? [],
+    // Quick searches in the music sheet: each opens the player's own Spotify or YouTube Music at that search.
+    musicPicks: fromFile.musicPicks ?? ['Hamilton', 'Wicked', 'Bo Burnham Inside', 'David Bowie Changes', 'David Bowie Life on Mars', 'אביתר בנאי', 'יוסי בנאי'],
+    // The game's own playlists, e.g. { "spotify": "https://open.spotify.com/playlist/…", "youtube": "https://music.youtube.com/playlist?list=…" }.
+    playlist: {
+      spotify: env.CHAIN_PLAYLIST_SPOTIFY ?? fromFile.playlist?.spotify ?? '',
+      youtube: env.CHAIN_PLAYLIST_YOUTUBE ?? fromFile.playlist?.youtube ?? '',
+    },
   };
 }
 

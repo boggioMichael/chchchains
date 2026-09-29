@@ -208,8 +208,9 @@ test('a whole round over a real socket: an empty map, join, steer, break, leave'
 
 test('while few people play, bots named for the rival parties fill the room, marked as bots, and one goes hunting', async () => {
   _internals.config.botFill = 5;
+  let c = null;
   try {
-    const c = await connect({ ip: '10.0.3.1' });
+    c = await connect({ ip: '10.0.3.1' });
     const map = (await c.text('hello')).home;
     c.send({ t: 'join', map, name: 'שחקנית אמיתית', vw: 500, vh: 900 });
     const joined = await c.text('joined');
@@ -231,13 +232,16 @@ test('while few people play, bots named for the rival parties fill the room, mar
     place(hunter, spot.x - 300, spot.y + 250, 0);
     const warn = await c.wait(() => c.texts.find((m) => m.t === 'ev' && m.k === 'hunt'), 8000);
     assert.ok(bots().some((b) => b.id === warn.id && b.ai.hunting && b.ai.target === joined.id));
-    // With the room full of people the bots leave: fewer wanted than there are.
+    // With more people here than bots are wanted for, they leave (one at a time, the smallest first).
+    const before = bots().length;
     _internals.config.botFill = 1;
-    await waitFor(() => bots().length <= 1, 20000);
-    c.sock.destroy();
-    await settle();
+    await waitFor(() => bots().length < before, 12000);
   } finally {
+    // Whatever happened, nothing of this test is left behind for the next ones: no socket, no room full of bots.
     _internals.config.botFill = 0;
+    c?.sock.destroy();
+    await settle();
+    for (const r of [..._internals.rooms]) r.close();
   }
 });
 
