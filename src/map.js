@@ -9,7 +9,7 @@ import { arenaOf } from './arena.js';
 
 const TILE_PX = 512; // tile size in device pixels
 const CELL = 256; // spatial index cell, map units
-const MAX_TILES = 40;
+const MAX_TILES = 64;
 
 export const MAP_STYLE = {
   land: '#f3efe6',
@@ -288,9 +288,10 @@ export class CityMap {
    * one); the rest show the terrain alone until a later frame paints them.
    */
   draw(ctx, cx, cy, zoom, W, H, dpr, budgetMs = 7) {
-    const scale = Math.min(2, dpr);
-    const devZoom = zoom * scale;
-    const level = Math.round(Math.log2(devZoom) * 2) / 2; // half-octave steps; tiles are stretched in between
+    const devZoom = zoom * dpr;
+    // Tiles are painted at the screen's own pixel density, a little finer than needed (half-octave steps, rounded
+    // up), so they are only ever drawn smaller: sharp lines and letters, never a stretched tile.
+    const level = Math.ceil(Math.log2(devZoom) * 2 - 0.05) / 2;
     const tz = 2 ** level; // tile pixels per map unit
     const tw = TILE_PX / tz; // map units per tile
     const vx0 = cx - W / 2 / zoom;
@@ -309,8 +310,13 @@ export class CityMap {
       }
     }
     want.sort((a, b) => a.d - b.d);
+    // While the tiles of a new zoom level are being painted, the last level's tiles stand in for the missing ones
+    // (still sharp, a little large or small), rather than the soft terrain picture.
+    const missing = want.some(({ tx, ty }) => !this.tiles.has(`${level}:${tx}:${ty}`));
+    const stand = missing && this.shownLevel !== undefined && this.shownLevel !== level ? this.drawCached(ctx, this.shownLevel, cx, cy, zoom, W, H) : false;
     const start = performance.now();
     let painted = 0;
+    let complete = true;
     const back = this.opts.sat && this.sat ? this.sat : this.terrain;
     for (const { tx, ty } of want) {
       const key = `${level}:${tx}:${ty}`;
@@ -325,13 +331,33 @@ export class CityMap {
         this.tiles.delete(key); // most recently used last
         this.tiles.set(key, tile);
         ctx.drawImage(tile, sx, sy, size + 0.5, size + 0.5);
-      } else if (back && !xyz) {
-        // Not painted yet: the terrain alone for a frame or two.
-        const k = back.naturalWidth / (2 * this.E);
-        ctx.drawImage(back, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
+      } else {
+        complete = false;
+        if (back && !xyz && !stand) {
+          // Nothing to stand in: the terrain alone for a frame or two.
+          const k = back.naturalWidth / (2 * this.E);
+          ctx.drawImage(back, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
+        }
       }
     }
+    if (complete) this.shownLevel = level;
     while (this.tiles.size > MAX_TILES) this.tiles.delete(this.tiles.keys().next().value);
+  }
+
+  /** The tiles of `level` already painted, where they fall on the screen; true if any were drawn. */
+  drawCached(ctx, level, cx, cy, zoom, W, H) {
+    const tw = TILE_PX / 2 ** level;
+    const size = tw * zoom;
+    let any = false;
+    for (let ty = Math.floor((cy - H / 2 / zoom) / tw); ty <= Math.floor((cy + H / 2 / zoom) / tw); ty++) {
+      for (let tx = Math.floor((cx - W / 2 / zoom) / tw); tx <= Math.floor((cx + W / 2 / zoom) / tw); tx++) {
+        const tile = this.tiles.get(`${level}:${tx}:${ty}`);
+        if (!tile) continue;
+        ctx.drawImage(tile, (tx * tw - cx) * zoom + W / 2, (ty * tw - cy) * zoom + H / 2, size + 0.5, size + 0.5);
+        any = true;
+      }
+    }
+    return any;
   }
 
   paintTile(tx, ty, tw, tz) {
@@ -384,6 +410,17 @@ export class CityMap {
       stroke(roads[0], '#ffe9a8', Math.max(1.8 * px, widths[0] * 0.4));
       stroke(by('motorway'), '#ffc766', Math.max(2 * px, widths[0] * 0.45));
       g.globalAlpha = 1;
+      // Close up, the buildings' outlines over the picture: sharp edges where the 10 m picture is soft.
+      if (this.detail && tz >= 0.45) {
+        const blds = by('building');
+        if (blds.length) {
+          g.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+          g.lineWidth = Math.max(px, 0.9);
+          g.beginPath();
+          for (const f of blds) ringPath(g, f.geom[0]);
+          g.stroke();
+        }
+      }
     } else {
       // Land use first, so water, beaches and parks lie over it.
       if (this.detail) for (const cls in AREA_STYLE) fill(`area:${cls}`, AREA_STYLE[cls]);
@@ -486,7 +523,7 @@ export class CityMap {
     const kx = 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi);
     const toLon = (x) => lon0 + (x * s) / kx;
     const toLat = (y) => lat0 - (y * s) / ky;
-    const mpp = s / (zoom * Math.min(2, dpr)); // real metres per device pixel
+    const mpp = s / (zoom * dpr); // real metres per device pixel
     const z = Math.max(1, Math.min(this.xyz.max || 19, Math.round(Math.log2((40075016 * Math.cos(phi)) / (256 * mpp)))));
     const n = 2 ** z;
     const tileX = (lon) => ((lon + 180) / 360) * n;

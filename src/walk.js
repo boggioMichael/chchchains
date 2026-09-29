@@ -4,6 +4,7 @@
 // People wait on the pavements and wave when you come near; walk up to them and they join your chain, following
 // behind you. Nothing here talks to the server: it is a walk on this phone.
 import { AREA_STYLE } from './map.js';
+import { pacer } from './pace.js';
 import {
   TILE, FLOOR, ROADS, streetCity, streetNamer, personModel, treeModel, seeded, rgb, hash2, inRing, nearestOnRing,
 } from './street3d.js';
@@ -17,6 +18,8 @@ const MAX_PEOPLE = 420;
 const SIGNS_MAX = 64;
 const WAITING = 26; // people waiting around you at any time
 const CHAIN = '#1f5fd6'; // the shirts of people in your chain
+const NEAR = 256; // metres a side of the sharp ground painted around you
+const NEAR_PX = 1024; // its pixels a side: 4 a metre
 const GROUND_CELL = 40;
 const GROUND_N = 28; // squares a side: 1120 m, past the haze
 const STONE = new Set(['jerusalem', 'maale-adumim', 'beitar-illit', 'beit-shemesh', 'modiin-illit', 'safed', 'ariel']);
@@ -125,12 +128,20 @@ in vec3 v_p;
 out vec4 o;
 uniform sampler2D u_ground;
 uniform sampler2D u_water;
+uniform sampler2D u_nearGround;
+uniform sampler2D u_nearWater;
+uniform vec3 u_near;
 uniform float u_E;
 void main() {
   vec2 uv = (v_p.xz + u_E) / (2.0 * u_E);
-  vec3 land = texture(u_ground, uv).rgb;
+  // Around you, a sharp picture of the ground (4 pixels a metre); further off, the whole town's (softer), blended
+  // over the last few metres.
+  vec2 nuv = (v_p.xz - u_near.xy) / u_near.z;
+  float edge = min(min(nuv.x, 1.0 - nuv.x), min(nuv.y, 1.0 - nuv.y));
+  float nf = u_near.z > 0.0 ? smoothstep(0.0, 0.1, edge) : 0.0;
+  vec3 land = mix(texture(u_ground, uv).rgb, texture(u_nearGround, nuv).rgb, nf);
   land *= 0.9 + vnoise(v_p.xz * 0.6) * 0.12 + vnoise(v_p.xz * 3.1) * 0.06;
-  float w = texture(u_water, uv).r;
+  float w = mix(texture(u_water, uv).r, texture(u_nearWater, nuv).r, nf);
   vec3 c = land;
   if (w > 0.02) {
     vec3 V = normalize(v_p - u_eye);
@@ -608,8 +619,7 @@ export function createWalk(canvas, ui, hooks = {}) {
   let streetWait = 0;
   let miniWait = 0;
   let scale = 1;
-  let slow = 0;
-  let fast = 0;
+  const pace = pacer({ every: 60 });
   let W = 1;
   let H = 1;
   let fovy = 1;
@@ -641,6 +651,7 @@ export function createWalk(canvas, ui, hooks = {}) {
     tex = null;
     map = null;
     sky = null;
+    near.at = near.ground = near.water = null;
     tiles.clear();
   });
   function init() {
@@ -648,7 +659,7 @@ export function createWalk(canvas, ui, hooks = {}) {
     if (!gl) return false;
     P = {
       sky: program(gl, SKY_VS, SKY_FS, ['u_fw', 'u_rt', 'u_up', 'u_tan']),
-      ground: program(gl, GROUND_VS, GROUND_FS, ['u_ground', 'u_water', 'u_E', 'u_origin']),
+      ground: program(gl, GROUND_VS, GROUND_FS, ['u_ground', 'u_water', 'u_nearGround', 'u_nearWater', 'u_near', 'u_E', 'u_origin']),
       road: program(gl, ROAD_VS, ROAD_FS, ['u_eps']),
       building: program(gl, BUILDING_VS, BUILDING_FS, []),
       tree: program(gl, TREE_VS, TREE_FS, []),
@@ -707,29 +718,32 @@ export function createWalk(canvas, ui, hooks = {}) {
     return true;
   }
 
-  /** The land under everything, painted once per city: land use, parks, beaches; the sea and lakes in a mask. */
-  function paintGround(m) {
-    const E = m.E;
-    const size = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE));
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
+  /**
+   * The land (land use, parks, beaches, the sea) for the square [x0, x0 + size]² into a canvas of px², and the sea
+   * and lakes, white on black, into `mask` (half as many pixels a side, or as many).
+   */
+  function paintLand(c, mask, x0, y0, size, feats) {
+    const px = c.width;
     const g = c.getContext('2d');
-    const k = size / (2 * E);
-    g.setTransform(k, 0, 0, k, E * k, E * k);
+    const k = px / size;
+    g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
     g.fillStyle = GROUND.land;
-    g.fillRect(-E, -E, 2 * E, 2 * E);
-    const fill = (layer, color) => {
-      const list = m.features.filter((f) => f.layer === layer);
-      if (!list.length) return;
-      g.fillStyle = color;
-      g.beginPath();
+    g.fillRect(x0, y0, size, size);
+    const path = (ctx, list) => {
+      ctx.beginPath();
       for (const f of list) {
         for (const ring of f.geom) {
-          g.moveTo(ring[0], ring[1]);
-          for (let i = 2; i < ring.length; i += 2) g.lineTo(ring[i], ring[i + 1]);
-          g.closePath();
+          ctx.moveTo(ring[0], ring[1]);
+          for (let i = 2; i < ring.length; i += 2) ctx.lineTo(ring[i], ring[i + 1]);
+          ctx.closePath();
         }
       }
+    };
+    const fill = (layer, color) => {
+      const list = feats.filter((f) => f.layer === layer);
+      if (!list.length) return;
+      g.fillStyle = color;
+      path(g, list);
       g.fill('evenodd');
     };
     for (const cls of Object.keys(AREA_STYLE)) fill(`area:${cls}`, GROUND[cls] || GROUND.land);
@@ -737,27 +751,20 @@ export function createWalk(canvas, ui, hooks = {}) {
     fill('green', GROUND.green);
     fill('sea', GROUND.water);
     fill('water', GROUND.water);
-    // The sea and lakes again, white on black, for the water's own shading.
-    const w = document.createElement('canvas');
-    w.width = w.height = size >> 1;
-    const wg = w.getContext('2d');
-    wg.setTransform(k / 2, 0, 0, k / 2, (E * k) / 2, (E * k) / 2);
+    const wg = mask.getContext('2d');
+    const mk = mask.width / size;
+    wg.setTransform(mk, 0, 0, mk, -x0 * mk, -y0 * mk);
     wg.fillStyle = '#000';
-    wg.fillRect(-E, -E, 2 * E, 2 * E);
+    wg.fillRect(x0, y0, size, size);
     wg.fillStyle = '#fff';
-    wg.beginPath();
-    for (const f of m.features) {
-      if (f.layer !== 'sea' && f.layer !== 'water') continue;
-      for (const ring of f.geom) {
-        wg.moveTo(ring[0], ring[1]);
-        for (let i = 2; i < ring.length; i += 2) wg.lineTo(ring[i], ring[i + 1]);
-        wg.closePath();
-      }
-    }
+    path(
+      wg,
+      feats.filter((f) => f.layer === 'sea' || f.layer === 'water'),
+    );
     wg.fill('evenodd');
     wg.strokeStyle = '#fff';
     wg.lineCap = 'round';
-    for (const f of m.features) {
+    for (const f of feats) {
       if (f.layer !== 'river') continue;
       wg.lineWidth = f.extra === 1 ? 14 : 5;
       wg.beginPath();
@@ -765,25 +772,36 @@ export function createWalk(canvas, ui, hooks = {}) {
       for (let i = 2; i < f.geom.length; i += 2) wg.lineTo(f.geom[i], f.geom[i + 1]);
       wg.stroke();
     }
-    const texture = (source, one = false) => {
-      const t = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, t);
-      if (one) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, source);
-      else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      const an = gl.getExtension('EXT_texture_filter_anisotropic');
-      if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
-      return t;
-    };
+  }
+  function texture(source, one = false, t = gl.createTexture()) {
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    if (one) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, source);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const an = gl.getExtension('EXT_texture_filter_anisotropic');
+    if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    return t;
+  }
+
+  /** The whole town's ground, painted once per city. */
+  function paintGround(m) {
+    const E = m.E;
+    const size = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const w = document.createElement('canvas');
+    w.width = w.height = size >> 1;
+    paintLand(c, w, -E, -E, 2 * E, m.features);
     if (tex) {
       gl.deleteTexture(tex.ground);
       gl.deleteTexture(tex.water);
     }
     tex = { ground: texture(c), water: texture(w, true), E };
+    near.at = null; // the sharp ground is painted again, for this town
     if (!shared.groundVao) {
       // The ground's grid, around (0, 0); it moves with the walker in steps of one square.
       const N = GROUND_N;
@@ -811,6 +829,23 @@ export function createWalk(canvas, ui, hooks = {}) {
       shared.groundCount = idx.length;
       gl.bindVertexArray(null);
     }
+  }
+
+  /** The sharp ground around (cx, cy): painted again whenever you have walked a quarter of the way to its edge. */
+  const near = { at: null, c: null, w: null, ground: null, water: null };
+  function paintNear(cx, cy) {
+    if (!near.c) {
+      near.c = document.createElement('canvas');
+      near.c.width = near.c.height = NEAR_PX;
+      near.w = document.createElement('canvas');
+      near.w.width = near.w.height = NEAR_PX;
+    }
+    const x0 = cx - NEAR / 2;
+    const y0 = cy - NEAR / 2;
+    paintLand(near.c, near.w, x0, y0, NEAR, map.query(x0, y0, x0 + NEAR, y0 + NEAR));
+    near.ground = texture(near.c, false, near.ground || undefined);
+    near.water = texture(near.w, true, near.water || undefined);
+    near.at = [x0, y0];
   }
 
   // ---------------------------------------------------------------------------------------------- tiles
@@ -1404,7 +1439,7 @@ export function createWalk(canvas, ui, hooks = {}) {
   // ---------------------------------------------------------------------------------------------- HUD
   function drawMini() {
     const c = ui.mini;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
     const size = c.clientWidth || 120;
     if (c.width !== Math.round(size * dpr)) {
       c.width = c.height = Math.round(size * dpr);
@@ -1446,7 +1481,7 @@ export function createWalk(canvas, ui, hooks = {}) {
 
   // ---------------------------------------------------------------------------------------------- drawing
   function resize() {
-    const dpr = Math.min(1.75, window.devicePixelRatio || 1) * scale;
+    const dpr = Math.min(3, window.devicePixelRatio || 1) * scale;
     W = window.innerWidth;
     H = window.innerHeight;
     const w = Math.max(1, Math.round(W * dpr));
@@ -1509,6 +1544,15 @@ export function createWalk(canvas, ui, hooks = {}) {
     gl.bindTexture(gl.TEXTURE_2D, tex.water);
     gl.uniform1i(P.ground.u.u_water, 1);
     gl.uniform1f(P.ground.u.u_E, tex.E);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, near.ground || tex.ground);
+    gl.uniform1i(P.ground.u.u_nearGround, 2);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, near.water || tex.water);
+    gl.uniform1i(P.ground.u.u_nearWater, 3);
+    gl.activeTexture(gl.TEXTURE0);
+    if (near.at) gl.uniform3f(P.ground.u.u_near, near.at[0], near.at[1], NEAR);
+    else gl.uniform3f(P.ground.u.u_near, 0, 0, 0);
     gl.uniform2f(P.ground.u.u_origin, Math.round(me.x / GROUND_CELL) * GROUND_CELL, Math.round(me.y / GROUND_CELL) * GROUND_CELL);
     gl.bindVertexArray(shared.groundVao);
     gl.drawElements(gl.TRIANGLES, shared.groundCount, gl.UNSIGNED_SHORT, 0);
@@ -1700,6 +1744,8 @@ export function createWalk(canvas, ui, hooks = {}) {
       joined = 0;
       target = null;
       rand = seeded((Date.now() & 0xffff) + 7);
+      // Start at twice the screen's width in pixels (sharp on most phones, easy on them); finer when it copes.
+      scale = Math.min(2, window.devicePixelRatio || 1) / Math.min(3, window.devicePixelRatio || 1);
       ui.count.querySelector('b').textContent = '0';
       resize();
       buildTiles(350); // the nearest first; the rest come in over the next frames, behind the haze
@@ -1739,6 +1785,9 @@ export function createWalk(canvas, ui, hooks = {}) {
     if (!ready || !gl || lost) return;
     time += dt;
     moveMe(dt);
+    if (!near.at || Math.hypot(me.x - (near.at[0] + NEAR / 2), me.y - (near.at[1] + NEAR / 2)) > NEAR / 4) {
+      paintNear(Math.round(me.x / 16) * 16, Math.round(me.y / 16) * 16);
+    }
     updatePeople(dt);
     buildTiles(6);
     draw();
@@ -1759,18 +1808,10 @@ export function createWalk(canvas, ui, hooks = {}) {
       drawMini();
       miniWait = 0.12;
     }
-    // Keep the frame rate: a lower resolution when the phone struggles, back up when it copes.
-    if (dt > 1 / 40) slow++;
-    else slow = Math.max(0, slow - 1);
-    if (dt < 1 / 55) fast++;
-    else fast = 0;
-    if (slow > 40 && scale > 0.55) {
-      scale = Math.max(0.55, scale - 0.15);
-      slow = 0;
-    } else if (fast > 240 && scale < 1) {
-      scale = Math.min(1, scale + 0.15);
-      fast = 0;
-    }
+    // As sharp as the phone manages: fewer pixels while it cannot keep up, more when it copes (pace.js).
+    const step = pace(dt);
+    if (step < 0 && scale > 0.4) scale = Math.max(0.4, scale - 0.12);
+    else if (step > 0 && scale < 1) scale = Math.min(1, scale + 0.12);
   }
 
   return {

@@ -11,6 +11,7 @@ import { figure, drawFlag, FIG } from './people.js';
 import { createAudio, TRACKS } from './audio.js';
 import { NAME, SLUG, drawWordmark } from './brand.js';
 import { createWalk } from './walk.js';
+import { pacer } from './pace.js';
 import { cleanName } from './names.js';
 import { AVATARS, avatar, allSkins, loadSuppliedSkins } from './avatars.js';
 import {
@@ -65,7 +66,8 @@ function setPref(key, value) {
 let W = 0;
 let H = 0;
 let DPR = 1;
-let dprCap = 2;
+let dprCap = Math.min(3, window.devicePixelRatio || 1); // the screen's own sharpness, unless the phone cannot keep up
+const pace = pacer();
 const miniSize = { w: 110, h: 110 };
 function resize() {
   DPR = Math.min(dprCap, window.devicePixelRatio || 1);
@@ -1497,12 +1499,14 @@ function updateStats(now) {
 }
 
 function trackPerformance(dt) {
-  frameTimes.push(dt);
-  if (frameTimes.length < 120) return;
-  const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
-  frameTimes = [];
-  if (avg > 1 / 40 && dprCap > 1) {
-    dprCap = Math.max(1, dprCap - 0.5);
+  // Sharp by default (the screen's own pixel density); a step down only while the phone cannot keep up (pace.js).
+  const step = pace(dt);
+  const native = Math.min(3, window.devicePixelRatio || 1);
+  if (step < 0 && dprCap > 1) {
+    dprCap = Math.max(1, Math.min(dprCap, native) - 0.5);
+    resize();
+  } else if (step > 0 && dprCap < native) {
+    dprCap = Math.min(native, dprCap + 0.5);
     resize();
   }
 }
@@ -1567,7 +1571,7 @@ function knessetBlock(st) {
 function drawKnesset(c, rows) {
   const cssW = c.clientWidth || 300;
   const cssH = Math.round(cssW * 0.52);
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
   c.width = Math.round(cssW * dpr);
   c.height = Math.round(cssH * dpr);
   c.style.height = `${cssH}px`;
@@ -1661,7 +1665,7 @@ function drawRoute(c, st) {
   const Y1 = 4450;
   const cssW = c.clientWidth || 96;
   const cssH = Math.round((cssW * (Y1 - Y0)) / (X1 - X0));
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
   c.width = Math.round(cssW * dpr);
   c.height = Math.round(cssH * dpr);
   c.style.height = `${cssH}px`;
@@ -2118,7 +2122,7 @@ function renderSkinList() {
     b.type = 'button';
     b.className = `skin${s.id === game.skin ? ' on' : ''}`;
     const c = document.createElement('canvas');
-    c.width = c.height = 112;
+    c.width = c.height = 168; // 56 CSS pixels, three times over
     drawSkinInto(c, s.id);
     const label = document.createElement('span');
     label.textContent = s.n ? `${s.n}. ${s.name}` : s.name;
@@ -2483,7 +2487,7 @@ $('waiting-share').addEventListener('click', () => {
 /** The small human chain above the logo: five people of different colours holding hands. */
 function drawMark() {
   const c = $('mark');
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
   c.width = Math.round(230 * dpr);
   c.height = Math.round(70 * dpr);
   const g = c.getContext('2d');

@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { NAME } from './src/brand.js';
 
 const ROOT = new URL('.', import.meta.url).pathname;
-const MODULES = ['brand', 'sim', 'names', 'arena', 'streets', 'protocol', 'net', 'map', 'street3d', 'walk', 'people', 'portraits', 'avatars', 'audio', 'story', 'campaign', 'client']; // dependency order
+const MODULES = ['brand', 'pace', 'sim', 'names', 'arena', 'streets', 'protocol', 'net', 'map', 'street3d', 'walk', 'people', 'portraits', 'avatars', 'audio', 'story', 'campaign', 'client']; // dependency order
 
 function bundle() {
   const parts = ['(() => {', "'use strict';", 'const __m = {};'];

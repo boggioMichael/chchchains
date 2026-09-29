@@ -15,9 +15,11 @@ export function figure(color, pose = 'chain', step = 0) {
   let c = cache.get(key);
   if (c) return c;
   c = document.createElement('canvas');
-  c.width = FIG.w;
-  c.height = FIG.h;
+  // Twice the size it is laid out at, so the people stay sharp on sharp screens.
+  c.width = FIG.w * 2;
+  c.height = FIG.h * 2;
   const g = c.getContext('2d');
+  g.scale(2, 2);
   g.lineCap = 'round';
   g.lineJoin = 'round';
   paint(g, '#ffffff', pose, step, 5); // the cut-out edge

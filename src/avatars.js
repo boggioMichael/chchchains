@@ -37,7 +37,9 @@ export const AVATARS = [
 ];
 export const AVATAR_IDS = [...PEOPLE_IDS, ...AVATARS.map((a) => a.id)];
 
-const SIZE = 128;
+const SIZE = 128; // the faces are drawn in these units…
+const RES = 2; // …at twice as many pixels, so they stay sharp on sharp screens
+const PX = SIZE * RES;
 const cache = new Map();
 const supplied = new Map(); // id → { name, image: HTMLImageElement | null, url }
 
@@ -72,7 +74,7 @@ export function skinName(id) {
   return PEOPLE.find((p) => p.id === id)?.name ?? supplied.get(id)?.name ?? AVATARS.find((a) => a.id === id)?.name ?? '';
 }
 
-/** The face for a skin as a 128 × 128 canvas with a white cut-out edge, or null (unknown, or its picture is loading). */
+/** The face for a skin as a square canvas (256 pixels) with a white cut-out edge, or null (unknown, or its picture is loading). */
 export function avatar(id) {
   if (!id) return null;
   let c = cache.get(id);
@@ -81,7 +83,7 @@ export function avatar(id) {
   const spec = AVATARS.find((a) => a.id === id);
   if (person) {
     c = canvas();
-    drawPortrait(c, person, SIZE);
+    drawPortrait(c, person, PX);
     ring(c);
   } else if (spec) c = drawFace(spec);
   else {
@@ -106,13 +108,14 @@ function roundRect(g, x, y, w, h, r) {
 
 function canvas() {
   const c = document.createElement('canvas');
-  c.width = c.height = SIZE;
+  c.width = c.height = PX;
   return c;
 }
 
 /** A white ring around a round picture. */
 function ring(c) {
   const g = c.getContext('2d');
+  g.setTransform(RES, 0, 0, RES, 0, 0);
   g.lineWidth = 6;
   g.strokeStyle = '#ffffff';
   g.beginPath();
@@ -124,6 +127,7 @@ function ring(c) {
 function drawPicture(img) {
   const c = canvas();
   const g = c.getContext('2d');
+  g.scale(RES, RES);
   const r = SIZE / 2 - 5;
   g.save();
   g.beginPath();
@@ -146,6 +150,7 @@ function drawPicture(img) {
 function drawFace(spec) {
   const art = canvas();
   const g = art.getContext('2d');
+  g.scale(RES, RES);
   const tone = TONES[spec.tone] ?? TONES[1];
   const hair = HAIR[spec.color] ?? HAIR.dark;
   const has = (x) => spec.extras.includes(x);
@@ -371,10 +376,10 @@ function drawFace(spec) {
   e.drawImage(art, 0, 0);
   e.globalCompositeOperation = 'source-in';
   e.fillStyle = '#ffffff';
-  e.fillRect(0, 0, SIZE, SIZE);
+  e.fillRect(0, 0, PX, PX);
   for (let k = 0; k < 12; k++) {
     const a = (k / 12) * Math.PI * 2;
-    o.drawImage(edge, Math.cos(a) * 4, Math.sin(a) * 4);
+    o.drawImage(edge, Math.cos(a) * 4 * RES, Math.sin(a) * 4 * RES);
   }
   o.drawImage(art, 0, 0);
   return c;

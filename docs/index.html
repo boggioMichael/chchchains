@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-J6HEaeMZnFBAITYslw8xL4Bp0bq+/D1D0aMSbxyTue4=' 'sha256-7iVbeXai0fg/J0i0QRasuzGCLvfvhvhuzBzu0u2F4Fo='; style-src 'sha256-wyA5Vs7Jjb5DONtEPCkXfKgWg8QeKsRmn+ZDQImenz4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qVxrc0sdKpEHzzajkubYbs4lRtFeZdqzQCxcaaAamxk=' 'sha256-zVR/KsEc9tPtscsyWorArF6Qce1IKlCz47frWOsDdnA='; style-src 'sha256-wyA5Vs7Jjb5DONtEPCkXfKgWg8QeKsRmn+ZDQImenz4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws://127.0.0.1:8080 http://127.0.0.1:8080; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -342,7 +342,7 @@ a { color: inherit; }
       <div><b>🤝</b>נותנים יד ומתחברים</div>
     </div>
     <div class="me-row">
-      <button id="skin-btn" type="button" aria-label="בחירת דמות"><canvas id="skin-face" width="96" height="96"></canvas></button>
+      <button id="skin-btn" type="button" aria-label="בחירת דמות"><canvas id="skin-face" width="144" height="144"></canvas></button>
       <div class="name-box">
         <label for="name">השם שלך</label>
         <input id="name" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
@@ -448,7 +448,7 @@ a { color: inherit; }
     <button id="share-close" class="secondary" type="button">סגירה</button>
   </div>
 </section>
-<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","party":"עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[],"musicPicks":["Hamilton","Wicked","Bo Burnham Inside","David Bowie Changes","David Bowie Life on Mars","אביתר בנאי","יוסי בנאי"],"playlist":{"spotify":"","youtube":""}};</script>
+<script>window.CHAIN_CONFIG = {"server":"ws://127.0.0.1:8080/ws","brand":"המשחק של עמך ישראל","party":"עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[],"musicPicks":["Hamilton","Wicked","Bo Burnham Inside","David Bowie Changes","David Bowie Life on Mars","אביתר בנאי","יוסי בנאי"],"playlist":{"spotify":"","youtube":""}};</script>
 <script>
 (() => {
 'use strict';
@@ -492,6 +492,53 @@ function drawWordmark(g, x, y, size, { align = 'center', maxWidth = Infinity, in
 }
 
 return { NAME, SLUG, WORDMARK, drawWordmark };
+})();
+__m.pace = (() => {
+// Ch-ch-chain-ges — drawing as sharp as the phone manages. The map, the people and the streets in 3D are drawn at the
+// screen's own pixel density; this only steps it down while the phone cannot keep up, and back up once it can.
+
+/**
+ * A pacer: call it with each frame's time (seconds); it answers -1 (draw fewer pixels), +1 (more) or 0. Every
+ * `every` frames the middle frame time decides: slower than `slow`, a step down. If the next frames are no quicker,
+ * fewer pixels did not help (a phone saving its battery shows 30 frames a second whatever is drawn), so the step is
+ * taken back and not tried again for a minute. Quicker than `quick`, a step up (not for a while after a step down
+ * that helped, so it does not see-saw). Hiccups (a map loading, the tab coming back) do not count.
+ */
+function pacer({ every = 90, slow = 1 / 40, quick = 1 / 57 } = {}) {
+  let times = [];
+  let clock = 0;
+  let tried = 0; // the middle frame time before a step down, while its effect is being measured
+  let downHold = 0;
+  let upHold = 0;
+  return (dt) => {
+    if (!(dt > 0) || dt > 0.12) {
+      times = [];
+      return 0;
+    }
+    clock += dt;
+    times.push(dt);
+    if (times.length < every) return 0;
+    const middle = times.sort((a, b) => a - b)[times.length >> 1];
+    times = [];
+    if (tried) {
+      const before = tried;
+      tried = 0;
+      if (middle > before * 0.85) {
+        downHold = clock + 60;
+        return 1;
+      }
+      upHold = clock + 20;
+    }
+    if (middle > slow && clock > downHold) {
+      tried = middle;
+      return -1;
+    }
+    if (middle < quick && clock > upHold) return 1;
+    return 0;
+  };
+}
+
+return { pacer };
 })();
 __m.sim = (() => {
 // Ch-ch-chain-ges — the world simulation. Pure logic with no DOM, so the same code runs in the browser (solo play with
@@ -2423,7 +2470,7 @@ __m.map = (() => {
 const { arenaOf } = __m.arena;
 const TILE_PX = 512; // tile size in device pixels
 const CELL = 256; // spatial index cell, map units
-const MAX_TILES = 40;
+const MAX_TILES = 64;
 
 const MAP_STYLE = {
   land: '#f3efe6',
@@ -2702,9 +2749,10 @@ class CityMap {
    * one); the rest show the terrain alone until a later frame paints them.
    */
   draw(ctx, cx, cy, zoom, W, H, dpr, budgetMs = 7) {
-    const scale = Math.min(2, dpr);
-    const devZoom = zoom * scale;
-    const level = Math.round(Math.log2(devZoom) * 2) / 2; // half-octave steps; tiles are stretched in between
+    const devZoom = zoom * dpr;
+    // Tiles are painted at the screen's own pixel density, a little finer than needed (half-octave steps, rounded
+    // up), so they are only ever drawn smaller: sharp lines and letters, never a stretched tile.
+    const level = Math.ceil(Math.log2(devZoom) * 2 - 0.05) / 2;
     const tz = 2 ** level; // tile pixels per map unit
     const tw = TILE_PX / tz; // map units per tile
     const vx0 = cx - W / 2 / zoom;
@@ -2723,8 +2771,13 @@ class CityMap {
       }
     }
     want.sort((a, b) => a.d - b.d);
+    // While the tiles of a new zoom level are being painted, the last level's tiles stand in for the missing ones
+    // (still sharp, a little large or small), rather than the soft terrain picture.
+    const missing = want.some(({ tx, ty }) => !this.tiles.has(`${level}:${tx}:${ty}`));
+    const stand = missing && this.shownLevel !== undefined && this.shownLevel !== level ? this.drawCached(ctx, this.shownLevel, cx, cy, zoom, W, H) : false;
     const start = performance.now();
     let painted = 0;
+    let complete = true;
     const back = this.opts.sat && this.sat ? this.sat : this.terrain;
     for (const { tx, ty } of want) {
       const key = `${level}:${tx}:${ty}`;
@@ -2739,13 +2792,33 @@ class CityMap {
         this.tiles.delete(key); // most recently used last
         this.tiles.set(key, tile);
         ctx.drawImage(tile, sx, sy, size + 0.5, size + 0.5);
-      } else if (back && !xyz) {
-        // Not painted yet: the terrain alone for a frame or two.
-        const k = back.naturalWidth / (2 * this.E);
-        ctx.drawImage(back, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
+      } else {
+        complete = false;
+        if (back && !xyz && !stand) {
+          // Nothing to stand in: the terrain alone for a frame or two.
+          const k = back.naturalWidth / (2 * this.E);
+          ctx.drawImage(back, (tx * tw + this.E) * k, (ty * tw + this.E) * k, tw * k, tw * k, sx, sy, size + 0.5, size + 0.5);
+        }
       }
     }
+    if (complete) this.shownLevel = level;
     while (this.tiles.size > MAX_TILES) this.tiles.delete(this.tiles.keys().next().value);
+  }
+
+  /** The tiles of `level` already painted, where they fall on the screen; true if any were drawn. */
+  drawCached(ctx, level, cx, cy, zoom, W, H) {
+    const tw = TILE_PX / 2 ** level;
+    const size = tw * zoom;
+    let any = false;
+    for (let ty = Math.floor((cy - H / 2 / zoom) / tw); ty <= Math.floor((cy + H / 2 / zoom) / tw); ty++) {
+      for (let tx = Math.floor((cx - W / 2 / zoom) / tw); tx <= Math.floor((cx + W / 2 / zoom) / tw); tx++) {
+        const tile = this.tiles.get(`${level}:${tx}:${ty}`);
+        if (!tile) continue;
+        ctx.drawImage(tile, (tx * tw - cx) * zoom + W / 2, (ty * tw - cy) * zoom + H / 2, size + 0.5, size + 0.5);
+        any = true;
+      }
+    }
+    return any;
   }
 
   paintTile(tx, ty, tw, tz) {
@@ -2798,6 +2871,17 @@ class CityMap {
       stroke(roads[0], '#ffe9a8', Math.max(1.8 * px, widths[0] * 0.4));
       stroke(by('motorway'), '#ffc766', Math.max(2 * px, widths[0] * 0.45));
       g.globalAlpha = 1;
+      // Close up, the buildings' outlines over the picture: sharp edges where the 10 m picture is soft.
+      if (this.detail && tz >= 0.45) {
+        const blds = by('building');
+        if (blds.length) {
+          g.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+          g.lineWidth = Math.max(px, 0.9);
+          g.beginPath();
+          for (const f of blds) ringPath(g, f.geom[0]);
+          g.stroke();
+        }
+      }
     } else {
       // Land use first, so water, beaches and parks lie over it.
       if (this.detail) for (const cls in AREA_STYLE) fill(`area:${cls}`, AREA_STYLE[cls]);
@@ -2900,7 +2984,7 @@ class CityMap {
     const kx = 111412.84 * Math.cos(phi) - 93.5 * Math.cos(3 * phi);
     const toLon = (x) => lon0 + (x * s) / kx;
     const toLat = (y) => lat0 - (y * s) / ky;
-    const mpp = s / (zoom * Math.min(2, dpr)); // real metres per device pixel
+    const mpp = s / (zoom * dpr); // real metres per device pixel
     const z = Math.max(1, Math.min(this.xyz.max || 19, Math.round(Math.log2((40075016 * Math.cos(phi)) / (256 * mpp)))));
     const n = 2 ** z;
     const tileX = (lon) => ((lon + 180) / 360) * n;
@@ -3954,6 +4038,7 @@ __m.walk = (() => {
 // People wait on the pavements and wave when you come near; walk up to them and they join your chain, following
 // behind you. Nothing here talks to the server: it is a walk on this phone.
 const { AREA_STYLE } = __m.map;
+const { pacer } = __m.pace;
 const { TILE, FLOOR, ROADS, streetCity, streetNamer, personModel, treeModel, seeded, rgb, hash2, inRing, nearestOnRing } = __m.street3d;
 const EYE = 1.62; // metres
 const WALK = 3.4; // m/s: a brisk walk (a game, not a stroll)
@@ -3964,6 +4049,8 @@ const MAX_PEOPLE = 420;
 const SIGNS_MAX = 64;
 const WAITING = 26; // people waiting around you at any time
 const CHAIN = '#1f5fd6'; // the shirts of people in your chain
+const NEAR = 256; // metres a side of the sharp ground painted around you
+const NEAR_PX = 1024; // its pixels a side: 4 a metre
 const GROUND_CELL = 40;
 const GROUND_N = 28; // squares a side: 1120 m, past the haze
 const STONE = new Set(['jerusalem', 'maale-adumim', 'beitar-illit', 'beit-shemesh', 'modiin-illit', 'safed', 'ariel']);
@@ -4072,12 +4159,20 @@ in vec3 v_p;
 out vec4 o;
 uniform sampler2D u_ground;
 uniform sampler2D u_water;
+uniform sampler2D u_nearGround;
+uniform sampler2D u_nearWater;
+uniform vec3 u_near;
 uniform float u_E;
 void main() {
   vec2 uv = (v_p.xz + u_E) / (2.0 * u_E);
-  vec3 land = texture(u_ground, uv).rgb;
+  // Around you, a sharp picture of the ground (4 pixels a metre); further off, the whole town's (softer), blended
+  // over the last few metres.
+  vec2 nuv = (v_p.xz - u_near.xy) / u_near.z;
+  float edge = min(min(nuv.x, 1.0 - nuv.x), min(nuv.y, 1.0 - nuv.y));
+  float nf = u_near.z > 0.0 ? smoothstep(0.0, 0.1, edge) : 0.0;
+  vec3 land = mix(texture(u_ground, uv).rgb, texture(u_nearGround, nuv).rgb, nf);
   land *= 0.9 + vnoise(v_p.xz * 0.6) * 0.12 + vnoise(v_p.xz * 3.1) * 0.06;
-  float w = texture(u_water, uv).r;
+  float w = mix(texture(u_water, uv).r, texture(u_nearWater, nuv).r, nf);
   vec3 c = land;
   if (w > 0.02) {
     vec3 V = normalize(v_p - u_eye);
@@ -4555,8 +4650,7 @@ function createWalk(canvas, ui, hooks = {}) {
   let streetWait = 0;
   let miniWait = 0;
   let scale = 1;
-  let slow = 0;
-  let fast = 0;
+  const pace = pacer({ every: 60 });
   let W = 1;
   let H = 1;
   let fovy = 1;
@@ -4588,6 +4682,7 @@ function createWalk(canvas, ui, hooks = {}) {
     tex = null;
     map = null;
     sky = null;
+    near.at = near.ground = near.water = null;
     tiles.clear();
   });
   function init() {
@@ -4595,7 +4690,7 @@ function createWalk(canvas, ui, hooks = {}) {
     if (!gl) return false;
     P = {
       sky: program(gl, SKY_VS, SKY_FS, ['u_fw', 'u_rt', 'u_up', 'u_tan']),
-      ground: program(gl, GROUND_VS, GROUND_FS, ['u_ground', 'u_water', 'u_E', 'u_origin']),
+      ground: program(gl, GROUND_VS, GROUND_FS, ['u_ground', 'u_water', 'u_nearGround', 'u_nearWater', 'u_near', 'u_E', 'u_origin']),
       road: program(gl, ROAD_VS, ROAD_FS, ['u_eps']),
       building: program(gl, BUILDING_VS, BUILDING_FS, []),
       tree: program(gl, TREE_VS, TREE_FS, []),
@@ -4654,29 +4749,32 @@ function createWalk(canvas, ui, hooks = {}) {
     return true;
   }
 
-  /** The land under everything, painted once per city: land use, parks, beaches; the sea and lakes in a mask. */
-  function paintGround(m) {
-    const E = m.E;
-    const size = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE));
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
+  /**
+   * The land (land use, parks, beaches, the sea) for the square [x0, x0 + size]² into a canvas of px², and the sea
+   * and lakes, white on black, into `mask` (half as many pixels a side, or as many).
+   */
+  function paintLand(c, mask, x0, y0, size, feats) {
+    const px = c.width;
     const g = c.getContext('2d');
-    const k = size / (2 * E);
-    g.setTransform(k, 0, 0, k, E * k, E * k);
+    const k = px / size;
+    g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
     g.fillStyle = GROUND.land;
-    g.fillRect(-E, -E, 2 * E, 2 * E);
-    const fill = (layer, color) => {
-      const list = m.features.filter((f) => f.layer === layer);
-      if (!list.length) return;
-      g.fillStyle = color;
-      g.beginPath();
+    g.fillRect(x0, y0, size, size);
+    const path = (ctx, list) => {
+      ctx.beginPath();
       for (const f of list) {
         for (const ring of f.geom) {
-          g.moveTo(ring[0], ring[1]);
-          for (let i = 2; i < ring.length; i += 2) g.lineTo(ring[i], ring[i + 1]);
-          g.closePath();
+          ctx.moveTo(ring[0], ring[1]);
+          for (let i = 2; i < ring.length; i += 2) ctx.lineTo(ring[i], ring[i + 1]);
+          ctx.closePath();
         }
       }
+    };
+    const fill = (layer, color) => {
+      const list = feats.filter((f) => f.layer === layer);
+      if (!list.length) return;
+      g.fillStyle = color;
+      path(g, list);
       g.fill('evenodd');
     };
     for (const cls of Object.keys(AREA_STYLE)) fill(`area:${cls}`, GROUND[cls] || GROUND.land);
@@ -4684,27 +4782,20 @@ function createWalk(canvas, ui, hooks = {}) {
     fill('green', GROUND.green);
     fill('sea', GROUND.water);
     fill('water', GROUND.water);
-    // The sea and lakes again, white on black, for the water's own shading.
-    const w = document.createElement('canvas');
-    w.width = w.height = size >> 1;
-    const wg = w.getContext('2d');
-    wg.setTransform(k / 2, 0, 0, k / 2, (E * k) / 2, (E * k) / 2);
+    const wg = mask.getContext('2d');
+    const mk = mask.width / size;
+    wg.setTransform(mk, 0, 0, mk, -x0 * mk, -y0 * mk);
     wg.fillStyle = '#000';
-    wg.fillRect(-E, -E, 2 * E, 2 * E);
+    wg.fillRect(x0, y0, size, size);
     wg.fillStyle = '#fff';
-    wg.beginPath();
-    for (const f of m.features) {
-      if (f.layer !== 'sea' && f.layer !== 'water') continue;
-      for (const ring of f.geom) {
-        wg.moveTo(ring[0], ring[1]);
-        for (let i = 2; i < ring.length; i += 2) wg.lineTo(ring[i], ring[i + 1]);
-        wg.closePath();
-      }
-    }
+    path(
+      wg,
+      feats.filter((f) => f.layer === 'sea' || f.layer === 'water'),
+    );
     wg.fill('evenodd');
     wg.strokeStyle = '#fff';
     wg.lineCap = 'round';
-    for (const f of m.features) {
+    for (const f of feats) {
       if (f.layer !== 'river') continue;
       wg.lineWidth = f.extra === 1 ? 14 : 5;
       wg.beginPath();
@@ -4712,25 +4803,36 @@ function createWalk(canvas, ui, hooks = {}) {
       for (let i = 2; i < f.geom.length; i += 2) wg.lineTo(f.geom[i], f.geom[i + 1]);
       wg.stroke();
     }
-    const texture = (source, one = false) => {
-      const t = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, t);
-      if (one) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, source);
-      else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      const an = gl.getExtension('EXT_texture_filter_anisotropic');
-      if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
-      return t;
-    };
+  }
+  function texture(source, one = false, t = gl.createTexture()) {
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    if (one) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, source);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const an = gl.getExtension('EXT_texture_filter_anisotropic');
+    if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    return t;
+  }
+
+  /** The whole town's ground, painted once per city. */
+  function paintGround(m) {
+    const E = m.E;
+    const size = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const w = document.createElement('canvas');
+    w.width = w.height = size >> 1;
+    paintLand(c, w, -E, -E, 2 * E, m.features);
     if (tex) {
       gl.deleteTexture(tex.ground);
       gl.deleteTexture(tex.water);
     }
     tex = { ground: texture(c), water: texture(w, true), E };
+    near.at = null; // the sharp ground is painted again, for this town
     if (!shared.groundVao) {
       // The ground's grid, around (0, 0); it moves with the walker in steps of one square.
       const N = GROUND_N;
@@ -4758,6 +4860,23 @@ function createWalk(canvas, ui, hooks = {}) {
       shared.groundCount = idx.length;
       gl.bindVertexArray(null);
     }
+  }
+
+  /** The sharp ground around (cx, cy): painted again whenever you have walked a quarter of the way to its edge. */
+  const near = { at: null, c: null, w: null, ground: null, water: null };
+  function paintNear(cx, cy) {
+    if (!near.c) {
+      near.c = document.createElement('canvas');
+      near.c.width = near.c.height = NEAR_PX;
+      near.w = document.createElement('canvas');
+      near.w.width = near.w.height = NEAR_PX;
+    }
+    const x0 = cx - NEAR / 2;
+    const y0 = cy - NEAR / 2;
+    paintLand(near.c, near.w, x0, y0, NEAR, map.query(x0, y0, x0 + NEAR, y0 + NEAR));
+    near.ground = texture(near.c, false, near.ground || undefined);
+    near.water = texture(near.w, true, near.water || undefined);
+    near.at = [x0, y0];
   }
 
   // ---------------------------------------------------------------------------------------------- tiles
@@ -5351,7 +5470,7 @@ function createWalk(canvas, ui, hooks = {}) {
   // ---------------------------------------------------------------------------------------------- HUD
   function drawMini() {
     const c = ui.mini;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
     const size = c.clientWidth || 120;
     if (c.width !== Math.round(size * dpr)) {
       c.width = c.height = Math.round(size * dpr);
@@ -5393,7 +5512,7 @@ function createWalk(canvas, ui, hooks = {}) {
 
   // ---------------------------------------------------------------------------------------------- drawing
   function resize() {
-    const dpr = Math.min(1.75, window.devicePixelRatio || 1) * scale;
+    const dpr = Math.min(3, window.devicePixelRatio || 1) * scale;
     W = window.innerWidth;
     H = window.innerHeight;
     const w = Math.max(1, Math.round(W * dpr));
@@ -5456,6 +5575,15 @@ function createWalk(canvas, ui, hooks = {}) {
     gl.bindTexture(gl.TEXTURE_2D, tex.water);
     gl.uniform1i(P.ground.u.u_water, 1);
     gl.uniform1f(P.ground.u.u_E, tex.E);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, near.ground || tex.ground);
+    gl.uniform1i(P.ground.u.u_nearGround, 2);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, near.water || tex.water);
+    gl.uniform1i(P.ground.u.u_nearWater, 3);
+    gl.activeTexture(gl.TEXTURE0);
+    if (near.at) gl.uniform3f(P.ground.u.u_near, near.at[0], near.at[1], NEAR);
+    else gl.uniform3f(P.ground.u.u_near, 0, 0, 0);
     gl.uniform2f(P.ground.u.u_origin, Math.round(me.x / GROUND_CELL) * GROUND_CELL, Math.round(me.y / GROUND_CELL) * GROUND_CELL);
     gl.bindVertexArray(shared.groundVao);
     gl.drawElements(gl.TRIANGLES, shared.groundCount, gl.UNSIGNED_SHORT, 0);
@@ -5647,6 +5775,8 @@ function createWalk(canvas, ui, hooks = {}) {
       joined = 0;
       target = null;
       rand = seeded((Date.now() & 0xffff) + 7);
+      // Start at twice the screen's width in pixels (sharp on most phones, easy on them); finer when it copes.
+      scale = Math.min(2, window.devicePixelRatio || 1) / Math.min(3, window.devicePixelRatio || 1);
       ui.count.querySelector('b').textContent = '0';
       resize();
       buildTiles(350); // the nearest first; the rest come in over the next frames, behind the haze
@@ -5686,6 +5816,9 @@ function createWalk(canvas, ui, hooks = {}) {
     if (!ready || !gl || lost) return;
     time += dt;
     moveMe(dt);
+    if (!near.at || Math.hypot(me.x - (near.at[0] + NEAR / 2), me.y - (near.at[1] + NEAR / 2)) > NEAR / 4) {
+      paintNear(Math.round(me.x / 16) * 16, Math.round(me.y / 16) * 16);
+    }
     updatePeople(dt);
     buildTiles(6);
     draw();
@@ -5706,18 +5839,10 @@ function createWalk(canvas, ui, hooks = {}) {
       drawMini();
       miniWait = 0.12;
     }
-    // Keep the frame rate: a lower resolution when the phone struggles, back up when it copes.
-    if (dt > 1 / 40) slow++;
-    else slow = Math.max(0, slow - 1);
-    if (dt < 1 / 55) fast++;
-    else fast = 0;
-    if (slow > 40 && scale > 0.55) {
-      scale = Math.max(0.55, scale - 0.15);
-      slow = 0;
-    } else if (fast > 240 && scale < 1) {
-      scale = Math.min(1, scale + 0.15);
-      fast = 0;
-    }
+    // As sharp as the phone manages: fewer pixels while it cannot keep up, more when it copes (pace.js).
+    const step = pace(dt);
+    if (step < 0 && scale > 0.4) scale = Math.max(0.4, scale - 0.12);
+    else if (step > 0 && scale < 1) scale = Math.min(1, scale + 0.12);
   }
 
   return {
@@ -5777,9 +5902,11 @@ function figure(color, pose = 'chain', step = 0) {
   let c = cache.get(key);
   if (c) return c;
   c = document.createElement('canvas');
-  c.width = FIG.w;
-  c.height = FIG.h;
+  // Twice the size it is laid out at, so the people stay sharp on sharp screens.
+  c.width = FIG.w * 2;
+  c.height = FIG.h * 2;
   const g = c.getContext('2d');
+  g.scale(2, 2);
   g.lineCap = 'round';
   g.lineJoin = 'round';
   paint(g, '#ffffff', pose, step, 5); // the cut-out edge
@@ -6412,7 +6539,9 @@ const AVATARS = [
 ];
 const AVATAR_IDS = [...PEOPLE_IDS, ...AVATARS.map((a) => a.id)];
 
-const SIZE = 128;
+const SIZE = 128; // the faces are drawn in these units…
+const RES = 2; // …at twice as many pixels, so they stay sharp on sharp screens
+const PX = SIZE * RES;
 const cache = new Map();
 const supplied = new Map(); // id → { name, image: HTMLImageElement | null, url }
 
@@ -6447,7 +6576,7 @@ function skinName(id) {
   return PEOPLE.find((p) => p.id === id)?.name ?? supplied.get(id)?.name ?? AVATARS.find((a) => a.id === id)?.name ?? '';
 }
 
-/** The face for a skin as a 128 × 128 canvas with a white cut-out edge, or null (unknown, or its picture is loading). */
+/** The face for a skin as a square canvas (256 pixels) with a white cut-out edge, or null (unknown, or its picture is loading). */
 function avatar(id) {
   if (!id) return null;
   let c = cache.get(id);
@@ -6456,7 +6585,7 @@ function avatar(id) {
   const spec = AVATARS.find((a) => a.id === id);
   if (person) {
     c = canvas();
-    drawPortrait(c, person, SIZE);
+    drawPortrait(c, person, PX);
     ring(c);
   } else if (spec) c = drawFace(spec);
   else {
@@ -6481,13 +6610,14 @@ function roundRect(g, x, y, w, h, r) {
 
 function canvas() {
   const c = document.createElement('canvas');
-  c.width = c.height = SIZE;
+  c.width = c.height = PX;
   return c;
 }
 
 /** A white ring around a round picture. */
 function ring(c) {
   const g = c.getContext('2d');
+  g.setTransform(RES, 0, 0, RES, 0, 0);
   g.lineWidth = 6;
   g.strokeStyle = '#ffffff';
   g.beginPath();
@@ -6499,6 +6629,7 @@ function ring(c) {
 function drawPicture(img) {
   const c = canvas();
   const g = c.getContext('2d');
+  g.scale(RES, RES);
   const r = SIZE / 2 - 5;
   g.save();
   g.beginPath();
@@ -6521,6 +6652,7 @@ function drawPicture(img) {
 function drawFace(spec) {
   const art = canvas();
   const g = art.getContext('2d');
+  g.scale(RES, RES);
   const tone = TONES[spec.tone] ?? TONES[1];
   const hair = HAIR[spec.color] ?? HAIR.dark;
   const has = (x) => spec.extras.includes(x);
@@ -6746,10 +6878,10 @@ function drawFace(spec) {
   e.drawImage(art, 0, 0);
   e.globalCompositeOperation = 'source-in';
   e.fillStyle = '#ffffff';
-  e.fillRect(0, 0, SIZE, SIZE);
+  e.fillRect(0, 0, PX, PX);
   for (let k = 0; k < 12; k++) {
     const a = (k / 12) * Math.PI * 2;
-    o.drawImage(edge, Math.cos(a) * 4, Math.sin(a) * 4);
+    o.drawImage(edge, Math.cos(a) * 4 * RES, Math.sin(a) * 4 * RES);
   }
   o.drawImage(art, 0, 0);
   return c;
@@ -8618,6 +8750,7 @@ const { figure, drawFlag, FIG } = __m.people;
 const { createAudio, TRACKS } = __m.audio;
 const { NAME, SLUG, drawWordmark } = __m.brand;
 const { createWalk } = __m.walk;
+const { pacer } = __m.pace;
 const { cleanName } = __m.names;
 const { AVATARS, avatar, allSkins, loadSuppliedSkins } = __m.avatars;
 const { CHAPTERS, BOOKS, BOOK_NAMES, PERKS, PERK_ROUNDS, RIVALS, OTHERS, EPILOGUE, POLL_NOTE, THRESHOLD, OURS, loadCampaign, saveCampaign, newCampaign, knesset, biggestRival, openBook, winChapter, choosePerk, perkMods, starTexts, goalText, mmss, fill, partyOf, startChapter, startSkirmish, startPoint } = __m.campaign;
@@ -8667,7 +8800,8 @@ function setPref(key, value) {
 let W = 0;
 let H = 0;
 let DPR = 1;
-let dprCap = 2;
+let dprCap = Math.min(3, window.devicePixelRatio || 1); // the screen's own sharpness, unless the phone cannot keep up
+const pace = pacer();
 const miniSize = { w: 110, h: 110 };
 function resize() {
   DPR = Math.min(dprCap, window.devicePixelRatio || 1);
@@ -10099,12 +10233,14 @@ function updateStats(now) {
 }
 
 function trackPerformance(dt) {
-  frameTimes.push(dt);
-  if (frameTimes.length < 120) return;
-  const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
-  frameTimes = [];
-  if (avg > 1 / 40 && dprCap > 1) {
-    dprCap = Math.max(1, dprCap - 0.5);
+  // Sharp by default (the screen's own pixel density); a step down only while the phone cannot keep up (pace.js).
+  const step = pace(dt);
+  const native = Math.min(3, window.devicePixelRatio || 1);
+  if (step < 0 && dprCap > 1) {
+    dprCap = Math.max(1, Math.min(dprCap, native) - 0.5);
+    resize();
+  } else if (step > 0 && dprCap < native) {
+    dprCap = Math.min(native, dprCap + 0.5);
     resize();
   }
 }
@@ -10169,7 +10305,7 @@ function knessetBlock(st) {
 function drawKnesset(c, rows) {
   const cssW = c.clientWidth || 300;
   const cssH = Math.round(cssW * 0.52);
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
   c.width = Math.round(cssW * dpr);
   c.height = Math.round(cssH * dpr);
   c.style.height = `${cssH}px`;
@@ -10263,7 +10399,7 @@ function drawRoute(c, st) {
   const Y1 = 4450;
   const cssW = c.clientWidth || 96;
   const cssH = Math.round((cssW * (Y1 - Y0)) / (X1 - X0));
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
   c.width = Math.round(cssW * dpr);
   c.height = Math.round(cssH * dpr);
   c.style.height = `${cssH}px`;
@@ -10720,7 +10856,7 @@ function renderSkinList() {
     b.type = 'button';
     b.className = `skin${s.id === game.skin ? ' on' : ''}`;
     const c = document.createElement('canvas');
-    c.width = c.height = 112;
+    c.width = c.height = 168; // 56 CSS pixels, three times over
     drawSkinInto(c, s.id);
     const label = document.createElement('span');
     label.textContent = s.n ? `${s.n}. ${s.name}` : s.name;
@@ -11085,7 +11221,7 @@ $('waiting-share').addEventListener('click', () => {
 /** The small human chain above the logo: five people of different colours holding hands. */
 function drawMark() {
   const c = $('mark');
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
   c.width = Math.round(230 * dpr);
   c.height = Math.round(70 * dpr);
   const g = c.getContext('2d');
