@@ -1252,10 +1252,28 @@ export function createWalk(canvas, ui, hooks = {}) {
     for (; k < followers.length; k++) place(followers[k], px, py, dt);
   }
   function place(p, x, y, dt) {
-    const dx = x - p.x;
-    const dy = y - p.y;
-    const d = Math.hypot(dx, dy);
-    const step = Math.min(d, Math.max(RUN * 1.4, d * 4) * dt);
+    let dx = x - p.x;
+    let dy = y - p.y;
+    let d = Math.hypot(dx, dy);
+    const speed = Math.max(RUN * 1.4, d * 4);
+    // On the way to their place behind you, round you rather than through you (someone who joins from in front would
+    // fill the whole screen for a moment): when the way passes within a metre of you, the next step aims beside you.
+    if (d > 0.01) {
+      const t = ((me.x - p.x) * dx + (me.y - p.y) * dy) / (d * d);
+      if (t > 0 && t < 1) {
+        const cx = p.x + dx * t - me.x;
+        const cy = p.y + dy * t - me.y;
+        const cd = Math.hypot(cx, cy);
+        if (cd < 1) {
+          const sx = cd > 1e-3 ? cx / cd : -dy / d;
+          const sy = cd > 1e-3 ? cy / cd : dx / d;
+          dx = me.x + sx * 1.1 - p.x;
+          dy = me.y + sy * 1.1 - p.y;
+          d = Math.hypot(dx, dy);
+        }
+      }
+    }
+    const step = Math.min(d, speed * dt);
     if (d > 0.01) {
       p.x += (dx / d) * step;
       p.y += (dy / d) * step;
@@ -1851,11 +1869,27 @@ export function createWalk(canvas, ui, hooks = {}) {
     },
     /** For tests: stand somewhere, looking somewhere. */
     teleport(x, y, yaw = me.yaw, pitch = me.pitch) {
+      const far = Math.hypot(x - me.x, y - me.y) > 5;
       me.x = x;
       me.y = y;
       me.yaw = yaw;
       me.pitch = pitch;
       target = null;
+      if (!far) return;
+      // Somewhere else: whoever follows you comes along, in a line behind you.
+      const bx = -Math.cos(yaw);
+      const by = -Math.sin(yaw);
+      trail.length = 0;
+      for (let d = 4 + joined * 1.1; d > 0; d -= 0.25) trail.push([x + bx * d, y + by * d]);
+      trail.push([x, y]);
+      let k = 0;
+      for (const p of people) {
+        if (!p.joined) continue;
+        const d = 2.1 + 1.05 * k++;
+        p.x = x + bx * d;
+        p.y = y + by * d;
+        p.a = yaw;
+      }
     },
     supported: () => !!(gl || (typeof WebGL2RenderingContext !== 'undefined')),
   };
