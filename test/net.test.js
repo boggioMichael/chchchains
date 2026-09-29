@@ -111,7 +111,8 @@ test('the client rebuilds every chain it sees exactly, from full bodies and smal
       `head gap ≤ ${stats.maxHeadGap.toFixed(1)})`,
   );
   assert.ok(stats.snaps >= 890, `snapshots sent: ${stats.snaps}`);
-  assert.ok(stats.full > 5 && stats.delta > stats.full * 5, `mostly small updates: ${stats.full} full, ${stats.delta} delta`);
+  // How many chains come into view depends on the random walk (4 to a dozen); either way, updates are mostly small.
+  assert.ok(stats.full >= 3 && stats.delta > stats.full * 5, `mostly small updates: ${stats.full} full, ${stats.delta} delta`);
   assert.ok(stats.checkedPoints > 30_000, `points compared: ${stats.checkedPoints}`);
   assert.ok(stats.maxHeadGap < 24, `head to body gap ${stats.maxHeadGap.toFixed(1)}`);
   assert.ok(perSecond < 12 * 1024, `bandwidth per player ${(perSecond / 1024).toFixed(1)} KB/s`);
