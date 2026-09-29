@@ -10,6 +10,7 @@ import { edgeAhead } from './arena.js';
 import { figure, drawFlag, FIG } from './people.js';
 import { createAudio, TRACKS } from './audio.js';
 import { NAME, SLUG, drawWordmark } from './brand.js';
+import { createWalk } from './walk.js';
 import { cleanName } from './names.js';
 import { AVATARS, avatar, allSkins, loadSuppliedSkins } from './avatars.js';
 import {
@@ -517,6 +518,11 @@ function frame(now) {
   let dt = (now - last) / 1000;
   last = now;
   if (dt > 0.25) dt = 0.25;
+  if (walk.active) {
+    // Walking the streets: the 3D view draws instead of the map.
+    walk.frame(Math.min(dt, 0.1));
+    return;
+  }
   trackPerformance(dt);
   updateStats(now);
   const w = game.world;
@@ -1974,6 +1980,10 @@ function renderMapList() {
     b.addEventListener('click', () => {
       chooseMap(m.id);
       hide('maps');
+      if (game.walkNext && m.kind !== 'region') {
+        game.walkNext = false;
+        startWalk();
+      }
     });
     return b;
   };
@@ -1994,6 +2004,7 @@ function renderMapList() {
   list.replaceChildren(...out);
 }
 $('map-btn').addEventListener('click', () => {
+  game.walkNext = false;
   $('map-search').value = '';
   renderMapList();
   show('maps');
@@ -2002,6 +2013,77 @@ $('map-btn').addEventListener('click', () => {
 $('map-search').addEventListener('input', renderMapList);
 
 // ------------------------------------------------------------------------------------------------ skins and name
+// ------------------------------------------------------------------------------------------------ the streets in 3D
+const walk = createWalk(
+  $('walk-gl'),
+  {
+    root: $('walk'),
+    street: $('walk-street'),
+    count: $('walk-count'),
+    mini: $('walk-mini'),
+    run: $('walk-run'),
+    stick: $('walk-stick'),
+    pad: $('walk-pad'),
+    loading: $('walk-loading'),
+    exit: $('walk-exit'),
+  },
+  {
+    toast,
+    hint,
+    sfx: (k) => audio.sfx(k),
+    onExit: () => {
+      show('start');
+      audio.setScene('menu');
+      renderMapRow();
+      game.net?.watch(viewExtents(), maps.current);
+    },
+  },
+);
+/** Into the chosen city's streets in 3D (a big map: first pick a city). */
+async function startWalk() {
+  audio.unlock();
+  const info = maps.byId.get(maps.current);
+  if (!info || info.kind === 'region' || !info.detail) {
+    game.walkNext = true;
+    renderMapList();
+    show('maps');
+    toast('🚶 בחרו עיר להסתובב ברחובות שלה', 3200);
+    return;
+  }
+  const id = maps.current;
+  $('walk-btn').disabled = true;
+  try {
+    const map = await cityMap(id);
+    const [ok, extra] = await Promise.all([
+      map ? map.loadDetail() : false,
+      fetch(`${CFG.maps}${encodeURIComponent(id)}-3d.json`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ]);
+    if (!map || !ok) {
+      toast('את הרחובות של העיר הזאת עוד אי אפשר לטעון. נסו עוד רגע', 3200);
+      return;
+    }
+    game.net?.idle();
+    hide('start');
+    if (!(await walk.enter(map, extra))) {
+      show('start');
+      toast('הדפדפן הזה לא מציג תלת־ממד (WebGL 2)', 4000);
+      return;
+    }
+    audio.setScene('play');
+    hint('👆 גוררים כדי להסתכל · נוגעים ברחוב כדי ללכת לשם', 5500);
+  } catch (err) {
+    console.error(err);
+    show('start');
+    toast('משהו השתבש בבניית העיר. נסו שוב', 3500);
+  } finally {
+    $('walk-btn').disabled = false;
+  }
+}
+$('walk-btn').addEventListener('click', () => startWalk());
+globalThis.__walk = walk; // for the browser tests
+
 function drawSkinInto(c, id) {
   const g = c.getContext('2d');
   g.clearRect(0, 0, c.width, c.height);

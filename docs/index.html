@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-J6HEaeMZnFBAITYslw8xL4Bp0bq+/D1D0aMSbxyTue4=' 'sha256-eRozD9B7GREICmfCEIIMfXlTOBM2AV7vZVTnQhOl4xI='; style-src 'sha256-plSiUcAFRoOI0Ge0PmpxhEhF/EI1y1Kg5cnZcabfKC4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-J6HEaeMZnFBAITYslw8xL4Bp0bq+/D1D0aMSbxyTue4=' 'sha256-3K+1r+cCie/VwJecZKQV1hD4AxHqqRlE38Gft/rbhNc='; style-src 'sha256-wyA5Vs7Jjb5DONtEPCkXfKgWg8QeKsRmn+ZDQImenz4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -106,7 +106,7 @@ a { color: inherit; }
   font-size: 14px; font-weight: 600; max-width: min(90vw, 460px); text-align: center; direction: rtl;
   transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 5; }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
-#hint { position: fixed; bottom: calc(var(--safe-b) + 180px); left: 50%; transform: translateX(-50%); opacity: 0;
+#hint { position: fixed; bottom: calc(var(--safe-b) + 180px); left: 50%; transform: translateX(-50%); opacity: 0; z-index: 5;
   font-size: 15px; font-weight: 800; color: var(--ink); text-align: center; width: 88vw; direction: rtl; pointer-events: none;
   text-shadow: 0 0 4px #fff, 0 0 8px #fff, 0 0 12px #fff; transition: opacity 0.4s; }
 #hint.on { opacity: 1; }
@@ -255,6 +255,38 @@ a { color: inherit; }
 .gain.big { font-size: 18px; color: var(--blue); }
 .loss { margin: 0; font-size: 15px; font-weight: 800; color: var(--danger); text-align: center; }
 #mission small { color: var(--ink); font-weight: 700; direction: rtl; }
+/* walking the streets in 3D */
+.walk-btn { font-size: 15.5px; }
+#walk { position: fixed; inset: 0; z-index: 3; background: #cfe0ea; direction: rtl; }
+#walk-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.walk-top { position: absolute; top: calc(var(--safe-t) + 10px); right: 10px; left: 10px; display: flex; gap: 8px; align-items: center;
+  pointer-events: none; }
+.walk-top > * { pointer-events: auto; }
+.walk-chip { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; box-shadow: var(--shadow);
+  font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#walk-street { min-width: 0; flex: 0 1 auto; margin-inline-end: auto; }
+#walk-count { flex: none; font-variant-numeric: tabular-nums; }
+#walk-count.pop { animation: pop 0.35s ease-out; }
+@keyframes pop { 40% { transform: scale(1.2); } }
+#walk-exit { flex: none; width: 44px; height: 44px; font-size: 18px; font-weight: 900; }
+#walk-mini { position: absolute; right: 12px; bottom: calc(var(--safe-b) + 24px); width: 116px; height: 116px; border-radius: 50%;
+  border: 3px solid #fff; box-shadow: var(--shadow); pointer-events: none; background: var(--paper); }
+#walk-run { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 30px); width: 56px; height: 56px;
+  font-size: 26px; }
+#walk-run[aria-pressed='true'] { background: #f59e0b; border-color: #d98a06; }
+#walk-pad { position: absolute; left: 18px; bottom: calc(var(--safe-b) + 34px); width: 104px; height: 104px; border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.85); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center;
+  text-align: center; line-height: 1.3; pointer-events: none; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45); transition: opacity 0.6s; }
+#walk-pad.gone { opacity: 0; }
+#walk-stick { position: fixed; left: 0; top: 0; width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.75); pointer-events: none; display: grid; place-items: center; z-index: 1; }
+#walk-stick i { width: 54px; height: 54px; border-radius: 50%; background: rgba(255, 255, 255, 0.9); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: block; }
+#walk-loading { position: absolute; inset: 0; display: grid; place-items: center; background: #cfe0ea; font-size: 17px; font-weight: 800;
+  color: var(--ink); }
+#walk-credit { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 3px); font-size: 10px;
+  color: var(--ink-2); text-decoration: none; background: rgba(255, 255, 255, 0.7); padding: 1px 6px; border-radius: 6px; direction: ltr;
+  white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { #hand.pulse { animation: none; } #toast { transition: none; } }
 @media (min-width: 900px) { #score { font-size: 36px; } .hud-board { width: 240px; } #leaderboard { font-size: 13px; } }
 </style>
@@ -277,6 +309,20 @@ a { color: inherit; }
   <canvas id="minimap" aria-hidden="true"></canvas>
   <a id="osm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
 </div>
+<section id="walk" hidden aria-label="הליכה ברחובות בתלת־ממד">
+  <canvas id="walk-gl" aria-label="הרחוב בתלת־ממד: גוררים כדי להסתכל, נוגעים ברחוב כדי ללכת לשם"></canvas>
+  <div class="walk-top">
+    <button id="walk-exit" class="round" type="button" aria-label="יציאה מהרחוב">✕</button>
+    <div id="walk-street" class="walk-chip" hidden></div>
+    <div id="walk-count" class="walk-chip" aria-label="כמה הצטרפו אליך">👥 <b>0</b></div>
+  </div>
+  <canvas id="walk-mini" aria-hidden="true"></canvas>
+  <div id="walk-pad" aria-hidden="true">🕹️<br>אגודל כאן:<br>הליכה</div>
+  <button id="walk-run" class="round" type="button" aria-label="ריצה" aria-pressed="false">🏃</button>
+  <div id="walk-stick" hidden><i></i></div>
+  <a id="walk-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
+  <div id="walk-loading" hidden>🏗️ בונים את העיר בתלת־ממד…</div>
+</section>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="hint" aria-live="polite"></div>
 
@@ -305,6 +351,7 @@ a { color: inherit; }
       <button id="reroll" type="button" aria-label="שם אחר">🔄</button>
     </div>
     <button id="play" class="primary" type="button">שחקו עכשיו</button>
+    <button id="walk-btn" class="secondary walk-btn" type="button">🚶 להסתובב ברחובות בתלת־ממד</button>
     <div class="row2">
       <button id="story-btn" class="secondary" type="button">📖 נגד כל הסיכויים</button>
       <button id="music-btn" class="secondary" type="button">🎵 מוסיקה</button>
@@ -2513,33 +2560,38 @@ class CityMap {
       try {
         const res = await fetch(`${this.base}${encodeURIComponent(this.id)}-detail.json`);
         if (!res.ok) return false;
-        const d = await res.json();
-        const add = this.adder;
-        for (const cls of Object.keys(AREA_STYLE)) {
-          for (const poly of d.a?.[cls] || []) add(`area:${cls}`, poly.map((r) => undelta(r)), true);
-        }
-        for (const b of d.b || []) add('building', [undelta(b)], true);
-        for (const m of d.m || []) add(m[0] === 1 ? 'path' : 'lane', undelta(m, 1), false);
-        for (const f of d.f || []) add('motorway', undelta(f), false);
-        this.pois = (d.p || [])
-          .filter((p) => POI_STYLE[p[2]])
-          // Names in a script most players cannot read (Cyrillic, say) keep their icon but show no name.
-          .map(([x, y, cat, name]) => ({ x, y, cat, name: /[\u0400-\u04ff]/.test(name) ? '' : name, rank: POI_RANK[cat] }))
-          .sort((a, b) => a.rank - b.rank);
-        for (const p of this.pois) {
-          const k = this.cell(p.y) * this.n + this.cell(p.x);
-          let list = this.poiCells.get(k);
-          if (!list) this.poiCells.set(k, (list = []));
-          list.push(p);
-        }
-        this.detail = true;
-        this.tiles.clear();
+        this.addDetail(await res.json());
         return true;
       } catch {
         return false;
       }
     })();
     return this.detailLoading;
+  }
+
+  /** Adds a parsed detail file (docs/maps/<id>-detail.json) to the map. */
+  addDetail(d) {
+    const add = this.adder;
+    for (const cls of Object.keys(AREA_STYLE)) {
+      for (const poly of d.a?.[cls] || []) add(`area:${cls}`, poly.map((r) => undelta(r)), true);
+    }
+    // Each building remembers its place in the file (the street view's heights are in the same order).
+    (d.b || []).forEach((b, i) => add('building', [undelta(b)], true, i));
+    for (const m of d.m || []) add(m[0] === 1 ? 'path' : 'lane', undelta(m, 1), false);
+    for (const f of d.f || []) add('motorway', undelta(f), false);
+    this.pois = (d.p || [])
+      .filter((p) => POI_STYLE[p[2]])
+      // Names in a script most players cannot read (Cyrillic, say) keep their icon but show no name.
+      .map(([x, y, cat, name]) => ({ x, y, cat, name: /[\u0400-\u04ff]/.test(name) ? '' : name, rank: POI_RANK[cat] }))
+      .sort((a, b) => a.rank - b.rank);
+    for (const p of this.pois) {
+      const k = this.cell(p.y) * this.n + this.cell(p.x);
+      let list = this.poiCells.get(k);
+      if (!list) this.poiCells.set(k, (list = []));
+      list.push(p);
+    }
+    this.detail = true;
+    this.tiles.clear();
   }
 
   /** { sat, green, xyz }: the satellite view, the Green Line layer (big maps), a tile provider for the satellite. */
@@ -3028,6 +3080,2683 @@ function ringPath(g, a) {
 }
 
 return { MAP_STYLE, AREA_STYLE, POI_STYLE, undelta, loadCity, loadMapIndex, CityMap };
+})();
+__m.street3d = (() => {
+// Ch-ch-chain-ges — the streets in 3D. Turns a city's map (its buildings and their heights, streets and pavements,
+// paths, railways, parks and trees) into meshes for the street view (walk.js), in square tiles built on demand around
+// the walker, and keeps the walker out of buildings and the sea. No DOM and no WebGL here: typed arrays only, so the
+// tests run it in Node.
+//
+// Map units are metres: x to the east, y to the south. In 3D, x stays, height is y (up) and the map's y is z.
+
+const TILE = 160; // metres a side
+const FLOOR = 3.1; // metres a floor, as in the map builder
+const SKYLINE = 36; // buildings this tall are seen from all over town (not in the tiles)
+
+// ------------------------------------------------------------------------------------------------ small helpers
+/** A number in [0, 1) that is always the same for the same place. */
+function hash2(x, y) {
+  const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/** A seeded random stream (mulberry32), so a tile's trees come out the same every time. */
+function seeded(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** '#rrggbb' → [r, g, b] (0–255). */
+function rgb(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+/** Twice the signed area of a flat ring [x0, y0, x1, y1, …]. */
+function signedArea2(p) {
+  let a = 0;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) a += p[j] * p[i + 1] - p[i] * p[j + 1];
+  return a;
+}
+
+/** The ring without its closing point, and without a point repeated right after itself. */
+function cleanRing(p) {
+  const out = [];
+  for (let i = 0; i + 1 < p.length; i += 2) {
+    const n = out.length;
+    if (n && Math.abs(out[n - 2] - p[i]) < 0.01 && Math.abs(out[n - 1] - p[i + 1]) < 0.01) continue;
+    out.push(p[i], p[i + 1]);
+  }
+  while (out.length >= 4 && Math.abs(out[0] - out[out.length - 2]) < 0.01 && Math.abs(out[1] - out[out.length - 1]) < 0.01) out.length -= 2;
+  return out;
+}
+
+/** Is (x, y) inside the ring (flat, open or closed)? */
+function inRing(p, x, y) {
+  let inside = false;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const yi = p[i + 1];
+    const yj = p[j + 1];
+    if (yi > y !== yj > y && x < ((p[j] - p[i]) * (y - yi)) / (yj - yi) + p[i]) inside = !inside;
+  }
+  return inside;
+}
+
+/** The point of the ring's outline nearest (x, y): [qx, qy, distance, edge start index]. */
+function nearestOnRing(p, x, y) {
+  let best = [p[0], p[1], Infinity, 0];
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const ax = p[j];
+    const ay = p[j + 1];
+    const dx = p[i] - ax;
+    const dy = p[i + 1] - ay;
+    const L2 = dx * dx + dy * dy;
+    const t = L2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)) : 0;
+    const qx = ax + dx * t;
+    const qy = ay + dy * t;
+    const d = Math.hypot(x - qx, y - qy);
+    if (d < best[2]) best = [qx, qy, d, j];
+  }
+  return best;
+}
+
+/** Distance from (x, y) to the polyline (flat, open). */
+function distToLine(p, x, y) {
+  let best = Infinity;
+  for (let i = 2; i + 1 < p.length; i += 2) {
+    const ax = p[i - 2];
+    const ay = p[i - 1];
+    const dx = p[i] - ax;
+    const dy = p[i + 1] - ay;
+    const L2 = dx * dx + dy * dy;
+    const t = L2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)) : 0;
+    best = Math.min(best, Math.hypot(x - ax - dx * t, y - ay - dy * t));
+  }
+  return best;
+}
+
+/**
+ * Triangles for a simple polygon (a flat ring, open): index triples in the ring's own turning direction. Ear
+ * clipping; a ring that is not quite simple (OSM has a few) still gets triangles: a fan of whatever is left when no
+ * ear can be cut.
+ */
+function triangulate(p) {
+  const n = p.length >> 1;
+  if (n < 3) return [];
+  const sgn = signedArea2(p) >= 0 ? 1 : -1;
+  const prev = new Int32Array(n);
+  const next = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    prev[i] = (i + n - 1) % n;
+    next[i] = (i + 1) % n;
+  }
+  const turn = (a, b, c) => sgn * ((p[2 * b] - p[2 * a]) * (p[2 * c + 1] - p[2 * a + 1]) - (p[2 * b + 1] - p[2 * a + 1]) * (p[2 * c] - p[2 * a]));
+  const same = (a, b) => p[2 * a] === p[2 * b] && p[2 * a + 1] === p[2 * b + 1];
+  const out = [];
+  let left = n;
+  let i = 0;
+  let stall = 0;
+  while (left > 3 && stall < left) {
+    const a = prev[i];
+    const c = next[i];
+    let ear = turn(a, i, c) > 1e-9;
+    for (let q = next[c]; ear && q !== a; q = next[q]) {
+      if (same(q, a) || same(q, i) || same(q, c)) continue;
+      if (turn(a, i, q) >= 0 && turn(i, c, q) >= 0 && turn(c, a, q) >= 0) ear = false;
+    }
+    if (ear) {
+      out.push(a, i, c);
+      next[a] = c;
+      prev[c] = a;
+      left--;
+      i = a;
+      stall = 0;
+    } else {
+      i = next[i];
+      stall++;
+    }
+  }
+  for (let q = next[i]; next[q] !== i; q = next[q]) out.push(i, q, next[q]);
+  return out;
+}
+
+// ------------------------------------------------------------------------------------------------ packing
+/** Interleaved vertices: `floats` 32-bit numbers, then 4 bytes, per vertex; and 16- or 32-bit indices. */
+class Packer {
+  constructor(floats) {
+    this.floats = floats;
+    this.stride = floats * 4 + 4;
+    this.cap = 256;
+    this.buf = new ArrayBuffer(this.stride * this.cap);
+    this.f = new Float32Array(this.buf);
+    this.u = new Uint8Array(this.buf);
+    this.n = 0;
+    this.index = [];
+  }
+  /** Room for one more vertex; returns its float offset. */
+  next() {
+    if (this.n === this.cap) {
+      this.cap *= 2;
+      const buf = new ArrayBuffer(this.stride * this.cap);
+      new Uint8Array(buf).set(this.u);
+      this.buf = buf;
+      this.f = new Float32Array(buf);
+      this.u = new Uint8Array(buf);
+    }
+    return (this.n * this.stride) >> 2;
+  }
+  bytes(b0, b1, b2, b3) {
+    const o = this.n * this.stride + this.floats * 4;
+    this.u[o] = b0;
+    this.u[o + 1] = b1;
+    this.u[o + 2] = b2;
+    this.u[o + 3] = b3;
+    return this.n++;
+  }
+  done() {
+    const count = this.index.length;
+    return {
+      data: this.buf.slice(0, this.n * this.stride),
+      index: this.n > 65535 ? Uint32Array.from(this.index) : Uint16Array.from(this.index),
+      count,
+      vertices: this.n,
+      stride: this.stride,
+    };
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ buildings
+/**
+ * What the map builder calls a building's kind (the 3D file's height × 10 + kind): 0 flats and anything else, 1 a
+ * house, 2 industry and storage, 3 a roof on pillars, 4 a place of worship, 5 shops and offices, 6 public.
+ */
+const KIND = { flats: 0, house: 1, industry: 2, canopy: 3, worship: 4, commerce: 5, public: 6 };
+
+/** Windows: punched in the wall (homes), long bands (offices), a glass wall (towers), none. */
+const STYLE = { punched: 0, bands: 1, glass: 2, none: 3 };
+
+/** A building's height when OSM does not say: from its size and kind, the same every time (r: hash of its place). */
+function guessHeight(area, kind, r) {
+  switch (kind) {
+    case KIND.house:
+      return 3.8 + FLOOR * Math.floor(r * 2);
+    case KIND.industry:
+      return 5.5 + r * 5;
+    case KIND.canopy:
+      return 5;
+    case KIND.worship:
+      return 8 + r * 6;
+    case KIND.commerce:
+    case KIND.public:
+      return FLOOR * (2 + Math.floor(r * 3)) + 1.2;
+    default:
+      if (area < 45) return 3 + r;
+      if (area < 140) return 4 + FLOOR * Math.floor(r * 2);
+      if (area > 2500) return FLOOR * (2 + Math.floor(r * 3)) + 1.2;
+      return FLOOR * (3 + Math.floor(r * 3)) + 1.5; // three to five floors: the blocks of flats most streets have
+  }
+}
+
+/** Plaster and whitewash; Jerusalem stone; glass; industry. */
+const PALETTES = {
+  plaster: ['#f1eee7', '#ebe5d9', '#e6dfd1', '#f4f0e8', '#ddd7cb', '#e8ddcf', '#e2e0d8', '#efe6d6', '#d9d6ce', '#e9e3db'],
+  stone: ['#e8dab9', '#ddcba5', '#eadcc0', '#d9c8a5', '#efe3c7', '#e3d2ad', '#d6c39e'],
+  glass: ['#8ea8be', '#7d98af', '#9db2c3', '#a8b9c4', '#86a0b6'],
+  industry: ['#c9c9c4', '#bfc3c5', '#d3d0c8', '#c4bdb2', '#b8bcbf'],
+};
+const PAL = Object.fromEntries(Object.entries(PALETTES).map(([k, list]) => [k, list.map(rgb)]));
+
+/**
+ * Walls and roofs for a list of buildings into a Packer of 8 floats (x, y, z, nx, ny, nz, u, v) and 4 bytes (r, g,
+ * b, flags). On a wall, u counts window bays along it (−1: too short for one) and v is the height in metres; on a
+ * roof, u and v are the map position. Flags: the window style (bits 0–1), roof (bit 2), shop fronts (bit 3), and a
+ * number for small differences between buildings (bits 4–7).
+ */
+function addBuilding(P, ring, base, top, color, style, shops, variant) {
+  const p = cleanRing(ring);
+  if (p.length < 6) return;
+  // Walls go round the ring one way, so every wall faces out and every roof triangle faces up (see below).
+  if (signedArea2(p) > 0) {
+    for (let i = 0, j = p.length - 2; i < j; i += 2, j -= 2) {
+      [p[i], p[j]] = [p[j], p[i]];
+      [p[i + 1], p[j + 1]] = [p[j + 1], p[i + 1]];
+    }
+  }
+  const [r, g, b] = color;
+  const flags = (style & 3) | (shops ? 8 : 0) | ((variant & 15) << 4);
+  const put = (x, y, z, nx, ny, nz, u, v, fl) => {
+    const o = P.next();
+    const F = P.f;
+    F[o] = x;
+    F[o + 1] = y;
+    F[o + 2] = z;
+    F[o + 3] = nx;
+    F[o + 4] = ny;
+    F[o + 5] = nz;
+    F[o + 6] = u;
+    F[o + 7] = v;
+    return P.bytes(r, g, b, fl);
+  };
+  const n = p.length >> 1;
+  for (let i = 0; i < n; i++) {
+    const ax = p[2 * i];
+    const ay = p[2 * i + 1];
+    const bx = p[(2 * i + 2) % p.length];
+    const by = p[(2 * i + 3) % p.length];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const L = Math.hypot(dx, dy);
+    if (L < 0.05) continue;
+    // With the ring turning this way, (−dy, dx) points out of the building.
+    const nx = -dy / L;
+    const nz = dx / L;
+    const bays = Math.floor(L / 2.9);
+    // A long wall in pieces of at most 30 m: very long triangles lose precision on some phones.
+    const pieces = Math.ceil(L / 30);
+    for (let k = 0; k < pieces; k++) {
+      const t0 = k / pieces;
+      const t1 = (k + 1) / pieces;
+      const u0 = bays >= 1 ? bays * t0 : -1;
+      const u1 = bays >= 1 ? bays * t1 : -1;
+      const x0 = ax + dx * t0;
+      const y0 = ay + dy * t0;
+      const x1 = ax + dx * t1;
+      const y1 = ay + dy * t1;
+      const a0 = put(x0, base, y0, nx, 0, nz, u0, base, flags);
+      const b0 = put(x1, base, y1, nx, 0, nz, u1, base, flags);
+      const b1 = put(x1, top, y1, nx, 0, nz, u1, top, flags);
+      const a1 = put(x0, top, y0, nx, 0, nz, u0, top, flags);
+      P.index.push(a0, b0, b1, a0, b1, a1);
+    }
+  }
+  // The roof: triangles turning the same way as the ring face up; any that do not (a fan over a ring that crosses
+  // itself) are turned over.
+  const tris = triangulate(p);
+  const first = P.n;
+  for (let i = 0; i < n; i++) put(p[2 * i], top, p[2 * i + 1], 0, 1, 0, p[2 * i], p[2 * i + 1], flags | 4);
+  for (let t = 0; t < tris.length; t += 3) {
+    const [a, b2, c] = [tris[t], tris[t + 1], tris[t + 2]];
+    const cross = (p[2 * b2] - p[2 * a]) * (p[2 * c + 1] - p[2 * a + 1]) - (p[2 * b2 + 1] - p[2 * a + 1]) * (p[2 * c] - p[2 * a]);
+    if (Math.abs(cross) < 1e-9) continue;
+    if (cross < 0) P.index.push(first + a, first + b2, first + c);
+    else P.index.push(first + a, first + c, first + b2);
+  }
+  // A roof on pillars is a slab: seen from below too.
+  if (base > 0.5) {
+    const under = P.n;
+    for (let i = 0; i < n; i++) put(p[2 * i], base, p[2 * i + 1], 0, -1, 0, p[2 * i], p[2 * i + 1], flags | 4);
+    for (let t = 0; t < tris.length; t += 3) {
+      const [a, b2, c] = [tris[t], tris[t + 1], tris[t + 2]];
+      const cross = (p[2 * b2] - p[2 * a]) * (p[2 * c + 1] - p[2 * a + 1]) - (p[2 * b2 + 1] - p[2 * a + 1]) * (p[2 * c] - p[2 * a]);
+      if (Math.abs(cross) < 1e-9) continue;
+      if (cross < 0) P.index.push(under + a, under + c, under + b2);
+      else P.index.push(under + a, under + b2, under + c);
+    }
+  }
+}
+
+/** How one building looks: { base, top, color, style, shops, variant }. hk: the 3D file's height × 10 + kind. */
+function lookOf(ring, hk, { stone = false, shopsNear = () => false } = {}) {
+  const r = hash2(ring[0], ring[1]);
+  const area = Math.abs(signedArea2(ring)) / 2;
+  const known = Math.floor((hk || 0) / 10);
+  const kind = (hk || 0) % 10;
+  let top = known > 0 ? known : guessHeight(area, kind, r);
+  let base = 0;
+  if (kind === KIND.canopy) {
+    top = known > 0 ? known : 5;
+    base = Math.max(2.5, top - 0.7);
+  }
+  const variant = Math.floor(r * 16);
+  const pick = (list) => list[Math.floor(hash2(ring[1], ring[0]) * list.length) % list.length];
+  let style = STYLE.punched;
+  let color = pick(stone ? PAL.stone : PAL.plaster);
+  if (kind === KIND.industry || kind === KIND.canopy) {
+    style = STYLE.none;
+    color = pick(PAL.industry);
+  } else if (top > 34 || (kind === KIND.commerce && area > 1500)) {
+    style = r < 0.55 ? STYLE.glass : STYLE.bands;
+    color = style === STYLE.glass ? pick(PAL.glass) : pick(PAL.plaster);
+  } else if (kind === KIND.commerce || kind === KIND.public) {
+    style = r < 0.5 ? STYLE.bands : STYLE.punched;
+  } else if (kind === KIND.worship) {
+    color = pick(PAL.stone);
+  }
+  const shops = kind !== KIND.industry && kind !== KIND.canopy && top < 60 && (kind === KIND.commerce || shopsNear(ring));
+  return { base, top, color, style, shops, variant };
+}
+
+// ------------------------------------------------------------------------------------------------ streets
+/**
+ * The street layers, bottom to top. half: half the width of the asphalt (or path); walk: the pavement on each side.
+ * The layer lifts it over the ones under it by a hair (in the shader), so tiles may be drawn in any order.
+ */
+const ROADS = {
+  road0: { cls: 0, half: 7.5, walk: 3.5, layer: 8 },
+  road1: { cls: 1, half: 5.5, walk: 3, layer: 7 },
+  road2: { cls: 2, half: 3.6, walk: 2.4, layer: 6 },
+  lane: { cls: 3, half: 2.3, walk: 0, layer: 5 },
+  rail: { cls: 4, half: 1.9, walk: 0, layer: 4 },
+  path: { cls: 5, half: 1.1, walk: 0, layer: 3 },
+};
+const PAVEMENT = { cls: 6, layer: 2 };
+const ROAD_LAYERS = Object.keys(ROADS);
+
+/**
+ * A ribbon along a polyline into a Packer of 6 floats (x, z, along, across, total, half) and 4 bytes (class,
+ * layer, kerb paint, inner half width in decimetres): only the segments whose middle lies in the box, so a street
+ * crossing several tiles is drawn once. Across is ±1 at the edges; along runs from 0 at the start to total at the
+ * end, and a little past each end (the ends reach over the junction, so corners have no gaps).
+ */
+function addRibbon(P, line, half, cls, layer, kerb, inner, box) {
+  const n = line.length >> 1;
+  if (n < 2) return;
+  const cum = new Float64Array(n);
+  for (let i = 1; i < n; i++) cum[i] = cum[i - 1] + Math.hypot(line[2 * i] - line[2 * i - 2], line[2 * i + 1] - line[2 * i - 1]);
+  const total = cum[n - 1];
+  if (total < 0.5) return;
+  // The offset at every point: the mitre between the segments on either side.
+  const ox = new Float64Array(n);
+  const oy = new Float64Array(n);
+  const dir = (i) => {
+    const dx = line[2 * i + 2] - line[2 * i];
+    const dy = line[2 * i + 3] - line[2 * i + 1];
+    const L = Math.hypot(dx, dy) || 1;
+    return [dx / L, dy / L];
+  };
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = dir(Math.max(0, i - 1));
+    const [bx, by] = dir(Math.min(n - 2, i));
+    let mx = -ay - by;
+    let my = ax + bx;
+    const ml = Math.hypot(mx, my);
+    if (ml < 1e-6) {
+      mx = -ay;
+      my = ax;
+    } else {
+      mx /= ml;
+      my /= ml;
+    }
+    const k = Math.min(3, 1 / Math.max(0.33, mx * -ay + my * ax));
+    ox[i] = mx * k * half;
+    oy[i] = my * k * half;
+  }
+  const ext = Math.min(half, 4);
+  const [sx, sy] = dir(0);
+  const [ex, ey] = dir(n - 2);
+  const put = (x, y, along, across) => {
+    const o = P.next();
+    const F = P.f;
+    F[o] = x;
+    F[o + 1] = y;
+    F[o + 2] = along;
+    F[o + 3] = across;
+    F[o + 4] = total;
+    F[o + 5] = half;
+    return P.bytes(cls, layer, kerb, inner);
+  };
+  const [x0, y0, x1, y1] = box;
+  for (let i = 0; i + 1 < n; i++) {
+    let ax = line[2 * i];
+    let ay = line[2 * i + 1];
+    let bx = line[2 * i + 2];
+    let by = line[2 * i + 3];
+    const mx = (ax + bx) / 2;
+    const my = (ay + by) / 2;
+    if (mx < x0 || mx >= x1 || my < y0 || my >= y1) continue;
+    let al = cum[i];
+    let bl = cum[i + 1];
+    if (i === 0) {
+      ax -= sx * ext;
+      ay -= sy * ext;
+      al -= ext;
+    }
+    if (i === n - 2) {
+      bx += ex * ext;
+      by += ey * ext;
+      bl += ext;
+    }
+    // In pieces of at most 24 m (long triangles lose depth precision on some phones); the pieces in between keep
+    // the segment's own width, the ends its mitres.
+    const L = Math.hypot(bx - ax, by - ay);
+    const pieces = Math.max(1, Math.ceil(L / 24));
+    const nx = L > 0 ? (-(by - ay) / L) * half : ox[i];
+    const ny = L > 0 ? ((bx - ax) / L) * half : oy[i];
+    let p0 = -1;
+    let p1 = -1;
+    for (let k = 0; k <= pieces; k++) {
+      const t = k / pieces;
+      const x = ax + (bx - ax) * t;
+      const y = ay + (by - ay) * t;
+      const qx = k === 0 ? ox[i] : k === pieces ? ox[i + 1] : nx;
+      const qy = k === 0 ? oy[i] : k === pieces ? oy[i + 1] : ny;
+      const along = al + (bl - al) * t;
+      const q0 = put(x + qx, y + qy, along, 1);
+      const q1 = put(x - qx, y - qy, along, -1);
+      if (k > 0) P.index.push(p0, p1, q1, p0, q1, q0);
+      p0 = q0;
+      p1 = q1;
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ the city
+/**
+ * The street view's city. map: a CityMap with its detail loaded (buildings carry their index in the detail file as
+ * `extra`); extra: the 3D file ({ n, h, t }) or null; opts.stone: Jerusalem stone rather than plaster.
+ * Returns { tile(tx, ty), move(x, y, dx, dy, r), walkable(x, y, r), buildingAt(x, y), trees(x0, y0, x1, y1) … }.
+ */
+function streetCity(map, extra = null, { stone = false } = {}) {
+  const heights = extra && Array.isArray(extra.h) && extra.n === countBuildings(map) ? extra.h : null;
+  // The mapped trees, in cells of a tile.
+  const treeCells = new Map();
+  if (extra && Array.isArray(extra.t)) {
+    let x = 0;
+    let y = 0;
+    for (let i = 0; i + 1 < extra.t.length; i += 2) {
+      x = i === 0 ? extra.t[0] : x + extra.t[i];
+      y = i === 0 ? extra.t[1] : y + extra.t[i + 1];
+      const k = cellKey(Math.floor(x / TILE), Math.floor(y / TILE));
+      let list = treeCells.get(k);
+      if (!list) treeCells.set(k, (list = []));
+      list.push(x, y);
+    }
+  }
+  const SHOPPY = new Set(['food', 'shop', 'bank', 'health', 'hotel']);
+  const near = (x0, y0, x1, y1, layer) => map.query(x0, y0, x1, y1).filter((f) => f.layer === layer);
+  const inArea = (layer, x, y) => {
+    for (const f of map.query(x, y, x, y)) {
+      if (f.layer !== layer) continue;
+      let odd = false;
+      for (const ring of f.geom) if (inRing(ring, x, y)) odd = !odd;
+      if (odd) return true;
+    }
+    return false;
+  };
+  /** In the sea: inside an odd number of the sea's rings (each its own feature). */
+  const inSea = (x, y) => {
+    let odd = false;
+    for (const f of map.query(x, y, x, y)) if (f.layer === 'sea' && inRing(f.geom[0], x, y)) odd = !odd;
+    return odd;
+  };
+  const buildingAt = (x, y, r = 0) => {
+    for (const f of map.query(x - r, y - r, x + r, y + r)) {
+      if (f.layer !== 'building') continue;
+      const ring = f.geom[0];
+      if (inRing(ring, x, y) || (r > 0 && nearestOnRing(ring, x, y)[2] < r)) return f;
+    }
+    return null;
+  };
+  const onRoad = (x, y, pad = 0.4) => {
+    for (const f of map.query(x - 9, y - 9, x + 9, y + 9)) {
+      const st = ROADS[f.layer];
+      if (!st || st.cls > 2) continue;
+      if (distToLine(f.geom, x, y) < st.half + pad) return true;
+    }
+    return false;
+  };
+  const walkable = (x, y) => map.arena.inside(x, y) && !inSea(x, y) && !inArea('water', x, y);
+  // Pedestrian streets are in the map's streets and among its paths too: those are paved, with no kerbs.
+  let pathEnds = null;
+  const pedestrian = (f) => {
+    if (!pathEnds) {
+      pathEnds = new Set();
+      for (const p of map.features || []) {
+        if (p.layer !== 'path') continue;
+        const g = p.geom;
+        pathEnds.add(`${Math.round(g[0])},${Math.round(g[1])},${Math.round(g[g.length - 2])},${Math.round(g[g.length - 1])}`);
+        pathEnds.add(`${Math.round(g[g.length - 2])},${Math.round(g[g.length - 1])},${Math.round(g[0])},${Math.round(g[1])}`);
+      }
+    }
+    const g = f.geom;
+    return pathEnds.has(`${Math.round(g[0])},${Math.round(g[1])},${Math.round(g[g.length - 2])},${Math.round(g[g.length - 1])}`);
+  };
+
+  function tile(tx, ty) {
+    const x0 = tx * TILE;
+    const y0 = ty * TILE;
+    const x1 = x0 + TILE;
+    const y1 = y0 + TILE;
+    const box = [x0, y0, x1, y1];
+    const feats = map.query(x0 - 2, y0 - 2, x1 + 2, y1 + 2);
+    // Shops, cafés and the like near a building give it shop fronts.
+    const shopsHere = (map.pois || []).filter((p) => SHOPPY.has(p.cat) && p.x > x0 - 60 && p.x < x1 + 60 && p.y > y0 - 60 && p.y < y1 + 60);
+    const shopsNear = (ring) => {
+      if (!shopsHere.length) return false;
+      let bx0 = Infinity;
+      let by0 = Infinity;
+      let bx1 = -Infinity;
+      let by1 = -Infinity;
+      for (let i = 0; i < ring.length; i += 2) {
+        bx0 = Math.min(bx0, ring[i]);
+        bx1 = Math.max(bx1, ring[i]);
+        by0 = Math.min(by0, ring[i + 1]);
+        by1 = Math.max(by1, ring[i + 1]);
+      }
+      return shopsHere.some((p) => p.x > bx0 - 7 && p.x < bx1 + 7 && p.y > by0 - 7 && p.y < by1 + 7);
+    };
+    const B = new Packer(8);
+    let tallest = 0;
+    for (const f of feats) {
+      if (f.layer !== 'building') continue;
+      const ring = f.geom[0];
+      if (ring[0] < x0 || ring[0] >= x1 || ring[1] < y0 || ring[1] >= y1) continue; // each building in one tile
+      const look = lookOf(ring, heights ? heights[f.extra] : 0, { stone, shopsNear });
+      if (look.top >= SKYLINE) continue; // in the skyline instead
+      addBuilding(B, ring, look.base, look.top, look.color, look.style, look.shops, look.variant);
+      tallest = Math.max(tallest, look.top);
+    }
+    // Streets: pavements first (under everything), then each kind of street; kerbs painted red-white or blue-white
+    // on some streets, as in Israel.
+    const R = new Packer(6);
+    for (const f of feats) {
+      const st = ROADS[f.layer];
+      if (!st || !st.walk || (st.cls === 2 && pedestrian(f))) continue;
+      const kerb = kerbOf(f.geom, st.cls);
+      addRibbon(R, f.geom, st.half + st.walk, PAVEMENT.cls, PAVEMENT.layer, kerb, Math.round(st.half * 10), box);
+    }
+    for (const layer of ROAD_LAYERS) {
+      const st = ROADS[layer];
+      for (const f of feats) {
+        if (f.layer !== layer) continue;
+        if (st.cls === 2 && pedestrian(f)) addRibbon(R, f.geom, st.half, ROADS.path.cls, st.layer, 0, 0, box);
+        else addRibbon(R, f.geom, st.half, st.cls, st.layer, 0, 0, box);
+      }
+    }
+    return { tx, ty, box, buildings: B.done(), roads: R.done(), trees: treesIn(box, feats), tallest };
+  }
+
+  /** The towers, all over town (seen from afar above the haze): one mesh. */
+  function skyline() {
+    const B = new Packer(8);
+    let n = 0;
+    if (heights) {
+      for (const f of map.features || []) {
+        if (f.layer !== 'building' || Math.floor((heights[f.extra] || 0) / 10) < SKYLINE) continue;
+        const ring = f.geom[0];
+        const look = lookOf(ring, heights[f.extra], { stone });
+        addBuilding(B, ring, look.base, look.top, look.color, look.style, false, look.variant);
+        n++;
+      }
+    }
+    return { mesh: B.done(), count: n };
+  }
+
+  /** Trees in the box: the mapped ones; where none are mapped, rows along the streets; and groves in the parks. */
+  function treesIn(box, feats) {
+    const [x0, y0, x1, y1] = box;
+    const out = [];
+    const rand = seeded(Math.floor(x0) * 73856093 ^ Math.floor(y0) * 19349663);
+    const add = (x, y, s) => out.push(x, y, s, Math.floor(rand() * 8));
+    const mapped = treeCells.get(cellKey(Math.floor(x0 / TILE), Math.floor(y0 / TILE))) || [];
+    for (let i = 0; i < mapped.length; i += 2) {
+      if (!buildingAt(mapped[i], mapped[i + 1])) add(mapped[i], mapped[i + 1], 0.8 + rand() * 0.5);
+    }
+    const free = (x, y) => x >= x0 && x < x1 && y >= y0 && y < y1 && !buildingAt(x, y, 2.2) && !onRoad(x, y) && walkable(x, y);
+    if (mapped.length < 16) {
+      for (const f of feats) {
+        const st = ROADS[f.layer];
+        if (!st || (st.cls !== 1 && st.cls !== 2)) continue;
+        const line = f.geom;
+        for (let i = 2; i + 1 < line.length; i += 2) {
+          const ax = line[i - 2];
+          const ay = line[i - 1];
+          const dx = line[i] - ax;
+          const dy = line[i + 1] - ay;
+          const L = Math.hypot(dx, dy);
+          if (L < 20) continue;
+          const step = 10 + hash2(ax, ay) * 5;
+          for (let d = 8; d < L - 8; d += step) {
+            for (const side of [-1, 1]) {
+              const off = st.half + 1.2;
+              const x = ax + (dx / L) * d - (dy / L) * off * side;
+              const y = ay + (dy / L) * d + (dx / L) * off * side;
+              if (free(x, y)) add(x, y, 0.75 + rand() * 0.45);
+            }
+          }
+        }
+      }
+    }
+    for (const f of feats) {
+      const spacing = f.layer === 'green' ? 11 : f.layer === 'area:forest' ? 7 : 0;
+      if (!spacing) continue;
+      for (let gy = Math.max(y0, f.y0); gy < Math.min(y1, f.y1); gy += spacing) {
+        for (let gx = Math.max(x0, f.x0); gx < Math.min(x1, f.x1); gx += spacing) {
+          const x = gx + rand() * spacing * 0.8;
+          const y = gy + rand() * spacing * 0.8;
+          let odd = false;
+          for (const ring of f.geom) if (inRing(ring, x, y)) odd = !odd;
+          if (odd && free(x, y) && !nearPath(feats, x, y)) add(x, y, 0.8 + rand() * 0.6);
+        }
+      }
+      if (out.length > 3200) break;
+    }
+    return Float32Array.from(out.slice(0, 3200));
+  }
+
+  /**
+   * Moves a walker of radius r from (x, y) by (dx, dy): never into a building (it slides along the wall), the sea,
+   * a lake or out of the city. Returns [x, y].
+   */
+  function move(x, y, dx, dy, r = 0.35) {
+    const settle = (px, py) => {
+      for (let k = 0; k < 3; k++) {
+        let pushed = false;
+        for (const f of map.query(px - r - 1, py - r - 1, px + r + 1, py + r + 1)) {
+          if (f.layer !== 'building') continue;
+          const ring = f.geom[0];
+          const inside = inRing(ring, px, py);
+          const [qx, qy, d] = nearestOnRing(ring, px, py);
+          if (!inside && d >= r) continue;
+          if (d < 1e-6) continue;
+          const ux = (px - qx) / d;
+          const uy = (py - qy) / d;
+          const s = inside ? -1 : 1; // inside: out through the nearest wall
+          px = qx + ux * s * (r + 0.01);
+          py = qy + uy * s * (r + 0.01);
+          pushed = true;
+        }
+        if (!pushed) break;
+      }
+      return [px, py];
+    };
+    for (const [mx, my] of [
+      [dx, dy],
+      [dx, 0],
+      [0, dy],
+    ]) {
+      if (!mx && !my) continue;
+      const [px, py] = settle(x + mx, y + my);
+      if (walkable(px, py) && !buildingAt(px, py)) return [px, py];
+    }
+    return [x, y];
+  }
+
+  return { map, stone, heights, tile, skyline, move, walkable, buildingAt, onRoad, inSea, pedestrian, trees: treeCells };
+}
+
+/**
+ * The name of the street at (x, y): the nearest street that has a name label lying along it (a main road built of
+ * two carriageways has its label on one of them, so the next-nearest streets are tried too). '' when none is near.
+ */
+function streetNamer(map) {
+  const cells = new Map();
+  for (const l of map.labels || []) {
+    const k = cellKey(Math.floor(l.x / 200), Math.floor(l.y / 200));
+    if (!cells.has(k)) cells.set(k, []);
+    cells.get(k).push(l);
+  }
+  return (x, y) => {
+    const near = [];
+    for (const f of map.query(x - 25, y - 25, x + 25, y + 25)) {
+      const st = ROADS[f.layer];
+      if (!st || st.cls > 2) continue;
+      const d = distToLine(f.geom, x, y);
+      if (d < 25) near.push({ f, d });
+    }
+    near.sort((a, b) => a.d - b.d);
+    const cx = Math.floor(x / 200);
+    const cy = Math.floor(y / 200);
+    for (const { f, d } of near.slice(0, 3)) {
+      if (d > near[0].d + 14) break;
+      let name = '';
+      let best = Infinity;
+      for (let j = cy - 2; j <= cy + 2; j++) {
+        for (let i = cx - 2; i <= cx + 2; i++) {
+          for (const l of cells.get(cellKey(i, j)) || []) {
+            const ld = Math.hypot(l.x - x, l.y - y);
+            if (ld < best && distToLine(f.geom, l.x, l.y) < 7) {
+              best = ld;
+              name = l.text;
+            }
+          }
+        }
+      }
+      if (name) return name;
+    }
+    return '';
+  };
+}
+
+function nearPath(feats, x, y) {
+  for (const f of feats) if (f.layer === 'path' && f.x0 - 2 < x && f.x1 + 2 > x && f.y0 - 2 < y && f.y1 + 2 > y && distToLine(f.geom, x, y) < 1.6) return true;
+  return false;
+}
+
+/** Kerb paint along a street: 0 plain, 1 red and white (no stopping), 2 blue and white (paid parking). */
+function kerbOf(line, cls) {
+  const r = hash2(line[0] * 0.37, line[1] * 0.61);
+  if (cls === 0) return r < 0.7 ? 1 : 0;
+  if (cls === 1) return r < 0.35 ? 1 : r < 0.75 ? 2 : 0;
+  return r < 0.3 ? 2 : r < 0.4 ? 1 : 0;
+}
+
+function countBuildings(map) {
+  let n = 0;
+  for (const f of map.features || []) if (f.layer === 'building') n = Math.max(n, f.extra + 1);
+  return n;
+}
+
+function cellKey(tx, ty) {
+  return (tx + 1024) * 4096 + (ty + 1024);
+}
+
+// ------------------------------------------------------------------------------------------------ models
+/** Faces of a box into lists (6 floats a vertex: position and normal, plus a part number) — for the models below. */
+function box(out, cx, y0, cz, w, h, d, part) {
+  const x0 = cx - w / 2;
+  const x1 = cx + w / 2;
+  const y1 = y0 + h;
+  const z0 = cz - d / 2;
+  const z1 = cz + d / 2;
+  const quad = (a, b, c, e, n) => {
+    for (const v of [a, b, c, a, c, e]) out.push(v[0], v[1], v[2], n[0], n[1], n[2], part);
+  };
+  quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, 1]);
+  quad([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [0, 0, -1]);
+  quad([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [1, 0, 0]);
+  quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [-1, 0, 0]);
+  quad([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], [0, 1, 0]);
+  quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [0, -1, 0]);
+}
+
+/**
+ * A person, 1.75 m tall, facing +x (the right hand on +z): 7 floats a vertex (position, normal, part). Parts: 0 the
+ * body, 1 and 2 the legs (they swing about the hips at 0.88 m), 3 and 4 the arms (about the shoulders at 1.42 m),
+ * 5 the head, 6 the hair.
+ */
+function personModel() {
+  const out = [];
+  box(out, 0, 0.86, 0, 0.26, 0.6, 0.4, 0); // body (0.4 wide across, along z)
+  box(out, 0, 0, -0.1, 0.16, 0.9, 0.15, 1);
+  box(out, 0, 0, 0.1, 0.16, 0.9, 0.15, 2);
+  box(out, 0, 0.84, -0.27, 0.12, 0.6, 0.11, 3);
+  box(out, 0, 0.84, 0.27, 0.12, 0.6, 0.11, 4);
+  box(out, 0.01, 1.48, 0, 0.23, 0.25, 0.2, 5);
+  box(out, -0.01, 1.68, 0, 0.25, 0.08, 0.22, 6);
+  return Float32Array.from(out);
+}
+
+/**
+ * A tree, about 5.4 m tall: a six-sided trunk and a crown of twenty faces, 7 floats a vertex (position, normal,
+ * part: 0 the trunk, 1 the crown). Instances scale it.
+ */
+function treeModel() {
+  const out = [];
+  const tri = (a, b, c, part) => {
+    const ux = b[0] - a[0];
+    const uy = b[1] - a[1];
+    const uz = b[2] - a[2];
+    const vx = c[0] - a[0];
+    const vy = c[1] - a[1];
+    const vz = c[2] - a[2];
+    let nx = uy * vz - uz * vy;
+    let ny = uz * vx - ux * vz;
+    let nz = ux * vy - uy * vx;
+    const L = Math.hypot(nx, ny, nz) || 1;
+    nx /= L;
+    ny /= L;
+    nz /= L;
+    for (const v of [a, b, c]) out.push(v[0], v[1], v[2], nx, ny, nz, part);
+  };
+  const r = 0.16;
+  const h = 2.6;
+  for (let i = 0; i < 6; i++) {
+    const a0 = (i / 6) * Math.PI * 2;
+    const a1 = ((i + 1) / 6) * Math.PI * 2;
+    const p0 = [Math.cos(a0) * r, 0, Math.sin(a0) * r];
+    const p1 = [Math.cos(a1) * r, 0, Math.sin(a1) * r];
+    const q0 = [Math.cos(a0) * r * 0.7, h, Math.sin(a0) * r * 0.7];
+    const q1 = [Math.cos(a1) * r * 0.7, h, Math.sin(a1) * r * 0.7];
+    tri(p0, q1, p1, 0);
+    tri(p0, q0, q1, 0);
+  }
+  // An icosahedron, a little flattened, for the crown.
+  const t = (1 + Math.sqrt(5)) / 2;
+  const V = [
+    [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t],
+    [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1],
+  ].map(([x, y, z]) => {
+    const L = Math.hypot(x, y, z);
+    return [(x / L) * 1.9, (y / L) * 1.55 + 3.85, (z / L) * 1.9];
+  });
+  const F = [
+    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
+  ];
+  for (const [a, b, c] of F) {
+    // Every face turned to face out (its normal away from the crown's middle).
+    const [p, q, s] = [V[a], V[b], V[c]];
+    const n = [
+      (q[1] - p[1]) * (s[2] - p[2]) - (q[2] - p[2]) * (s[1] - p[1]),
+      (q[2] - p[2]) * (s[0] - p[0]) - (q[0] - p[0]) * (s[2] - p[2]),
+      (q[0] - p[0]) * (s[1] - p[1]) - (q[1] - p[1]) * (s[0] - p[0]),
+    ];
+    const out3 = n[0] * (p[0] + q[0] + s[0]) + n[1] * (p[1] + q[1] + s[1] - 3 * 3.85) + n[2] * (p[2] + q[2] + s[2]);
+    if (out3 >= 0) tri(p, q, s, 1);
+    else tri(p, s, q, 1);
+  }
+  return Float32Array.from(out);
+}
+
+return { TILE, FLOOR, SKYLINE, hash2, seeded, rgb, signedArea2, cleanRing, inRing, nearestOnRing, distToLine, triangulate, Packer, KIND, STYLE, guessHeight, PALETTES, addBuilding, lookOf, ROADS, PAVEMENT, ROAD_LAYERS, addRibbon, streetCity, streetNamer, cellKey, personModel, treeModel };
+})();
+__m.walk = (() => {
+// Ch-ch-chain-ges — walking the streets in 3D. A city's real streets, buildings (their heights where OSM knows
+// them), pavements with painted kerbs, parks, trees and the sea, drawn with WebGL 2 from the map files; you walk them
+// at eye height, look around by dragging, walk with your left thumb or by tapping the street where you want to go.
+// People wait on the pavements and wave when you come near; walk up to them and they join your chain, following
+// behind you. Nothing here talks to the server: it is a walk on this phone.
+const { AREA_STYLE } = __m.map;
+const { TILE, FLOOR, ROADS, streetCity, streetNamer, personModel, treeModel, seeded, rgb, hash2, inRing, nearestOnRing } = __m.street3d;
+const EYE = 1.62; // metres
+const WALK = 3.4; // m/s: a brisk walk (a game, not a stroll)
+const RUN = 8;
+const FAR = 480; // the fog is complete here, and nothing is drawn beyond
+const FOG_START = 110;
+const MAX_PEOPLE = 420;
+const SIGNS_MAX = 128;
+const WAITING = 26; // people waiting around you at any time
+const CHAIN = '#1f5fd6'; // the shirts of people in your chain
+const GROUND_CELL = 40;
+const GROUND_N = 28; // squares a side: 1120 m, past the haze
+const STONE = new Set(['jerusalem', 'maale-adumim', 'beitar-illit', 'beit-shemesh', 'modiin-illit', 'safed', 'ariel']);
+
+// The land as seen from the street: paler, dustier and greener than the map's paper colours.
+const GROUND = {
+  land: '#cbc3b1',
+  residential: '#c6c1ab',
+  commercial: '#cdc5b8',
+  industrial: '#bcb8b1',
+  parking: '#8e8d8a',
+  school: '#d1c7ae',
+  hospital: '#cfc8bb',
+  cemetery: '#9dab85',
+  sport: '#7da458',
+  farmland: '#b3aa76',
+  forest: '#5d8243',
+  sand: '#ddcc9c',
+  green: '#7ba350',
+  beach: '#e6d6a6',
+  water: '#3b6c79',
+};
+
+const SHIRTS = ['#e5484d', '#f59e0b', '#12a594', '#8e4ec6', '#e93d82', '#f2f2f0', '#27272a', '#46a758', '#f76b15', '#0891b2', '#a18072', '#d6c3a5', '#6e56cf', '#fbbf24'];
+const PANTS = ['#2f4a6d', '#1f2937', '#a89274', '#4b5563', '#e5e7eb', '#5b6b3a'];
+const SKIN = ['#f1c7a4', '#e0ac85', '#c68b62', '#a8704a', '#7d4f35', '#f5d4b8'];
+const HAIR = ['#1c1917', '#3f2a1d', '#6b4a2f', '#c9a36b', '#9ca3af', '#7c3a1d'];
+const packRGB = (hex) => {
+  const [r, g, b] = rgb(hex);
+  return r * 65536 + g * 256 + b;
+};
+
+// ------------------------------------------------------------------------------------------------ shaders
+const COMMON = `
+precision highp float;
+uniform vec3 u_eye;
+uniform vec3 u_fogc;
+uniform vec2 u_fogr;
+uniform vec3 u_sun;
+uniform vec3 u_zen;
+uniform float u_time;
+// The haze lies low: high up (the tops of towers) it is thinner, so a skyline shows over the town from afar.
+vec3 fogged(vec3 c, vec3 p) {
+  float d = distance(p, u_eye) * mix(1.0, 0.12, smoothstep(10.0, 160.0, p.y));
+  float f = clamp((d - u_fogr.x) / (u_fogr.y - u_fogr.x), 0.0, 1.0);
+  return mix(c, u_fogc, f * f * (3.0 - 2.0 * f));
+}
+vec3 skyc(vec3 d) {
+  return mix(u_fogc, u_zen, pow(clamp(d.y, 0.0, 1.0), 0.5));
+}
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), f.x), mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float band(float x, float c, float w) {
+  float px = fwidth(x) + 1e-4;
+  return 1.0 - smoothstep(w - px, w + px, abs(x - c));
+}
+`;
+
+const SKY_VS = `#version 300 es
+in vec2 a_pos;
+out vec2 v_ndc;
+void main() { v_ndc = a_pos; gl_Position = vec4(a_pos, 0.9999, 1.0); }`;
+const SKY_FS = `#version 300 es
+${COMMON}
+in vec2 v_ndc;
+out vec4 o;
+uniform vec3 u_fw;
+uniform vec3 u_rt;
+uniform vec3 u_up;
+uniform vec2 u_tan;
+void main() {
+  vec3 d = normalize(u_fw + u_rt * v_ndc.x * u_tan.x + u_up * v_ndc.y * u_tan.y);
+  vec3 c = skyc(d);
+  if (d.y > 0.0) {
+    // A few light clouds, drifting.
+    vec2 q = d.xz / (d.y + 0.08) * 0.9 + vec2(u_time * 0.004, u_time * 0.002);
+    float n = vnoise(q) * 0.55 + vnoise(q * 2.3) * 0.3 + vnoise(q * 5.1) * 0.15;
+    float cl = smoothstep(0.58, 0.82, n) * smoothstep(0.02, 0.25, d.y);
+    c = mix(c, vec3(0.97, 0.97, 0.96), cl * 0.75);
+  }
+  float s = max(dot(d, u_sun), 0.0);
+  c += vec3(1.0, 0.92, 0.76) * (pow(s, 900.0) * 1.8 + pow(s, 14.0) * 0.16);
+  o = vec4(c, 1.0);
+}`;
+
+// The ground: a grid of 40 m squares following the walker (small triangles: a huge one reaching behind the eye loses
+// depth precision on some phones, and the streets drawn over it then vanish).
+const GROUND_VS = `#version 300 es
+in vec2 a_pos;
+uniform mat4 u_vp;
+uniform vec2 u_origin;
+out vec3 v_p;
+void main() { v_p = vec3(a_pos.x + u_origin.x, 0.0, a_pos.y + u_origin.y); gl_Position = u_vp * vec4(v_p, 1.0); }`;
+const GROUND_FS = `#version 300 es
+${COMMON}
+in vec3 v_p;
+out vec4 o;
+uniform sampler2D u_ground;
+uniform sampler2D u_water;
+uniform float u_E;
+void main() {
+  vec2 uv = (v_p.xz + u_E) / (2.0 * u_E);
+  vec3 land = texture(u_ground, uv).rgb;
+  land *= 0.9 + vnoise(v_p.xz * 0.6) * 0.12 + vnoise(v_p.xz * 3.1) * 0.06;
+  float w = texture(u_water, uv).r;
+  vec3 c = land;
+  if (w > 0.02) {
+    vec3 V = normalize(v_p - u_eye);
+    vec2 q = v_p.xz * 0.3 + vec2(u_time * 0.35, u_time * 0.21);
+    vec3 N = normalize(vec3((vnoise(q) - 0.5) * 0.3 + (vnoise(q * 2.7) - 0.5) * 0.15, 1.0, (vnoise(q + 19.0) - 0.5) * 0.3));
+    vec3 R = reflect(V, N);
+    float fres = 0.05 + 0.95 * pow(1.0 - max(dot(-V, N), 0.0), 5.0);
+    vec3 sea = mix(vec3(0.09, 0.31, 0.40), skyc(R), fres);
+    sea += vec3(1.0, 0.95, 0.82) * pow(max(dot(R, u_sun), 0.0), 220.0) * 1.4;
+    // Foam where the sea meets the beach.
+    sea = mix(sea, vec3(0.93), smoothstep(0.62, 0.45, w) * (0.35 + 0.35 * vnoise(q * 3.0)));
+    c = mix(land, sea, smoothstep(0.3, 0.6, w));
+  }
+  o = vec4(fogged(c, v_p), 1.0);
+}`;
+
+// Everything on the ground lies at height 0; each layer is drawn a little nearer than the one under it by sliding its
+// corners towards the eye along the line of sight (so they stay on the same pixels): a fixed share of the distance,
+// which the depth buffer can always tell apart, near or far, whatever order the tiles are drawn in.
+const ROAD_VS = `#version 300 es
+in vec2 a_pos;
+in vec4 a_road;
+in vec4 a_info;
+uniform mat4 u_vp;
+uniform vec3 u_eye;
+uniform float u_eps;
+out vec3 v_p;
+out vec4 v_road;
+flat out vec4 v_info;
+void main() {
+  v_p = vec3(a_pos.x, 0.0, a_pos.y);
+  v_road = a_road;
+  v_info = a_info;
+  gl_Position = u_vp * vec4(v_p + (u_eye - v_p) * (a_info.y * u_eps), 1.0);
+}`;
+const ROAD_FS = `#version 300 es
+${COMMON}
+in vec3 v_p;
+in vec4 v_road;
+flat in vec4 v_info;
+out vec4 o;
+void main() {
+  float along = v_road.x;
+  float acr = v_road.y * v_road.w;
+  float total = v_road.z;
+  float hw = v_road.w;
+  float cls = v_info.x;
+  float a = abs(acr);
+  float e = min(along, total - along); // how far from the nearest end (a junction, usually)
+  vec3 c;
+  if (cls < 2.5) {
+    c = vec3(0.29, 0.30, 0.32) * (0.9 + vnoise(v_p.xz * 1.3) * 0.12 + hash12(floor(v_p.xz * 9.0)) * 0.05);
+    float paint = 0.0;
+    if (e > 3.0) {
+      if (cls < 0.5) {
+        paint = band(a, 0.18, 0.06); // a double line in the middle
+        paint = max(paint, band(a, hw * 0.5, 0.07) * step(fract(along / 6.0), 0.45));
+      } else if (cls < 1.5) {
+        paint = band(acr, 0.0, 0.07) * step(fract(along / 9.0), 0.4);
+      }
+    }
+    // Zebra crossings where the street meets the next one.
+    if (total > 26.0 && e > 2.2 && e < 5.6 && a < hw - 0.35) paint = max(paint, step(0.5, fract(acr + 0.25)));
+    c = mix(c, vec3(0.9, 0.9, 0.88), paint * 0.92);
+  } else if (cls < 3.5) {
+    c = vec3(0.36, 0.365, 0.37) * (0.9 + vnoise(v_p.xz * 1.1) * 0.14);
+  } else if (cls < 4.5) {
+    c = vec3(0.54, 0.50, 0.46) * (0.85 + hash12(floor(v_p.xz * 12.0)) * 0.2);
+    if (a < 1.25) c = mix(c, vec3(0.36, 0.30, 0.25), step(fract(along / 0.62), 0.3));
+    c = mix(c, vec3(0.74, 0.74, 0.76), band(a, 0.72, 0.04));
+  } else if (cls < 5.5) {
+    c = vec3(0.80, 0.76, 0.68);
+    float row = floor(along / 0.3);
+    float g = max(band(fract(along / 0.3), 0.0, 0.05), band(fract(acr / 0.2 + mod(row, 2.0) * 0.5), 0.0, 0.06));
+    c *= 1.0 - g * 0.12;
+  } else {
+    // The pavement: square slabs, and its kerb along the street, sometimes painted.
+    c = vec3(0.77, 0.75, 0.71) * (0.95 + vnoise(v_p.xz * 2.0) * 0.08);
+    float g = max(band(fract(along / 0.5), 0.0, 0.03), band(fract(acr / 0.5), 0.0, 0.03));
+    c *= 1.0 - g * 0.1;
+    float inner = v_info.w * 0.1;
+    if (a > inner - 0.02 && a < inner + 0.24) {
+      float kerb = v_info.z;
+      float s = step(fract(along / 1.0), 0.5);
+      vec3 k = vec3(0.86, 0.85, 0.82);
+      if (kerb > 0.5 && kerb < 1.5) k = mix(vec3(0.95), vec3(0.78, 0.16, 0.14), s);
+      if (kerb > 1.5) k = mix(vec3(0.95), vec3(0.10, 0.30, 0.72), s);
+      c = k;
+    }
+  }
+  o = vec4(fogged(c, v_p), 1.0);
+}`;
+
+const BUILDING_VS = `#version 300 es
+in vec3 a_pos;
+in vec3 a_nrm;
+in vec2 a_uv;
+in vec4 a_col;
+uniform mat4 u_vp;
+out vec3 v_p;
+out vec3 v_n;
+out vec2 v_uv;
+out vec3 v_c;
+flat out float v_fl;
+void main() {
+  v_p = a_pos;
+  v_n = a_nrm;
+  v_uv = a_uv;
+  v_c = a_col.rgb;
+  v_fl = floor(a_col.a * 255.0 + 0.5);
+  gl_Position = u_vp * vec4(a_pos, 1.0);
+}`;
+const BUILDING_FS = `#version 300 es
+${COMMON}
+in vec3 v_p;
+in vec3 v_n;
+in vec2 v_uv;
+in vec3 v_c;
+flat in float v_fl;
+out vec4 o;
+const float FLOOR = ${FLOOR.toFixed(2)};
+float box(float x, float c, float w) { return band(x, c, w); }
+void main() {
+  float style = mod(v_fl, 4.0);
+  bool roof = mod(floor(v_fl / 4.0), 2.0) > 0.5;
+  bool shops = mod(floor(v_fl / 8.0), 2.0) > 0.5;
+  float variant = floor(v_fl / 16.0);
+  vec3 n = normalize(v_n);
+  vec3 V = normalize(v_p - u_eye);
+  vec3 c = v_c;
+  if (roof) {
+    c = mix(c, vec3(0.60, 0.58, 0.55), 0.55) * (0.88 + vnoise(v_uv * 0.4) * 0.16);
+  } else {
+    float u = v_uv.x;
+    float h = v_uv.y;
+    float fv = h / FLOOR;
+    float fy = fract(fv);
+    float fu = fract(u);
+    float storey = floor(fv);
+    vec3 glass = mix(vec3(0.15, 0.19, 0.24), skyc(reflect(V, n)), 0.3 + 0.45 * pow(1.0 - abs(dot(V, n)), 3.0));
+    // Too far to draw the windows one by one: their average instead (no shimmer).
+    float fine = clamp(max(fwidth(u), fwidth(fv)) * 3.0 - 0.4, 0.0, 1.0);
+    float win = 0.0;
+    float frame = 0.0;
+    float shutter = 0.0;
+    if (u >= 0.0 && h > 0.6) {
+      if (style < 0.5) {
+        float ww = 0.2 + 0.05 * mod(variant, 3.0);
+        float opening = box(fu, 0.5, ww) * box(fy, 0.56, 0.23);
+        // Roller shutters (trisim), some of them part of the way down.
+        float sh = hash12(vec2(floor(u) + variant * 7.0, storey));
+        float down = sh < 0.35 ? 1.0 - step(fy, 0.79 - sh * 0.9) : 0.0;
+        win = opening * (1.0 - down);
+        shutter = opening * down;
+        frame = max(box(fu, 0.5, ww + 0.035) * box(fy, 0.56, 0.26) - opening, 0.0);
+        // Slab lines between the floors (balconies, on some buildings).
+        if (mod(variant, 2.0) > 0.5) c *= 1.0 - 0.1 * box(fy, 0.02, 0.035);
+      } else if (style < 1.5) {
+        win = box(fy, 0.58, 0.27) * (1.0 - band(fract(u * 2.0), 0.0, 0.05));
+      } else if (style < 2.5) {
+        win = 1.0 - max(band(fract(u * 2.0), 0.0, 0.04), box(fy, 0.0, 0.04));
+      }
+    }
+    vec3 wall = c;
+    c = mix(c, glass, clamp(win, 0.0, 1.0));
+    c = mix(c, vec3(0.80, 0.78, 0.73), clamp(shutter, 0.0, 1.0));
+    c = mix(c, wall * 0.82, clamp(frame, 0.0, 1.0) * 0.6);
+    if (shops && h < FLOOR && u >= 0.0) {
+      // Shop fronts: big windows lit from inside, a sign band over them.
+      float sw = box(fu, 0.5, 0.42) * box(h, 1.45, 1.1);
+      vec3 inside = mix(vec3(0.22, 0.2, 0.17), vec3(0.62, 0.52, 0.38), hash12(vec2(floor(u), variant)));
+      c = mix(c, mix(inside, glass, 0.35), sw);
+      vec3 signc = vec3(0.12 + 0.6 * hash12(vec2(variant, 3.0)), 0.2 + 0.5 * hash12(vec2(variant, 5.0)), 0.25 + 0.5 * hash12(vec2(variant, 9.0)));
+      c = mix(c, signc, box(h, 2.82, 0.2) * (1.0 - band(fu, 0.0, 0.02)));
+    }
+    c = mix(c, mix(wall, glass, style > 1.5 ? 0.8 : style > 0.5 ? 0.45 : 0.25), fine);
+    c *= mix(0.72, 1.0, smoothstep(0.0, 2.8, h)); // darker at the foot of the wall
+  }
+  float lit = 0.6 + 0.42 * max(dot(n, u_sun), 0.0) + 0.05 * n.y;
+  o = vec4(fogged(c * lit, v_p), 1.0);
+}`;
+
+const TREE_VS = `#version 300 es
+in vec3 a_pos;
+in vec3 a_nrm;
+in float a_part;
+in vec4 i_tree;
+uniform mat4 u_vp;
+uniform float u_time;
+out vec3 v_p;
+out vec3 v_n;
+flat out float v_part;
+flat out float v_var;
+void main() {
+  float s = i_tree.z;
+  float r = i_tree.w * 0.785 + i_tree.x * 0.13;
+  float cr = cos(r);
+  float sr = sin(r);
+  vec3 p = a_pos * vec3(s, s * (0.85 + 0.3 * fract(i_tree.x * 0.37 + i_tree.y * 0.11)), s);
+  p.xz = mat2(cr, sr, -sr, cr) * p.xz;
+  vec3 n = a_nrm;
+  n.xz = mat2(cr, sr, -sr, cr) * n.xz;
+  if (a_part > 0.5) p.x += sin(u_time * 1.4 + i_tree.x * 0.3 + i_tree.y * 0.2) * 0.05 * p.y;
+  v_p = vec3(i_tree.x, 0.0, i_tree.y) + p;
+  v_n = n;
+  v_part = a_part;
+  v_var = i_tree.w;
+  gl_Position = u_vp * vec4(v_p, 1.0);
+}`;
+const TREE_FS = `#version 300 es
+${COMMON}
+in vec3 v_p;
+in vec3 v_n;
+flat in float v_part;
+flat in float v_var;
+out vec4 o;
+void main() {
+  vec3 n = normalize(v_n);
+  vec3 c = vec3(0.40, 0.33, 0.26);
+  if (v_part > 0.5) {
+    c = mix(vec3(0.27, 0.45, 0.20), vec3(0.42, 0.56, 0.26), fract(v_var * 0.37));
+    c = mix(c, vec3(0.33, 0.47, 0.30), step(6.5, v_var) * 0.6);
+    c *= 0.85 + 0.3 * vnoise(v_p.xz * 1.7 + v_p.y);
+  }
+  float lit = 0.55 + 0.5 * max(dot(n, u_sun), 0.0);
+  o = vec4(fogged(c * lit, v_p), 1.0);
+}`;
+
+const PERSON_VS = `#version 300 es
+in vec3 a_pos;
+in vec3 a_nrm;
+in float a_part;
+in vec4 i_pos;
+in vec4 i_act;
+in vec4 i_look;
+uniform mat4 u_vp;
+uniform float u_time;
+out vec3 v_p;
+out vec3 v_n;
+out vec3 v_c;
+vec3 unpack(float v) { return vec3(floor(v / 65536.0), mod(floor(v / 256.0), 256.0), mod(v, 256.0)) / 255.0; }
+vec2 rot(vec2 v, float a) { float c = cos(a); float s = sin(a); return vec2(c * v.x - s * v.y, s * v.x + c * v.y); }
+void main() {
+  vec3 p = a_pos;
+  vec3 n = a_nrm;
+  float act = i_act.x;
+  float moving = (act > 0.5 && act < 1.5) || act > 2.5 ? 1.0 : 0.0;
+  float sw = sin(i_pos.w) * 0.55 * moving;
+  if (a_part > 0.5 && a_part < 2.5) {
+    // Legs swing about the hips.
+    float s = a_part < 1.5 ? sw : -sw;
+    p.xy = rot(p.xy - vec2(0.0, 0.88), s) + vec2(0.0, 0.88);
+    n.xy = rot(n.xy, s);
+  } else if (a_part > 2.5 && a_part < 4.5) {
+    bool right = a_part > 3.5;
+    if (act > 1.5 && act < 2.5 && right) {
+      // Waving: the right arm up, going side to side.
+      float s = 2.75 + 0.3 * sin(u_time * 9.0 + i_pos.w);
+      p.zy = rot(p.zy - vec2(0.27, 1.42), s) + vec2(0.27, 1.42);
+      n.zy = rot(n.zy, s);
+    } else if (act > 2.5) {
+      // In the chain: hands on the shoulders of the one in front.
+      float s = 1.25 + 0.08 * sin(i_pos.w);
+      p.xy = rot(p.xy - vec2(0.0, 1.42), s) + vec2(0.0, 1.42);
+      n.xy = rot(n.xy, s);
+    } else {
+      float s = (right ? sw : -sw) * 0.75;
+      p.xy = rot(p.xy - vec2(0.0, 1.42), s) + vec2(0.0, 1.42);
+      n.xy = rot(n.xy, s);
+    }
+  }
+  float bob = moving * abs(sin(i_pos.w)) * 0.035;
+  p *= i_act.y;
+  p.y += bob;
+  p.xz = rot(p.xz, i_pos.z);
+  n.xz = rot(n.xz, i_pos.z);
+  vec3 shirt = unpack(i_look.x);
+  vec3 skin = unpack(i_look.z);
+  vec3 c = shirt;
+  if (a_part > 0.5 && a_part < 2.5) c = unpack(i_look.y);
+  else if (a_part > 2.5 && a_part < 4.5) c = a_pos.y < 1.13 ? skin : shirt;
+  else if (a_part > 4.5 && a_part < 5.5) c = skin;
+  else if (a_part > 5.5) c = unpack(i_look.w);
+  v_c = c;
+  v_p = vec3(i_pos.x, 0.0, i_pos.y) + p;
+  v_n = n;
+  gl_Position = u_vp * vec4(v_p, 1.0);
+}`;
+const PERSON_FS = `#version 300 es
+${COMMON}
+in vec3 v_p;
+in vec3 v_n;
+in vec3 v_c;
+out vec4 o;
+void main() {
+  vec3 n = normalize(v_n);
+  float lit = 0.62 + 0.45 * max(dot(n, u_sun), 0.0);
+  o = vec4(fogged(v_c * lit, v_p), 1.0);
+}`;
+
+// Soft round shadows under trees and people (and the ring where a tap sends you), on the ground.
+const BLOB_VS = `#version 300 es
+in vec2 a_pos;
+in vec4 i_blob;
+uniform mat4 u_vp;
+uniform vec3 u_eye;
+uniform float u_eps;
+uniform float u_k;
+uniform float u_alpha;
+out vec2 v_q;
+out vec3 v_p;
+flat out float v_a;
+void main() {
+  v_q = a_pos;
+  v_a = u_alpha > 0.0 ? u_alpha : i_blob.w;
+  v_p = vec3(i_blob.x + a_pos.x * i_blob.z * u_k, 0.0, i_blob.y + a_pos.y * i_blob.z * u_k);
+  gl_Position = u_vp * vec4(v_p + (u_eye - v_p) * (11.0 * u_eps), 1.0);
+}`;
+const BLOB_FS = `#version 300 es
+${COMMON}
+in vec2 v_q;
+in vec3 v_p;
+flat in float v_a;
+out vec4 o;
+uniform float u_ring;
+void main() {
+  float d = length(v_q);
+  if (u_ring > 0.5) {
+    float r = (1.0 - smoothstep(0.06, 0.12, abs(d - 0.8))) * (0.75 + 0.25 * sin(u_time * 6.0));
+    o = vec4(vec3(1.0), r * v_a);
+    return;
+  }
+  float f = clamp((distance(v_p, u_eye) - u_fogr.x) / (u_fogr.y - u_fogr.x), 0.0, 1.0);
+  o = vec4(0.0, 0.0, 0.0, v_a * (1.0 - smoothstep(0.25, 1.0, d)) * (1.0 - f));
+}`;
+
+// Shop signs: the names of shops, cafés and the like, over their doors (a picture of each, in one big texture).
+const SIGN_VS = `#version 300 es
+in vec2 a_pos;
+in vec4 i_c;
+in vec4 i_r;
+in vec4 i_uv;
+uniform mat4 u_vp;
+out vec2 v_uv;
+out vec3 v_p;
+void main() {
+  vec3 right = vec3(i_r.x, 0.0, i_r.y);
+  v_p = i_c.xyz + right * (a_pos.x * i_r.z) + vec3(0.0, a_pos.y * i_r.w, 0.0);
+  v_uv = vec2(mix(i_uv.x, i_uv.z, a_pos.x + 0.5), mix(i_uv.w, i_uv.y, a_pos.y + 0.5));
+  gl_Position = u_vp * vec4(v_p, 1.0);
+}`;
+const SIGN_FS = `#version 300 es
+${COMMON}
+in vec2 v_uv;
+in vec3 v_p;
+out vec4 o;
+uniform sampler2D u_atlas;
+void main() {
+  o = vec4(fogged(texture(u_atlas, v_uv).rgb, v_p), 1.0);
+}`;
+const SIGN_PX = [512, 64]; // one sign's picture
+const ATLAS = 2048; // 4 × 32 signs
+const SIGN_COLORS = [
+  ['#0f4c81', '#ffffff'], ['#b91c1c', '#ffffff'], ['#166534', '#ffffff'], ['#111827', '#fde68a'], ['#f59e0b', '#1f2937'],
+  ['#6d28d9', '#ffffff'], ['#f8fafc', '#b91c1c'], ['#0e7490', '#ffffff'], ['#9a3412', '#ffffff'], ['#fef3c7', '#1f2937'],
+];
+const SIGN_ICON = { food: '🍴', shop: '🛍️', health: '✚', bank: '🏦', hotel: '🛏️', culture: '🎭', edu: '🎓', gov: '🏛️', transit: '🚌', fuel: '⛽', sport: '⚽', worship: '' };
+
+// ------------------------------------------------------------------------------------------------ small maths
+function perspective(out, fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2);
+  const nf = 1 / (near - far);
+  out.fill(0);
+  out[0] = f / aspect;
+  out[5] = f;
+  out[10] = (far + near) * nf;
+  out[11] = -1;
+  out[14] = 2 * far * near * nf;
+  return out;
+}
+/** View matrix from the eye looking along f (unit), up +y; also returns the right and up vectors. */
+function lookAlong(out, e, f) {
+  let rx = -f[2];
+  let rz = f[0];
+  const rl = Math.hypot(rx, rz) || 1;
+  rx /= rl;
+  rz /= rl;
+  const ux = -rz * f[1];
+  const uy = rz * f[0] - rx * f[2];
+  const uz = rx * f[1];
+  out[0] = rx;
+  out[1] = ux;
+  out[2] = -f[0];
+  out[3] = 0;
+  out[4] = 0;
+  out[5] = uy;
+  out[6] = -f[1];
+  out[7] = 0;
+  out[8] = rz;
+  out[9] = uz;
+  out[10] = -f[2];
+  out[11] = 0;
+  out[12] = -(rx * e[0] + rz * e[2]);
+  out[13] = -(ux * e[0] + uy * e[1] + uz * e[2]);
+  out[14] = f[0] * e[0] + f[1] * e[1] + f[2] * e[2];
+  out[15] = 1;
+  return { right: [rx, 0, rz], up: [ux, uy, uz] };
+}
+function mul(out, a, b) {
+  for (let c = 0; c < 4; c++) {
+    for (let r = 0; r < 4; r++) {
+      out[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+  }
+  return out;
+}
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+
+// ------------------------------------------------------------------------------------------------ WebGL helpers
+function compile(gl, type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+  return s;
+}
+function program(gl, vs, fs, uniforms) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+  const u = {};
+  for (const name of ['u_vp', 'u_eye', 'u_fogc', 'u_fogr', 'u_sun', 'u_zen', 'u_time', ...uniforms]) u[name] = gl.getUniformLocation(p, name);
+  return { p, u, a: (name) => gl.getAttribLocation(p, name) };
+}
+function buffer(gl, target, data, usage = gl.STATIC_DRAW) {
+  const b = gl.createBuffer();
+  gl.bindBuffer(target, b);
+  gl.bufferData(target, data, usage);
+  return b;
+}
+function attrib(gl, loc, size, type, normalized, stride, offset, divisor = 0) {
+  if (loc < 0) return;
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, size, type, normalized, stride, offset);
+  gl.vertexAttribDivisor(loc, divisor);
+}
+
+// ------------------------------------------------------------------------------------------------ the walk
+/**
+ * The street view, drawn into `canvas` (a WebGL 2 context is made on the first walk). ui: the HUD elements
+ * { root, street, count, mini, run, stick, pad, loading, exit }; hooks: { toast, hint, sfx, onExit }.
+ * Returns { enter(map, extra, opts), exit(), frame(dt, nowMs), get active }.
+ */
+function createWalk(canvas, ui, hooks = {}) {
+  let gl = null;
+  let P = null; // programs
+  let shared = null; // models and quads
+  let city = null;
+  let map = null;
+  let active = false;
+  let ready = false; // the city is built and you are in it
+  let tex = null;
+  let lost = false;
+  const tiles = new Map(); // key → tile (with its GL buffers)
+  const me = { x: 0, y: 0, yaw: 0, pitch: -0.08, speed: 0, run: false, step: 0, moved: 0 };
+  const input = { fwd: 0, side: 0, turn: 0, keys: new Set() };
+  let target = null; // { x, y, since, best }
+  const people = [];
+  const trail = [];
+  let joined = 0;
+  let time = 0;
+  let spawnWait = 0;
+  let streetWait = 0;
+  let miniWait = 0;
+  let scale = 1;
+  let slow = 0;
+  let fast = 0;
+  let W = 1;
+  let H = 1;
+  let fovy = 1;
+  let fovx = 1;
+  const proj = new Float32Array(16);
+  const view = new Float32Array(16);
+  const vp = new Float32Array(16);
+  let basis = null;
+  let eyeY = EYE;
+  let streetName = () => '';
+  let sky = null; // the towers' mesh
+  let rand = seeded(1);
+
+  // ---------------------------------------------------------------------------------------------- set-up
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    lost = true;
+    if (active) {
+      exit();
+      hooks.toast?.('התלת־ממד נעצר (הטלפון פינה זיכרון). אפשר להיכנס שוב', 4000);
+    }
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    // Everything made on the old context is gone: start again on the next walk.
+    lost = false;
+    gl = null;
+    P = null;
+    shared = null;
+    tex = null;
+    map = null;
+    sky = null;
+    tiles.clear();
+  });
+  function init() {
+    gl = canvas.getContext('webgl2', { antialias: true, alpha: false, depth: true, stencil: false, powerPreference: 'high-performance' });
+    if (!gl) return false;
+    P = {
+      sky: program(gl, SKY_VS, SKY_FS, ['u_fw', 'u_rt', 'u_up', 'u_tan']),
+      ground: program(gl, GROUND_VS, GROUND_FS, ['u_ground', 'u_water', 'u_E', 'u_origin']),
+      road: program(gl, ROAD_VS, ROAD_FS, ['u_eps']),
+      building: program(gl, BUILDING_VS, BUILDING_FS, []),
+      tree: program(gl, TREE_VS, TREE_FS, []),
+      person: program(gl, PERSON_VS, PERSON_FS, []),
+      blob: program(gl, BLOB_VS, BLOB_FS, ['u_eps', 'u_k', 'u_ring', 'u_alpha']),
+      sign: program(gl, SIGN_VS, SIGN_FS, ['u_atlas']),
+    };
+    // Shared vertex data: the sky's triangle, the ground's square, the models, a quad for shadows.
+    const skyV = buffer(gl, gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]));
+    const skyVao = gl.createVertexArray();
+    gl.bindVertexArray(skyVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, skyV);
+    attrib(gl, P.sky.a('a_pos'), 2, gl.FLOAT, false, 8, 0);
+    const quad = buffer(gl, gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1]));
+    const person = personModel();
+    const tree = treeModel();
+    const personV = buffer(gl, gl.ARRAY_BUFFER, person);
+    const treeV = buffer(gl, gl.ARRAY_BUFFER, tree);
+    const peopleI = buffer(gl, gl.ARRAY_BUFFER, new Float32Array(MAX_PEOPLE * 12), gl.DYNAMIC_DRAW);
+    const peopleVao = gl.createVertexArray();
+    gl.bindVertexArray(peopleVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, personV);
+    attrib(gl, P.person.a('a_pos'), 3, gl.FLOAT, false, 28, 0);
+    attrib(gl, P.person.a('a_nrm'), 3, gl.FLOAT, false, 28, 12);
+    attrib(gl, P.person.a('a_part'), 1, gl.FLOAT, false, 28, 24);
+    gl.bindBuffer(gl.ARRAY_BUFFER, peopleI);
+    attrib(gl, P.person.a('i_pos'), 4, gl.FLOAT, false, 48, 0, 1);
+    attrib(gl, P.person.a('i_act'), 4, gl.FLOAT, false, 48, 16, 1);
+    attrib(gl, P.person.a('i_look'), 4, gl.FLOAT, false, 48, 32, 1);
+    const blobsI = buffer(gl, gl.ARRAY_BUFFER, new Float32Array(MAX_PEOPLE * 4 + 4), gl.DYNAMIC_DRAW);
+    const blobVao = gl.createVertexArray();
+    gl.bindVertexArray(blobVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    attrib(gl, P.blob.a('a_pos'), 2, gl.FLOAT, false, 8, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, blobsI);
+    attrib(gl, P.blob.a('i_blob'), 4, gl.FLOAT, false, 16, 0, 1);
+    // The signs: a quad per sign, and their pictures in one texture.
+    const signsI = buffer(gl, gl.ARRAY_BUFFER, new Float32Array(SIGNS_MAX * 12), gl.DYNAMIC_DRAW);
+    const signVao = gl.createVertexArray();
+    gl.bindVertexArray(signVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    attrib(gl, P.sign.a('a_pos'), 2, gl.FLOAT, false, 8, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, signsI);
+    attrib(gl, P.sign.a('i_c'), 4, gl.FLOAT, false, 48, 0, 1);
+    attrib(gl, P.sign.a('i_r'), 4, gl.FLOAT, false, 48, 16, 1);
+    attrib(gl, P.sign.a('i_uv'), 4, gl.FLOAT, false, 48, 32, 1);
+    const atlas = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, atlas);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, ATLAS, ATLAS, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindVertexArray(null);
+    shared = { signsI, signVao, atlas, skyVao, quad, treeV, treeCount: tree.length / 7, personCount: person.length / 7, peopleI, peopleVao, blobsI, blobVao, groundVao: null, groundV: null };
+    return true;
+  }
+
+  /** The land under everything, painted once per city: land use, parks, beaches; the sea and lakes in a mask. */
+  function paintGround(m) {
+    const E = m.E;
+    const size = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d');
+    const k = size / (2 * E);
+    g.setTransform(k, 0, 0, k, E * k, E * k);
+    g.fillStyle = GROUND.land;
+    g.fillRect(-E, -E, 2 * E, 2 * E);
+    const fill = (layer, color) => {
+      const list = m.features.filter((f) => f.layer === layer);
+      if (!list.length) return;
+      g.fillStyle = color;
+      g.beginPath();
+      for (const f of list) {
+        for (const ring of f.geom) {
+          g.moveTo(ring[0], ring[1]);
+          for (let i = 2; i < ring.length; i += 2) g.lineTo(ring[i], ring[i + 1]);
+          g.closePath();
+        }
+      }
+      g.fill('evenodd');
+    };
+    for (const cls of Object.keys(AREA_STYLE)) fill(`area:${cls}`, GROUND[cls] || GROUND.land);
+    fill('beach', GROUND.beach);
+    fill('green', GROUND.green);
+    fill('sea', GROUND.water);
+    fill('water', GROUND.water);
+    // The sea and lakes again, white on black, for the water's own shading.
+    const w = document.createElement('canvas');
+    w.width = w.height = size >> 1;
+    const wg = w.getContext('2d');
+    wg.setTransform(k / 2, 0, 0, k / 2, (E * k) / 2, (E * k) / 2);
+    wg.fillStyle = '#000';
+    wg.fillRect(-E, -E, 2 * E, 2 * E);
+    wg.fillStyle = '#fff';
+    wg.beginPath();
+    for (const f of m.features) {
+      if (f.layer !== 'sea' && f.layer !== 'water') continue;
+      for (const ring of f.geom) {
+        wg.moveTo(ring[0], ring[1]);
+        for (let i = 2; i < ring.length; i += 2) wg.lineTo(ring[i], ring[i + 1]);
+        wg.closePath();
+      }
+    }
+    wg.fill('evenodd');
+    wg.strokeStyle = '#fff';
+    wg.lineCap = 'round';
+    for (const f of m.features) {
+      if (f.layer !== 'river') continue;
+      wg.lineWidth = f.extra === 1 ? 14 : 5;
+      wg.beginPath();
+      wg.moveTo(f.geom[0], f.geom[1]);
+      for (let i = 2; i < f.geom.length; i += 2) wg.lineTo(f.geom[i], f.geom[i + 1]);
+      wg.stroke();
+    }
+    const texture = (source) => {
+      const t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const an = gl.getExtension('EXT_texture_filter_anisotropic');
+      if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+      return t;
+    };
+    if (tex) {
+      gl.deleteTexture(tex.ground);
+      gl.deleteTexture(tex.water);
+    }
+    tex = { ground: texture(c), water: texture(w), E };
+    if (!shared.groundVao) {
+      // The ground's grid, around (0, 0); it moves with the walker in steps of one square.
+      const N = GROUND_N;
+      const v = new Float32Array((N + 1) * (N + 1) * 2);
+      for (let j = 0; j <= N; j++) {
+        for (let i = 0; i <= N; i++) {
+          v[(j * (N + 1) + i) * 2] = (i - N / 2) * GROUND_CELL;
+          v[(j * (N + 1) + i) * 2 + 1] = (j - N / 2) * GROUND_CELL;
+        }
+      }
+      const idx = new Uint16Array(N * N * 6);
+      let k = 0;
+      for (let j = 0; j < N; j++) {
+        for (let i = 0; i < N; i++) {
+          const a = j * (N + 1) + i;
+          idx.set([a, a + 1, a + N + 2, a, a + N + 2, a + N + 1], k);
+          k += 6;
+        }
+      }
+      shared.groundVao = gl.createVertexArray();
+      gl.bindVertexArray(shared.groundVao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer(gl, gl.ARRAY_BUFFER, v));
+      attrib(gl, P.ground.a('a_pos'), 2, gl.FLOAT, false, 8, 0);
+      buffer(gl, gl.ELEMENT_ARRAY_BUFFER, idx);
+      shared.groundCount = idx.length;
+      gl.bindVertexArray(null);
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------- tiles
+  const keyOf = (tx, ty) => `${tx},${ty}`;
+  function upload(t) {
+    const out = { tx: t.tx, ty: t.ty, box: t.box, tallest: t.tallest, trees: t.trees.length / 4, bufs: [] };
+    const keep = (b) => (out.bufs.push(b), b);
+    if (t.buildings.count) {
+      const b = t.buildings;
+      out.bVao = gl.createVertexArray();
+      gl.bindVertexArray(out.bVao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, keep(buffer(gl, gl.ARRAY_BUFFER, b.data)));
+      const pr = P.building;
+      attrib(gl, pr.a('a_pos'), 3, gl.FLOAT, false, 36, 0);
+      attrib(gl, pr.a('a_nrm'), 3, gl.FLOAT, false, 36, 12);
+      attrib(gl, pr.a('a_uv'), 2, gl.FLOAT, false, 36, 24);
+      attrib(gl, pr.a('a_col'), 4, gl.UNSIGNED_BYTE, true, 36, 32);
+      keep(buffer(gl, gl.ELEMENT_ARRAY_BUFFER, b.index));
+      out.bCount = b.count;
+      out.bType = b.index instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+    }
+    if (t.roads.count) {
+      const r = t.roads;
+      out.rVao = gl.createVertexArray();
+      gl.bindVertexArray(out.rVao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, keep(buffer(gl, gl.ARRAY_BUFFER, r.data)));
+      const pr = P.road;
+      attrib(gl, pr.a('a_pos'), 2, gl.FLOAT, false, 28, 0);
+      attrib(gl, pr.a('a_road'), 4, gl.FLOAT, false, 28, 8);
+      attrib(gl, pr.a('a_info'), 4, gl.UNSIGNED_BYTE, false, 28, 24);
+      keep(buffer(gl, gl.ELEMENT_ARRAY_BUFFER, r.index));
+      out.rCount = r.count;
+      out.rType = r.index instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+    }
+    if (out.trees) {
+      const inst = keep(buffer(gl, gl.ARRAY_BUFFER, t.trees));
+      out.tVao = gl.createVertexArray();
+      gl.bindVertexArray(out.tVao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, shared.treeV);
+      const pr = P.tree;
+      attrib(gl, pr.a('a_pos'), 3, gl.FLOAT, false, 28, 0);
+      attrib(gl, pr.a('a_nrm'), 3, gl.FLOAT, false, 28, 12);
+      attrib(gl, pr.a('a_part'), 1, gl.FLOAT, false, 28, 24);
+      gl.bindBuffer(gl.ARRAY_BUFFER, inst);
+      attrib(gl, pr.a('i_tree'), 4, gl.FLOAT, false, 16, 0, 1);
+      // Their shadows: the same numbers read as (x, z, size, darkness).
+      out.sVao = gl.createVertexArray();
+      gl.bindVertexArray(out.sVao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, shared.quad);
+      attrib(gl, P.blob.a('a_pos'), 2, gl.FLOAT, false, 8, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, inst);
+      attrib(gl, P.blob.a('i_blob'), 4, gl.FLOAT, false, 16, 0, 1);
+    }
+    gl.bindVertexArray(null);
+    return out;
+  }
+  function uploadSkyline() {
+    if (sky) {
+      for (const b of sky.bufs) gl.deleteBuffer(b);
+      if (sky.vao) gl.deleteVertexArray(sky.vao);
+    }
+    const { mesh, count } = city.skyline();
+    sky = { bufs: [], count: mesh.count, towers: count };
+    if (!mesh.count) return;
+    sky.vao = gl.createVertexArray();
+    gl.bindVertexArray(sky.vao);
+    const vb = buffer(gl, gl.ARRAY_BUFFER, mesh.data);
+    const pr = P.building;
+    attrib(gl, pr.a('a_pos'), 3, gl.FLOAT, false, 36, 0);
+    attrib(gl, pr.a('a_nrm'), 3, gl.FLOAT, false, 36, 12);
+    attrib(gl, pr.a('a_uv'), 2, gl.FLOAT, false, 36, 24);
+    attrib(gl, pr.a('a_col'), 4, gl.UNSIGNED_BYTE, true, 36, 32);
+    const ib = buffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.index);
+    gl.bindVertexArray(null);
+    sky.bufs.push(vb, ib);
+    sky.type = mesh.index instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+  }
+  function drop(key) {
+    const t = tiles.get(key);
+    if (!t) return;
+    for (const b of t.bufs) gl.deleteBuffer(b);
+    for (const v of [t.bVao, t.rVao, t.tVao, t.sVao]) if (v) gl.deleteVertexArray(v);
+    tiles.delete(key);
+  }
+  /** Builds missing tiles near the walker, nearest first, for at most `ms` (always at least one). */
+  function buildTiles(ms, all = false) {
+    const r = FAR + TILE * 0.5;
+    const want = [];
+    for (let ty = Math.floor((me.y - r) / TILE); ty <= Math.floor((me.y + r) / TILE); ty++) {
+      for (let tx = Math.floor((me.x - r) / TILE); tx <= Math.floor((me.x + r) / TILE); tx++) {
+        if (tiles.has(keyOf(tx, ty))) continue;
+        const d = Math.hypot((tx + 0.5) * TILE - me.x, (ty + 0.5) * TILE - me.y);
+        if (d > r + TILE * 0.72) continue;
+        // In front first: what you are looking at.
+        const ang = Math.abs(wrap(Math.atan2((ty + 0.5) * TILE - me.y, (tx + 0.5) * TILE - me.x) - me.yaw));
+        want.push({ tx, ty, d: d * (d < TILE * 1.5 ? 0.3 : ang < fovx * 0.7 ? 1 : 2.2) });
+      }
+    }
+    want.sort((a, b) => a.d - b.d);
+    const t0 = performance.now();
+    for (const w of want) {
+      tiles.set(keyOf(w.tx, w.ty), upload(city.tile(w.tx, w.ty)));
+      if (!all && performance.now() - t0 > ms) break;
+    }
+    // Tiles left well behind go.
+    for (const [key, t] of tiles) {
+      if (Math.hypot((t.tx + 0.5) * TILE - me.x, (t.ty + 0.5) * TILE - me.y) > FAR + TILE * 3) drop(key);
+    }
+  }
+  function visible(t) {
+    const cx = (t.tx + 0.5) * TILE - me.x;
+    const cy = (t.ty + 0.5) * TILE - me.y;
+    const d = Math.hypot(cx, cy);
+    if (d < TILE * 1.1) return true;
+    if (d > FAR + TILE * 0.72) return false;
+    const ang = Math.abs(wrap(Math.atan2(cy, cx) - me.yaw));
+    return ang < fovx / 2 + Math.asin(Math.min(1, (TILE * 0.72) / d)) + 0.04;
+  }
+
+  // ---------------------------------------------------------------------------------------------- shop signs
+  const signs = { placed: new Map(), slots: new Map(), walls: new Map(), free: [], count: 0, wait: 0, scratch: null };
+  function resetSigns() {
+    signs.placed.clear();
+    signs.walls.clear();
+    signs.slots.clear();
+    signs.free = Array.from({ length: SIGNS_MAX }, (_, i) => SIGNS_MAX - 1 - i);
+    signs.count = 0;
+  }
+  /**
+   * Where a named place's sign goes: over the door on the nearest wall (within 12 m) that has room for it, facing
+   * the street; never over another sign.
+   */
+  function placeSign(p, pxWidth) {
+    const edges = [];
+    for (const f of map.query(p.x - 14, p.y - 14, p.x + 14, p.y + 14)) {
+      if (f.layer !== 'building') continue;
+      const ring = f.geom[0];
+      for (let j = 0; j < ring.length; j += 2) {
+        const i = (j + 2) % ring.length;
+        const ax = ring[j];
+        const ay = ring[j + 1];
+        const dx = ring[i] - ax;
+        const dy = ring[i + 1] - ay;
+        const L = Math.hypot(dx, dy);
+        if (L < 2.2) continue;
+        const t = Math.max(0, Math.min(L, ((p.x - ax) * dx + (p.y - ay) * dy) / L));
+        const d = Math.hypot(p.x - ax - (dx / L) * t, p.y - ay - (dy / L) * t);
+        if (d < 12) edges.push({ d, f, ring, j, ax, ay, L, ux: dx / L, uy: dy / L, t });
+      }
+    }
+    edges.sort((a, b) => a.d - b.d);
+    for (const e of edges.slice(0, 6)) {
+      let w = pxWidth / 72; // 72 pixels a metre: a sign 0.9 m tall
+      let h = SIGN_PX[1] / 72;
+      const room = Math.min(6, e.L - 0.5);
+      if (w > room) {
+        h *= room / w;
+        w = room;
+      }
+      const key = `${e.f.extra}:${e.j}`;
+      const taken = signs.walls.get(key) || [];
+      const lo = w / 2 + 0.2;
+      const hi = e.L - w / 2 - 0.2;
+      const free = (s) => s >= lo - 1e-6 && s <= hi + 1e-6 && taken.every(([a, b]) => s + w / 2 + 0.15 <= a || s - w / 2 - 0.15 >= b);
+      const want = Math.max(lo, Math.min(hi, e.t));
+      const tries = [want, ...taken.flatMap(([a, b]) => [b + 0.15 + w / 2, a - 0.15 - w / 2])].filter(free);
+      if (!tries.length) continue;
+      const s = tries.reduce((x, y) => (Math.abs(y - want) < Math.abs(x - want) ? y : x));
+      taken.push([s - w / 2, s + w / 2]);
+      signs.walls.set(key, taken);
+      let nx = -e.uy;
+      let ny = e.ux;
+      if (inRing(e.ring, e.ax + e.ux * e.L * 0.5 + nx * 0.4, e.ay + e.uy * e.L * 0.5 + ny * 0.4)) {
+        nx = -nx;
+        ny = -ny;
+      }
+      // Facing out of the wall, the sign's left-to-right runs to the right of someone looking at it.
+      return { x: e.ax + e.ux * s + nx * 0.08, y: e.ay + e.uy * s + ny * 0.08, rx: ny, rz: -nx, w, h };
+    }
+    return null;
+  }
+  /** Draws a place's sign into the scratch canvas; returns its width in pixels. */
+  function drawSign(p) {
+    const [W0, H0] = SIGN_PX;
+    if (!signs.scratch) {
+      signs.scratch = document.createElement('canvas');
+      signs.scratch.width = W0;
+      signs.scratch.height = H0;
+    }
+    const g = signs.scratch.getContext('2d');
+    const [bg, fg] = SIGN_COLORS[Math.floor(hash2(p.x * 0.7, p.y * 1.3) * SIGN_COLORS.length) % SIGN_COLORS.length];
+    const icon = SIGN_ICON[p.cat] || '';
+    const font = '800 38px system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+    g.font = font;
+    const text = p.name.length > 26 ? `${p.name.slice(0, 25)}…` : p.name;
+    const tw = Math.ceil(g.measureText(text).width);
+    const iw = icon ? 46 : 0;
+    const w = Math.min(W0, tw + iw + 36);
+    g.clearRect(0, 0, W0, H0);
+    g.fillStyle = bg;
+    g.fillRect(0, 0, W0, H0);
+    g.fillStyle = 'rgba(0, 0, 0, 0.18)';
+    g.fillRect(0, H0 - 5, w, 5);
+    g.fillStyle = fg;
+    g.font = font;
+    g.textBaseline = 'middle';
+    g.direction = 'rtl';
+    g.textAlign = 'right';
+    g.fillText(text, w - 18, H0 / 2 + 1, w - iw - 30);
+    if (icon) {
+      g.direction = 'ltr';
+      g.textAlign = 'left';
+      g.font = '32px system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      g.fillText(icon, 12, H0 / 2 + 2);
+    }
+    return w;
+  }
+  /** The signs of the named places within 80 m: placed, drawn once, and the far ones' room given to new ones. */
+  function updateSigns() {
+    const near = [];
+    for (let r = map.cell(me.y - 80); r <= map.cell(me.y + 80); r++) {
+      for (let c = map.cell(me.x - 80); c <= map.cell(me.x + 80); c++) {
+        for (const p of map.poiCells.get(r * map.n + c) || []) {
+          if (!p.name || p.cat === 'park' || Math.abs(p.x - me.x) > 80 || Math.abs(p.y - me.y) > 80) continue;
+          near.push(p);
+        }
+      }
+    }
+    near.sort((a, b) => Math.hypot(a.x - me.x, a.y - me.y) - Math.hypot(b.x - me.x, b.y - me.y));
+    const keep = new Set(near.slice(0, SIGNS_MAX));
+    for (const [p, slot] of signs.slots) {
+      if (!keep.has(p)) {
+        signs.slots.delete(p);
+        signs.free.push(slot);
+      }
+    }
+    let added = 0;
+    for (const p of keep) {
+      if (signs.slots.has(p) || !signs.free.length || added >= 6) continue;
+      if (signs.placed.get(p) === null) continue;
+      const w = drawSign(p);
+      const at = signs.placed.get(p) ?? placeSign(p, w);
+      signs.placed.set(p, at);
+      if (!at) continue;
+      const slot = signs.free.pop();
+      const cols = ATLAS / SIGN_PX[0];
+      at.u0 = ((slot % cols) * SIGN_PX[0]) / ATLAS;
+      at.v0 = (Math.floor(slot / cols) * SIGN_PX[1]) / ATLAS;
+      at.u1 = at.u0 + (w - 1) / ATLAS;
+      at.v1 = at.v0 + (SIGN_PX[1] - 1) / ATLAS;
+      gl.bindTexture(gl.TEXTURE_2D, shared.atlas);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, (slot % cols) * SIGN_PX[0], Math.floor(slot / cols) * SIGN_PX[1], gl.RGBA, gl.UNSIGNED_BYTE, signs.scratch);
+      signs.slots.set(p, slot);
+      added++;
+    }
+    if (added) {
+      gl.bindTexture(gl.TEXTURE_2D, shared.atlas);
+      gl.generateMipmap(gl.TEXTURE_2D);
+    }
+    const data = new Float32Array(SIGNS_MAX * 12);
+    let n = 0;
+    for (const [p] of signs.slots) {
+      const at = signs.placed.get(p);
+      if (!at) continue;
+      data.set([at.x, 2.93, at.y, 0, at.rx, at.rz, at.w, at.h, at.u0, at.v0, at.u1, at.v1], n * 12);
+      n++;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, shared.signsI);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, n * 12);
+    signs.count = n;
+  }
+
+  // ---------------------------------------------------------------------------------------------- people
+  /** Someone new on a pavement, 25–100 m away (strolling, or standing and waiting). */
+  function spawnPerson() {
+    const a = rand() * Math.PI * 2;
+    const d = 25 + rand() * 75;
+    const px = me.x + Math.cos(a) * d;
+    const py = me.y + Math.sin(a) * d;
+    let best = null;
+    for (const f of map.query(px - 30, py - 30, px + 30, py + 30)) {
+      const st = ROADS[f.layer];
+      if (!st || st.cls > 2) continue;
+      const line = f.geom;
+      for (let i = 2; i + 1 < line.length; i += 2) {
+        const ax = line[i - 2];
+        const ay = line[i - 1];
+        const dx = line[i] - ax;
+        const dy = line[i + 1] - ay;
+        const L2 = dx * dx + dy * dy;
+        if (L2 < 64) continue;
+        const t = Math.max(0.1, Math.min(0.9, ((px - ax) * dx + (py - ay) * dy) / L2));
+        const qd = Math.hypot(px - ax - dx * t, py - ay - dy * t);
+        if (!best || qd < best.qd) best = { qd, ax, ay, dx, dy, t, st };
+      }
+    }
+    if (!best) return;
+    const L = Math.hypot(best.dx, best.dy);
+    const ux = best.dx / L;
+    const uy = best.dy / L;
+    const side = rand() < 0.5 ? -1 : 1;
+    const off = best.st.half + 0.8 + rand() * Math.max(0.2, best.st.walk - 1.2);
+    const x = best.ax + best.dx * best.t - uy * off * side;
+    const y = best.ay + best.dy * best.t + ux * off * side;
+    if (Math.hypot(x - me.x, y - me.y) < 12 || city.buildingAt(x, y, 0.5) || !city.walkable(x, y) || city.onRoad(x, y, 0.2)) return;
+    const pick = (list) => list[Math.floor(rand() * list.length)];
+    const strolling = rand() < 0.45;
+    const dir = rand() < 0.5 ? 1 : -1;
+    people.push({
+      x,
+      y,
+      a: strolling ? Math.atan2(uy * dir, ux * dir) : Math.atan2(uy, ux) + (side > 0 ? -Math.PI / 2 : Math.PI / 2) + (rand() - 0.5),
+      phase: rand() * 6,
+      act: strolling ? 1 : 0,
+      ux: ux * dir,
+      uy: uy * dir,
+      speed: strolling ? 1.05 + rand() * 0.4 : 0,
+      scale: 0.9 + rand() * 0.16,
+      shirt: packRGB(pick(SHIRTS)),
+      pants: packRGB(pick(PANTS)),
+      skin: packRGB(pick(SKIN)),
+      hair: packRGB(pick(HAIR)),
+      joined: false,
+      walked: 0,
+    });
+  }
+  function updatePeople(dt) {
+    let waiting = 0;
+    for (let i = people.length - 1; i >= 0; i--) {
+      const p = people[i];
+      if (p.joined) continue;
+      const d = Math.hypot(p.x - me.x, p.y - me.y);
+      if (d > 140) {
+        people.splice(i, 1);
+        continue;
+      }
+      waiting++;
+      if (d < 2.6) {
+        // Joins the chain.
+        p.joined = true;
+        p.act = 3;
+        p.shirt = packRGB(CHAIN);
+        joined++;
+        hooks.sfx?.('pick');
+        navigator.vibrate?.(25);
+        ui.count.querySelector('b').textContent = String(joined);
+        ui.count.classList.remove('pop');
+        void ui.count.offsetWidth;
+        ui.count.classList.add('pop');
+        if (joined === 1) hooks.toast?.('🙌 מישהו הצטרף אליך! כל מי שתגיעו אליו ברחוב מצטרף לשרשרת', 3600);
+        else if ([10, 25, 50, 100, 200].includes(joined)) hooks.toast?.(`🎉 ${joined} אנשים הולכים איתך ברחוב`, 2600);
+        continue;
+      }
+      if (d < 14) {
+        // Near: turns to you and waves.
+        const want = Math.atan2(me.y - p.y, me.x - p.x);
+        p.a += wrap(want - p.a) * Math.min(1, dt * 5);
+        p.act = 2;
+        p.phase += dt * 2;
+      } else if (p.speed > 0) {
+        p.act = 1;
+        const nx = p.x + p.ux * p.speed * dt;
+        const ny = p.y + p.uy * p.speed * dt;
+        if (city.buildingAt(nx, ny, 0.4) || city.onRoad(nx, ny, 0.1) || !city.walkable(nx, ny) || (p.walked += p.speed * dt) > 60) {
+          p.ux = -p.ux;
+          p.uy = -p.uy;
+          p.walked = 0;
+        } else {
+          p.x = nx;
+          p.y = ny;
+        }
+        p.a += wrap(Math.atan2(p.uy, p.ux) - p.a) * Math.min(1, dt * 6);
+        p.phase += p.speed * dt * 3.1;
+      } else {
+        p.act = 0;
+      }
+    }
+    spawnWait -= dt;
+    if (waiting < WAITING && spawnWait <= 0 && people.length < MAX_PEOPLE) {
+      for (let k = 0; k < 3 && people.filter((p) => !p.joined).length < WAITING; k++) spawnPerson();
+      spawnWait = 0.25;
+    }
+    // The chain follows you along the way you walked: each one about a metre behind the one in front.
+    const followers = people.filter((p) => p.joined);
+    if (!followers.length) return;
+    let want = 2.1; // the first one a couple of steps behind you, the rest a metre apart
+    let k = 0;
+    let acc = 0;
+    let px = me.x;
+    let py = me.y;
+    for (let i = trail.length - 1; i >= 0 && k < followers.length; i--) {
+      const [tx, ty] = trail[i];
+      const seg = Math.hypot(tx - px, ty - py);
+      while (k < followers.length && acc + seg >= want) {
+        const t = seg > 0 ? (want - acc) / seg : 0;
+        place(followers[k], px + (tx - px) * t, py + (ty - py) * t, dt);
+        k++;
+        want += 1.05;
+      }
+      acc += seg;
+      px = tx;
+      py = ty;
+    }
+    for (; k < followers.length; k++) place(followers[k], px, py, dt);
+  }
+  function place(p, x, y, dt) {
+    const dx = x - p.x;
+    const dy = y - p.y;
+    const d = Math.hypot(dx, dy);
+    const step = Math.min(d, Math.max(RUN * 1.4, d * 4) * dt);
+    if (d > 0.01) {
+      p.x += (dx / d) * step;
+      p.y += (dy / d) * step;
+      p.a += wrap(Math.atan2(dy, dx) - p.a) * Math.min(1, dt * 8);
+    }
+    p.phase += step * 3.1;
+    p.act = 3;
+  }
+
+  // ---------------------------------------------------------------------------------------------- moving
+  function walkTo(sx, sy) {
+    // The tapped point on the ground (or 25 m ahead, for a tap on the sky), stopping short of any wall on the way.
+    const nx = (sx / W) * 2 - 1;
+    const ny = 1 - (sy / H) * 2;
+    const tx = Math.tan(fovx / 2);
+    const ty = Math.tan(fovy / 2);
+    const { f, right, up } = basis;
+    const d = [f[0] + right[0] * nx * tx + up[0] * ny * ty, f[1] + right[1] * nx * tx + up[1] * ny * ty, f[2] + right[2] * nx * tx + up[2] * ny * ty];
+    const hl = Math.hypot(d[0], d[2]) || 1;
+    const hx = d[0] / hl;
+    const hz = d[2] / hl;
+    const len = Math.min(90, d[1] < -0.02 ? (EYE / -d[1]) * hl : 25);
+    let gx = me.x;
+    let gy = me.y;
+    for (let s = 0.5; s <= len; s += 0.5) {
+      const x = me.x + hx * s;
+      const y = me.y + hz * s;
+      if (city.buildingAt(x, y, 0.3) || !city.walkable(x, y)) break;
+      gx = x;
+      gy = y;
+    }
+    if (Math.hypot(gx - me.x, gy - me.y) < 0.8) return;
+    target = { x: gx, y: gy, since: 0, best: Infinity };
+  }
+  function moveMe(dt) {
+    let fwd = input.fwd;
+    let side = input.side;
+    if (input.keys.size) {
+      const k = input.keys;
+      fwd = (k.has('w') || k.has('ArrowUp') ? 1 : 0) - (k.has('s') || k.has('ArrowDown') ? 1 : 0);
+      side = (k.has('d') ? 1 : 0) - (k.has('a') ? 1 : 0);
+      me.yaw += ((k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0)) * 1.9 * dt;
+    }
+    if (fwd || side) target = null;
+    let vx = 0;
+    let vy = 0;
+    let mag = 0;
+    if (target) {
+      const dx = target.x - me.x;
+      const dy = target.y - me.y;
+      const d = Math.hypot(dx, dy);
+      target.since += dt;
+      if (d < target.best - 0.05) {
+        target.best = d;
+        target.since = 0;
+      }
+      if (d < 0.5 || target.since > 0.6) target = null;
+      else {
+        vx = dx / d;
+        vy = dy / d;
+        mag = Math.min(1, d / 1.5 + 0.3);
+        me.yaw += wrap(Math.atan2(dy, dx) - me.yaw) * Math.min(1, dt * 3.2); // face where you are going
+      }
+    } else if (fwd || side) {
+      const l = Math.hypot(fwd, side);
+      const cy = Math.cos(me.yaw);
+      const sy = Math.sin(me.yaw);
+      vx = (cy * fwd - sy * side) / l;
+      vy = (sy * fwd + cy * side) / l;
+      mag = Math.min(1, l);
+      me.yaw += side * Math.abs(fwd) * 0.9 * dt; // a push to the side turns you a little too, the way people walk
+    }
+    const want = mag * (me.run ? RUN : WALK);
+    me.speed += (want - me.speed) * Math.min(1, dt * 6);
+    if (mag > 0 && me.speed > 0.05) {
+      const [nx, ny] = city.move(me.x, me.y, vx * me.speed * dt, vy * me.speed * dt);
+      const moved = Math.hypot(nx - me.x, ny - me.y);
+      me.x = nx;
+      me.y = ny;
+      me.step += moved * 2.1;
+      me.moved += moved;
+      const last = trail[trail.length - 1];
+      if (!last || Math.hypot(last[0] - me.x, last[1] - me.y) > 0.25) {
+        trail.push([me.x, me.y]);
+        const keep = Math.ceil(((joined + 4) * 1.1) / 0.25) + 20;
+        if (trail.length > keep * 2) trail.splice(0, trail.length - keep);
+      }
+    } else if (!mag) me.speed = Math.max(0, me.speed - dt * 12);
+  }
+
+  // ---------------------------------------------------------------------------------------------- input
+  const ptrs = new Map();
+  let stick = null; // { id, x, y }
+  function stickArea(x, y) {
+    return x < W * 0.46 && y > H * 0.52;
+  }
+  function onDown(e) {
+    if (!ready) return;
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {
+      /* a pointer the browser no longer tracks */
+    }
+    if (!stick && e.pointerType !== 'mouse' && stickArea(e.clientX, e.clientY)) {
+      stick = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      ui.pad?.classList.add('gone');
+      ui.stick.hidden = false;
+      ui.stick.style.transform = `translate(${e.clientX - 60}px, ${e.clientY - 60}px)`;
+      ui.stick.firstElementChild.style.transform = 'translate(0px, 0px)';
+      return;
+    }
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now() });
+  }
+  function onMove(e) {
+    if (!ready) return;
+    if (stick && e.pointerId === stick.id) {
+      let dx = e.clientX - stick.x;
+      let dy = e.clientY - stick.y;
+      const l = Math.hypot(dx, dy);
+      if (l > 50) {
+        dx *= 50 / l;
+        dy *= 50 / l;
+      }
+      input.fwd = Math.abs(dy) < 6 ? 0 : -dy / 50;
+      input.side = Math.abs(dx) < 6 ? 0 : dx / 50;
+      me.run = l > 62 || ui.run.getAttribute('aria-pressed') === 'true';
+      ui.stick.firstElementChild.style.transform = `translate(${dx}px, ${dy}px)`;
+      return;
+    }
+    const p = ptrs.get(e.pointerId);
+    if (!p) return;
+    // The street moves with the finger (as in a street-view picture).
+    me.yaw -= ((e.clientX - p.x) / W) * fovx;
+    me.pitch = Math.max(-1.2, Math.min(1.1, me.pitch + ((e.clientY - p.y) / H) * fovy));
+    p.x = e.clientX;
+    p.y = e.clientY;
+  }
+  function onUp(e) {
+    if (stick && e.pointerId === stick.id) {
+      stick = null;
+      input.fwd = 0;
+      input.side = 0;
+      me.run = ui.run.getAttribute('aria-pressed') === 'true';
+      ui.stick.hidden = true;
+      return;
+    }
+    const p = ptrs.get(e.pointerId);
+    ptrs.delete(e.pointerId);
+    if (!p || !ready || e.type === 'pointercancel') return;
+    if (performance.now() - p.t < 350 && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 10) walkTo(e.clientX, e.clientY);
+  }
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onUp);
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  const KEYS = new Set(['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  window.addEventListener('keydown', (e) => {
+    if (!ready || e.target?.tagName === 'INPUT') return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (KEYS.has(k)) {
+      input.keys.add(k);
+      e.preventDefault();
+    }
+    if (k === 'Shift') me.run = true;
+    if (k === 'Escape') exit();
+  });
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    input.keys.delete(k);
+    if (k === 'Shift') me.run = ui.run.getAttribute('aria-pressed') === 'true';
+  });
+  window.addEventListener('blur', () => input.keys.clear());
+  ui.run.addEventListener('click', () => {
+    const on = ui.run.getAttribute('aria-pressed') !== 'true';
+    ui.run.setAttribute('aria-pressed', String(on));
+    me.run = on;
+  });
+  ui.exit.addEventListener('click', () => exit());
+
+  // ---------------------------------------------------------------------------------------------- HUD
+  function drawMini() {
+    const c = ui.mini;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const size = c.clientWidth || 120;
+    if (c.width !== Math.round(size * dpr)) {
+      c.width = c.height = Math.round(size * dpr);
+    }
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const zoom = size / 380;
+    map.draw(g, me.x, me.y, zoom, size, size, dpr, 3);
+    // Your chain, and you: a dot and where you look.
+    g.fillStyle = CHAIN;
+    for (const p of people) {
+      if (!p.joined) continue;
+      g.beginPath();
+      g.arc(size / 2 + (p.x - me.x) * zoom, size / 2 + (p.y - me.y) * zoom, 1.6, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.save();
+    g.translate(size / 2, size / 2);
+    g.rotate(me.yaw);
+    const cone = g.createRadialGradient(0, 0, 0, 0, 0, 34);
+    cone.addColorStop(0, 'rgba(31, 95, 214, 0.45)');
+    cone.addColorStop(1, 'rgba(31, 95, 214, 0)');
+    g.fillStyle = cone;
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.arc(0, 0, 34, -fovx / 2, fovx / 2);
+    g.closePath();
+    g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath();
+    g.arc(0, 0, 6, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = CHAIN;
+    g.beginPath();
+    g.arc(0, 0, 4.2, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  }
+
+  // ---------------------------------------------------------------------------------------------- drawing
+  function resize() {
+    const dpr = Math.min(1.75, window.devicePixelRatio || 1) * scale;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    const w = Math.max(1, Math.round(W * dpr));
+    const h = Math.max(1, Math.round(H * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    // A wide enough view on a tall phone, without a fish-eye on a wide screen.
+    const aspect = W / H;
+    fovy = Math.max((45 * Math.PI) / 180, Math.min((92 * Math.PI) / 180, 2 * Math.atan(Math.tan((72 * Math.PI) / 360) / aspect)));
+    fovx = 2 * Math.atan(Math.tan(fovy / 2) * aspect);
+  }
+  function setCommon(pr) {
+    const u = pr.u;
+    gl.uniformMatrix4fv(u.u_vp, false, vp);
+    gl.uniform3f(u.u_eye, me.x, eyeY, me.y);
+    gl.uniform3f(u.u_fogc, 0.81, 0.87, 0.91);
+    gl.uniform2f(u.u_fogr, FOG_START, FAR);
+    gl.uniform3f(u.u_sun, -0.5, 0.74, 0.45);
+    gl.uniform3f(u.u_zen, 0.3, 0.55, 0.84);
+    gl.uniform1f(u.u_time, time);
+  }
+  function draw() {
+    resize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    const bob = Math.sin(me.step) * 0.03 * Math.min(1, me.speed / WALK);
+    eyeY = EYE + bob;
+    const eye = [me.x, eyeY, me.y];
+    const cp = Math.cos(me.pitch);
+    const f = [Math.cos(me.yaw) * cp, Math.sin(me.pitch), Math.sin(me.yaw) * cp];
+    perspective(proj, fovy, W / H, 0.25, 4000);
+    const b = lookAlong(view, eye, f);
+    basis = { f, right: b.right, up: b.up };
+    mul(vp, proj, view);
+    const eps = 4e-4; // a share of the distance per layer (see ROAD_VS)
+    gl.disable(gl.BLEND);
+    gl.depthMask(true);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    // The sky.
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.useProgram(P.sky.p);
+    setCommon(P.sky);
+    gl.uniform3fv(P.sky.u.u_fw, f);
+    gl.uniform3fv(P.sky.u.u_rt, b.right);
+    gl.uniform3fv(P.sky.u.u_up, b.up);
+    gl.uniform2f(P.sky.u.u_tan, Math.tan(fovx / 2), Math.tan(fovy / 2));
+    gl.bindVertexArray(shared.skyVao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // The ground, then the streets on it (each layer a hair above the last, so any order will do).
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.useProgram(P.ground.p);
+    setCommon(P.ground);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex.ground);
+    gl.uniform1i(P.ground.u.u_ground, 0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, tex.water);
+    gl.uniform1i(P.ground.u.u_water, 1);
+    gl.uniform1f(P.ground.u.u_E, tex.E);
+    gl.uniform2f(P.ground.u.u_origin, Math.round(me.x / GROUND_CELL) * GROUND_CELL, Math.round(me.y / GROUND_CELL) * GROUND_CELL);
+    gl.bindVertexArray(shared.groundVao);
+    gl.drawElements(gl.TRIANGLES, shared.groundCount, gl.UNSIGNED_SHORT, 0);
+    const shown = [...tiles.values()].filter(visible);
+    gl.useProgram(P.road.p);
+    setCommon(P.road);
+    gl.uniform1f(P.road.u.u_eps, eps);
+    for (const t of shown) {
+      if (!t.rVao) continue;
+      gl.bindVertexArray(t.rVao);
+      gl.drawElements(gl.TRIANGLES, t.rCount, t.rType, 0);
+    }
+    // Shadows under the trees and the people.
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    gl.useProgram(P.blob.p);
+    setCommon(P.blob);
+    gl.uniform1f(P.blob.u.u_eps, eps);
+    gl.uniform1f(P.blob.u.u_ring, 0);
+    gl.uniform1f(P.blob.u.u_k, 2.3);
+    gl.uniform1f(P.blob.u.u_alpha, 0.22);
+    for (const t of shown) {
+      if (!t.sVao || Math.hypot((t.tx + 0.5) * TILE - me.x, (t.ty + 0.5) * TILE - me.y) > 330) continue;
+      gl.bindVertexArray(t.sVao);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, t.trees);
+    }
+    const n = writePeople();
+    gl.uniform1f(P.blob.u.u_alpha, 0);
+    if (n) {
+      gl.uniform1f(P.blob.u.u_k, 1);
+      gl.bindVertexArray(shared.blobVao);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, n);
+    }
+    if (target) {
+      gl.uniform1f(P.blob.u.u_ring, 1);
+      gl.uniform1f(P.blob.u.u_k, 1);
+      gl.bindBuffer(gl.ARRAY_BUFFER, shared.blobsI);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array([target.x, target.y, 0.9, 0.9]));
+      gl.bindVertexArray(shared.blobVao);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 1);
+    }
+    gl.disable(gl.BLEND);
+    gl.depthMask(true);
+    // Buildings, trees, people.
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+    gl.useProgram(P.building.p);
+    setCommon(P.building);
+    for (const t of shown) {
+      if (!t.bVao) continue;
+      gl.bindVertexArray(t.bVao);
+      gl.drawElements(gl.TRIANGLES, t.bCount, t.bType, 0);
+    }
+    if (sky?.vao) {
+      gl.bindVertexArray(sky.vao);
+      gl.drawElements(gl.TRIANGLES, sky.count, sky.type, 0);
+    }
+    gl.useProgram(P.tree.p);
+    setCommon(P.tree);
+    for (const t of shown) {
+      if (!t.tVao) continue;
+      gl.bindVertexArray(t.tVao);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, shared.treeCount, t.trees);
+    }
+    if (n) {
+      gl.useProgram(P.person.p);
+      setCommon(P.person);
+      gl.bindVertexArray(shared.peopleVao);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, shared.personCount, n);
+    }
+    if (signs.count) {
+      gl.disable(gl.CULL_FACE);
+      gl.useProgram(P.sign.p);
+      setCommon(P.sign);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, shared.atlas);
+      gl.uniform1i(P.sign.u.u_atlas, 0);
+      gl.bindVertexArray(shared.signVao);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, signs.count);
+    }
+    gl.bindVertexArray(null);
+  }
+  /** People into their instance buffer (and their shadows into the blobs'); returns how many. */
+  const peopleData = new Float32Array(MAX_PEOPLE * 12);
+  const blobData = new Float32Array(MAX_PEOPLE * 4);
+  function writePeople() {
+    let n = 0;
+    for (const p of people) {
+      if (n >= MAX_PEOPLE) break;
+      if (Math.hypot(p.x - me.x, p.y - me.y) > FAR) continue;
+      const o = n * 12;
+      peopleData[o] = p.x;
+      peopleData[o + 1] = p.y;
+      peopleData[o + 2] = p.a;
+      peopleData[o + 3] = p.phase;
+      peopleData[o + 4] = p.act;
+      peopleData[o + 5] = p.scale;
+      peopleData[o + 8] = p.shirt;
+      peopleData[o + 9] = p.pants;
+      peopleData[o + 10] = p.skin;
+      peopleData[o + 11] = p.hair;
+      blobData[n * 4] = p.x;
+      blobData[n * 4 + 1] = p.y;
+      blobData[n * 4 + 2] = 0.42;
+      blobData[n * 4 + 3] = 0.3;
+      n++;
+    }
+    if (n) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, shared.peopleI);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, peopleData, 0, n * 12);
+      gl.bindBuffer(gl.ARRAY_BUFFER, shared.blobsI);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, blobData, 0, n * 4);
+    }
+    return n;
+  }
+
+  // ---------------------------------------------------------------------------------------------- start and stop
+  /**
+   * Where to start: in the middle of a street by the town hall (else a square, else the middle of the map), looking
+   * along it the longer way, as a street-view picture would.
+   */
+  function startPoint() {
+    const pois = map.data.pois || [];
+    const at = pois.find((p) => p[2] === 'hall') || pois.find((p) => p[2] === 'square') || [0, 0];
+    const [ax, ay] = at;
+    let best = null;
+    for (const f of map.query(ax - 200, ay - 200, ax + 200, ay + 200)) {
+      const st = ROADS[f.layer];
+      if (!st || st.cls > 2) continue;
+      const line = f.geom;
+      for (let i = 2; i + 1 < line.length; i += 2) {
+        const x0 = line[i - 2];
+        const y0 = line[i - 1];
+        const dx = line[i] - x0;
+        const dy = line[i + 1] - y0;
+        const L = Math.hypot(dx, dy);
+        if (L < 25) continue;
+        const t = Math.max(0.2, Math.min(0.8, ((ax - x0) * dx + (ay - y0) * dy) / (L * L)));
+        const x = x0 + dx * t;
+        const y = y0 + dy * t;
+        const d = Math.hypot(x - ax, y - ay) - Math.min(L, 120) * 0.3; // a longer street is worth a few more steps
+        if (best && d >= best.d) continue;
+        if (city.buildingAt(x, y, 1) || !city.walkable(x, y)) continue;
+        best = { d, x, y, yaw: t < 0.5 ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx) };
+      }
+    }
+    if (best) return best;
+    for (let r = 0; r < 400; r += 4) {
+      for (let k = 0; k < 16; k++) {
+        const x = ax + Math.cos((k / 16) * Math.PI * 2) * r;
+        const y = ay + Math.sin((k / 16) * Math.PI * 2) * r;
+        if (!city.buildingAt(x, y, 0.5) && city.walkable(x, y)) return { x, y, yaw: 0 };
+      }
+    }
+    return { x: ax, y: ay, yaw: 0 };
+  }
+
+  /**
+   * Into the street view of a city map (with its detail loaded); extra: its 3D file (heights and trees), or null.
+   * Resolves to false when this phone cannot draw it.
+   */
+  async function enter(m, extra = null) {
+    if (lost) return false;
+    if (!gl && !init()) return false;
+    active = true;
+    ready = false;
+    ui.root.hidden = false;
+    ui.loading.hidden = false;
+    await new Promise((r) => setTimeout(r, 30)); // the "building the city" note shows first
+    try {
+      if (map !== m) {
+        for (const key of [...tiles.keys()]) drop(key);
+        map = m;
+        city = streetCity(m, extra, { stone: STONE.has(m.id) });
+        paintGround(m);
+        streetName = streetNamer(m);
+        uploadSkyline();
+        resetSigns();
+      }
+      const s = startPoint();
+      me.x = s.x;
+      me.y = s.y;
+      me.yaw = s.yaw;
+      me.pitch = -0.06;
+      me.speed = 0;
+      people.length = 0;
+      trail.length = 0;
+      joined = 0;
+      target = null;
+      rand = seeded((Date.now() & 0xffff) + 7);
+      ui.count.querySelector('b').textContent = '0';
+      resize();
+      buildTiles(350); // the nearest first; the rest come in over the next frames, behind the haze
+      for (let i = 0; i < 12; i++) spawnPerson();
+    } catch (err) {
+      active = false;
+      ui.root.hidden = true;
+      ui.loading.hidden = true;
+      throw err;
+    }
+    ready = true;
+    ui.loading.hidden = true;
+    ui.street.textContent = '';
+    if (ui.pad) {
+      ui.pad.hidden = !window.matchMedia?.('(pointer: coarse)').matches;
+      ui.pad.classList.remove('gone');
+    }
+    streetWait = 0;
+    miniWait = 0;
+    signs.wait = 0;
+    return true;
+  }
+  function exit() {
+    if (!active) return;
+    active = false;
+    ready = false;
+    ui.root.hidden = true;
+    stick = null;
+    ptrs.clear();
+    input.fwd = input.side = 0;
+    input.keys.clear();
+    hooks.onExit?.();
+  }
+
+  /** One frame (the game's loop calls it instead of drawing the map while you walk). */
+  function frame(dt) {
+    if (!ready || !gl || lost) return;
+    time += dt;
+    moveMe(dt);
+    updatePeople(dt);
+    buildTiles(6);
+    draw();
+    streetWait -= dt;
+    if (streetWait <= 0) {
+      const name = streetName(me.x, me.y);
+      ui.street.textContent = name ? `📍 ${name}` : '';
+      ui.street.hidden = !name;
+      streetWait = 0.7;
+    }
+    signs.wait -= dt;
+    if (signs.wait <= 0) {
+      updateSigns();
+      signs.wait = 0.4;
+    }
+    miniWait -= dt;
+    if (miniWait <= 0) {
+      drawMini();
+      miniWait = 0.12;
+    }
+    // Keep the frame rate: a lower resolution when the phone struggles, back up when it copes.
+    if (dt > 1 / 40) slow++;
+    else slow = Math.max(0, slow - 1);
+    if (dt < 1 / 55) fast++;
+    else fast = 0;
+    if (slow > 40 && scale > 0.55) {
+      scale = Math.max(0.55, scale - 0.15);
+      slow = 0;
+    } else if (fast > 240 && scale < 1) {
+      scale = Math.min(1, scale + 0.15);
+      fast = 0;
+    }
+  }
+
+  return {
+    enter,
+    exit,
+    frame,
+    get active() {
+      return active;
+    },
+    /** For tests: where you are, and how many have joined you. */
+    state: () => ({
+      x: me.x,
+      y: me.y,
+      yaw: me.yaw,
+      pitch: me.pitch,
+      joined,
+      people: people.length,
+      tiles: tiles.size,
+      scale,
+      roads: [...tiles.values()].reduce((n, t) => n + (t.rCount || 0), 0),
+      signs: signs.count,
+      towers: sky?.towers ?? 0,
+      glError: gl ? gl.getError() : -1,
+    }),
+    /** For tests: the people around (where they are, and whether they joined). */
+    people: () => people.map((p) => ({ x: p.x, y: p.y, joined: p.joined, act: p.act })),
+    /** For tests: stand somewhere, looking somewhere. */
+    teleport(x, y, yaw = me.yaw, pitch = me.pitch) {
+      me.x = x;
+      me.y = y;
+      me.yaw = yaw;
+      me.pitch = pitch;
+      target = null;
+    },
+    supported: () => !!(gl || (typeof WebGL2RenderingContext !== 'undefined')),
+  };
+}
+
+
+return { createWalk };
 })();
 __m.people = (() => {
 // Ch-ch-chain-ges — the people. Flat paper-doll figures with a white cut-out edge: in a chain they reach out to hold
@@ -5887,6 +8616,7 @@ const { edgeAhead } = __m.arena;
 const { figure, drawFlag, FIG } = __m.people;
 const { createAudio, TRACKS } = __m.audio;
 const { NAME, SLUG, drawWordmark } = __m.brand;
+const { createWalk } = __m.walk;
 const { cleanName } = __m.names;
 const { AVATARS, avatar, allSkins, loadSuppliedSkins } = __m.avatars;
 const { CHAPTERS, BOOKS, BOOK_NAMES, PERKS, PERK_ROUNDS, RIVALS, OTHERS, EPILOGUE, POLL_NOTE, THRESHOLD, OURS, loadCampaign, saveCampaign, newCampaign, knesset, biggestRival, openBook, winChapter, choosePerk, perkMods, starTexts, goalText, mmss, fill, partyOf, startChapter, startSkirmish, startPoint } = __m.campaign;
@@ -6389,6 +9119,11 @@ function frame(now) {
   let dt = (now - last) / 1000;
   last = now;
   if (dt > 0.25) dt = 0.25;
+  if (walk.active) {
+    // Walking the streets: the 3D view draws instead of the map.
+    walk.frame(Math.min(dt, 0.1));
+    return;
+  }
   trackPerformance(dt);
   updateStats(now);
   const w = game.world;
@@ -7846,6 +10581,10 @@ function renderMapList() {
     b.addEventListener('click', () => {
       chooseMap(m.id);
       hide('maps');
+      if (game.walkNext && m.kind !== 'region') {
+        game.walkNext = false;
+        startWalk();
+      }
     });
     return b;
   };
@@ -7866,6 +10605,7 @@ function renderMapList() {
   list.replaceChildren(...out);
 }
 $('map-btn').addEventListener('click', () => {
+  game.walkNext = false;
   $('map-search').value = '';
   renderMapList();
   show('maps');
@@ -7874,6 +10614,77 @@ $('map-btn').addEventListener('click', () => {
 $('map-search').addEventListener('input', renderMapList);
 
 // ------------------------------------------------------------------------------------------------ skins and name
+// ------------------------------------------------------------------------------------------------ the streets in 3D
+const walk = createWalk(
+  $('walk-gl'),
+  {
+    root: $('walk'),
+    street: $('walk-street'),
+    count: $('walk-count'),
+    mini: $('walk-mini'),
+    run: $('walk-run'),
+    stick: $('walk-stick'),
+    pad: $('walk-pad'),
+    loading: $('walk-loading'),
+    exit: $('walk-exit'),
+  },
+  {
+    toast,
+    hint,
+    sfx: (k) => audio.sfx(k),
+    onExit: () => {
+      show('start');
+      audio.setScene('menu');
+      renderMapRow();
+      game.net?.watch(viewExtents(), maps.current);
+    },
+  },
+);
+/** Into the chosen city's streets in 3D (a big map: first pick a city). */
+async function startWalk() {
+  audio.unlock();
+  const info = maps.byId.get(maps.current);
+  if (!info || info.kind === 'region' || !info.detail) {
+    game.walkNext = true;
+    renderMapList();
+    show('maps');
+    toast('🚶 בחרו עיר להסתובב ברחובות שלה', 3200);
+    return;
+  }
+  const id = maps.current;
+  $('walk-btn').disabled = true;
+  try {
+    const map = await cityMap(id);
+    const [ok, extra] = await Promise.all([
+      map ? map.loadDetail() : false,
+      fetch(`${CFG.maps}${encodeURIComponent(id)}-3d.json`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ]);
+    if (!map || !ok) {
+      toast('את הרחובות של העיר הזאת עוד אי אפשר לטעון. נסו עוד רגע', 3200);
+      return;
+    }
+    game.net?.idle();
+    hide('start');
+    if (!(await walk.enter(map, extra))) {
+      show('start');
+      toast('הדפדפן הזה לא מציג תלת־ממד (WebGL 2)', 4000);
+      return;
+    }
+    audio.setScene('play');
+    hint('👆 גוררים כדי להסתכל · נוגעים ברחוב כדי ללכת לשם', 5500);
+  } catch (err) {
+    console.error(err);
+    show('start');
+    toast('משהו השתבש בבניית העיר. נסו שוב', 3500);
+  } finally {
+    $('walk-btn').disabled = false;
+  }
+}
+$('walk-btn').addEventListener('click', () => startWalk());
+globalThis.__walk = walk; // for the browser tests
+
 function drawSkinInto(c, id) {
   const g = c.getContext('2d');
   g.clearRect(0, 0, c.width, c.height);

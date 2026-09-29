@@ -146,33 +146,38 @@ export class CityMap {
       try {
         const res = await fetch(`${this.base}${encodeURIComponent(this.id)}-detail.json`);
         if (!res.ok) return false;
-        const d = await res.json();
-        const add = this.adder;
-        for (const cls of Object.keys(AREA_STYLE)) {
-          for (const poly of d.a?.[cls] || []) add(`area:${cls}`, poly.map((r) => undelta(r)), true);
-        }
-        for (const b of d.b || []) add('building', [undelta(b)], true);
-        for (const m of d.m || []) add(m[0] === 1 ? 'path' : 'lane', undelta(m, 1), false);
-        for (const f of d.f || []) add('motorway', undelta(f), false);
-        this.pois = (d.p || [])
-          .filter((p) => POI_STYLE[p[2]])
-          // Names in a script most players cannot read (Cyrillic, say) keep their icon but show no name.
-          .map(([x, y, cat, name]) => ({ x, y, cat, name: /[\u0400-\u04ff]/.test(name) ? '' : name, rank: POI_RANK[cat] }))
-          .sort((a, b) => a.rank - b.rank);
-        for (const p of this.pois) {
-          const k = this.cell(p.y) * this.n + this.cell(p.x);
-          let list = this.poiCells.get(k);
-          if (!list) this.poiCells.set(k, (list = []));
-          list.push(p);
-        }
-        this.detail = true;
-        this.tiles.clear();
+        this.addDetail(await res.json());
         return true;
       } catch {
         return false;
       }
     })();
     return this.detailLoading;
+  }
+
+  /** Adds a parsed detail file (docs/maps/<id>-detail.json) to the map. */
+  addDetail(d) {
+    const add = this.adder;
+    for (const cls of Object.keys(AREA_STYLE)) {
+      for (const poly of d.a?.[cls] || []) add(`area:${cls}`, poly.map((r) => undelta(r)), true);
+    }
+    // Each building remembers its place in the file (the street view's heights are in the same order).
+    (d.b || []).forEach((b, i) => add('building', [undelta(b)], true, i));
+    for (const m of d.m || []) add(m[0] === 1 ? 'path' : 'lane', undelta(m, 1), false);
+    for (const f of d.f || []) add('motorway', undelta(f), false);
+    this.pois = (d.p || [])
+      .filter((p) => POI_STYLE[p[2]])
+      // Names in a script most players cannot read (Cyrillic, say) keep their icon but show no name.
+      .map(([x, y, cat, name]) => ({ x, y, cat, name: /[\u0400-\u04ff]/.test(name) ? '' : name, rank: POI_RANK[cat] }))
+      .sort((a, b) => a.rank - b.rank);
+    for (const p of this.pois) {
+      const k = this.cell(p.y) * this.n + this.cell(p.x);
+      let list = this.poiCells.get(k);
+      if (!list) this.poiCells.set(k, (list = []));
+      list.push(p);
+    }
+    this.detail = true;
+    this.tiles.clear();
   }
 
   /** { sat, green, xyz }: the satellite view, the Green Line layer (big maps), a tile provider for the satellite. */
