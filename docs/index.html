@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-ugBQ0pYIk6MZfgyXr+a7XPa0g8CFJPJL9cCHvZU9Ye0='; style-src 'sha256-uOq/Spyu4U3kbWzjI2Yn33tmMBKcGiAqGS84uE2Yq4g='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-i7UoWindDcmWYL6v7buyLIdNs/YOS75TlOKsKiw8Fgw='; style-src 'sha256-uOq/Spyu4U3kbWzjI2Yn33tmMBKcGiAqGS84uE2Yq4g='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -4188,6 +4188,17 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
   let comboAt = 0;
   let lastBlip = 0;
   const state = { muted, scene: 'menu' };
+  // Muted, the page lets go of the sound entirely (the context is suspended, and on iPhones the page's audio session
+  // mixes with other apps), so a player's own music from Spotify or the like keeps playing under the game.
+  const session = (m) => {
+    try {
+      const s = globalThis.navigator?.audioSession;
+      if (s) s.type = m ? 'ambient' : 'auto';
+    } catch {
+      /* not supported */
+    }
+  };
+  session(muted);
 
   function unlock() {
     if (!ac) {
@@ -4221,7 +4232,9 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     }
     if (context) return; // offline: the caller schedules with renderUntil()
-    if (ac.state === 'suspended') ac.resume();
+    if (state.muted) {
+      if (ac.state === 'running') ac.suspend();
+    } else if (ac.state === 'suspended') ac.resume();
     if (!timer) {
       nextTime = ac.currentTime + 0.08;
       timer = setInterval(schedule, 25);
@@ -4460,11 +4473,17 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
     unlock,
     setMuted(m) {
       state.muted = m;
+      session(m);
       if (!master) return;
+      if (!m && ac.state === 'suspended' && !context) {
+        ac.resume();
+        nextTime = Math.max(nextTime, ac.currentTime + 0.05);
+      }
       const now = ac.currentTime;
       master.gain.cancelScheduledValues(now);
       master.gain.setValueAtTime(master.gain.value, now);
       master.gain.linearRampToValueAtTime(m ? 0 : 0.8, now + 0.25);
+      if (m && !context) setTimeout(() => state.muted && ac.state === 'running' && ac.suspend(), 320);
     },
     /** 'menu' (calm), 'play' or 'over'. */
     setScene(scene) {
@@ -4574,7 +4593,7 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
     pause(on) {
       if (!ac) return;
       if (on && ac.state === 'running') ac.suspend();
-      else if (!on && ac.state === 'suspended') {
+      else if (!on && ac.state === 'suspended' && !state.muted) {
         ac.resume();
         nextTime = Math.max(nextTime, ac.currentTime + 0.05);
       }

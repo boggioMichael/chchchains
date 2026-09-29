@@ -187,6 +187,17 @@ export function createAudio({ muted = false, context = null, track = 'chains' } 
   let comboAt = 0;
   let lastBlip = 0;
   const state = { muted, scene: 'menu' };
+  // Muted, the page lets go of the sound entirely (the context is suspended, and on iPhones the page's audio session
+  // mixes with other apps), so a player's own music from Spotify or the like keeps playing under the game.
+  const session = (m) => {
+    try {
+      const s = globalThis.navigator?.audioSession;
+      if (s) s.type = m ? 'ambient' : 'auto';
+    } catch {
+      /* not supported */
+    }
+  };
+  session(muted);
 
   function unlock() {
     if (!ac) {
@@ -220,7 +231,9 @@ export function createAudio({ muted = false, context = null, track = 'chains' } 
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     }
     if (context) return; // offline: the caller schedules with renderUntil()
-    if (ac.state === 'suspended') ac.resume();
+    if (state.muted) {
+      if (ac.state === 'running') ac.suspend();
+    } else if (ac.state === 'suspended') ac.resume();
     if (!timer) {
       nextTime = ac.currentTime + 0.08;
       timer = setInterval(schedule, 25);
@@ -459,11 +472,17 @@ export function createAudio({ muted = false, context = null, track = 'chains' } 
     unlock,
     setMuted(m) {
       state.muted = m;
+      session(m);
       if (!master) return;
+      if (!m && ac.state === 'suspended' && !context) {
+        ac.resume();
+        nextTime = Math.max(nextTime, ac.currentTime + 0.05);
+      }
       const now = ac.currentTime;
       master.gain.cancelScheduledValues(now);
       master.gain.setValueAtTime(master.gain.value, now);
       master.gain.linearRampToValueAtTime(m ? 0 : 0.8, now + 0.25);
+      if (m && !context) setTimeout(() => state.muted && ac.state === 'running' && ac.suspend(), 320);
     },
     /** 'menu' (calm), 'play' or 'over'. */
     setScene(scene) {
@@ -573,7 +592,7 @@ export function createAudio({ muted = false, context = null, track = 'chains' } 
     pause(on) {
       if (!ac) return;
       if (on && ac.state === 'running') ac.suspend();
-      else if (!on && ac.state === 'suspended') {
+      else if (!on && ac.state === 'suspended' && !state.muted) {
         ac.resume();
         nextTime = Math.max(nextTime, ac.currentTime + 0.05);
       }
