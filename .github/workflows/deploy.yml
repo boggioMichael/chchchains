@@ -31,7 +31,13 @@ jobs:
         with:
           node-version: '22'
       - name: Tests
-        run: npm test
+        run: |
+          # On a failure, the failing tests and their errors as annotations (readable without the full log).
+          if ! npm test > test.log 2>&1; then
+            grep -E '^not ok|^# (pass|fail)|error:|expected:|actual:|timed out' test.log | head -30 | sed 's/^/::error::/'
+            exit 1
+          fi
+          grep -E '^# (tests|pass|fail)' test.log
       - name: The page is built from these sources
         run: |
           node build.mjs
