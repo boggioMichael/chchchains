@@ -116,7 +116,13 @@ node server.mjs     # http://localhost:3000
 - **chchchains**: דף המשחק והמפות, אתר סטטי על ה־CDN של Render. נטען מיד ולא נרדם אף פעם.
 - **chchchains-server**: שרת המשחק, שירות חינמי שנרדם אחרי 15 דקות בלי שחקנים. כשמישהו נכנס, הדף מעיר אותו (בערך דקה), ובינתיים אפשר לשחק לבד.
 
-אחרי שינוי: Manual Deploy → Deploy latest commit בשני השירותים (או לחבר את GitHub ב־Render כדי שזה יקרה לבד).
+**העלאה אוטומטית**: ה־workflow ‏`deploy` (‏`.github/workflows/deploy.yml`) מעלה את שני השירותים בכל שינוי במשחק ב־main ואחרי כל בנייה של המפות, אחרי שהבדיקות עוברות והדף בנוי מהקוד העדכני. צריך להגדיר אותו פעם אחת:
+1. ב־Render, בכל אחד משני השירותים: Settings → Deploy Hook, ומעתיקים את הכתובת (היא סודית: מי שמחזיק אותה יכול להפעיל העלאה).
+2. ב־GitHub, במאגר: Settings → Secrets and variables → Actions → New repository secret. שני סודות:
+   - `RENDER_DEPLOY_HOOK_SITE`: הכתובת של **chchchains**
+   - `RENDER_DEPLOY_HOOK_SERVER`: הכתובת של **chchchains-server**
+
+מאז כל שינוי עולה לבד תוך כמה דקות (אפשר גם להריץ ידנית מלשונית Actions). בלי הסודות, ה־workflow רק בודק ולא מעלה, ואז מעלים ידנית: Manual Deploy → Deploy latest commit בשני השירותים.
 
 ## הגדרות
 

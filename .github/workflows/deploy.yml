@@ -1,0 +1,60 @@
+# Deploys the game to Render by itself: whenever the game changes on main (and after the maps workflow rebuilds the
+# maps), once the tests pass and the page is built from the current sources, both services are deployed through
+# their Deploy Hooks: Render → the service → Settings → Deploy Hook, kept as the repository secrets
+# RENDER_DEPLOY_HOOK_SITE (the site, chchchains) and RENDER_DEPLOY_HOOK_SERVER (the game server, chchchains-server).
+# Without them it checks and does nothing more. It can also be run by hand from the Actions tab.
+name: deploy
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', 'src/**', 'server.mjs', 'build.mjs', 'config.json', 'package.json', '.github/workflows/deploy.yml']
+  workflow_run:
+    workflows: [maps]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deploy
+  cancel-in-progress: true # a newer push replaces a deploy that has not started yet
+jobs:
+  deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # the newest commit (after a maps run, the one with the new maps)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: npm test
+      - name: The page is built from these sources
+        run: |
+          node build.mjs
+          if ! git diff --quiet -- docs/index.html docs/manifest.webmanifest; then
+            echo "::error::docs/index.html is older than the sources: run node build.mjs and commit it"
+            exit 1
+          fi
+      - name: Deploy both services
+        env:
+          SITE: ${{ secrets.RENDER_DEPLOY_HOOK_SITE }}
+          SERVER: ${{ secrets.RENDER_DEPLOY_HOOK_SERVER }}
+        run: |
+          if [ -z "$SITE" ] && [ -z "$SERVER" ]; then
+            echo "::notice::No deploy hooks yet (repository secrets RENDER_DEPLOY_HOOK_SITE and RENDER_DEPLOY_HOOK_SERVER): nothing deployed."
+            exit 0
+          fi
+          for name in SERVER SITE; do
+            hook="${!name}"
+            if [ -z "$hook" ]; then
+              echo "::warning::RENDER_DEPLOY_HOOK_$name is not set: that service is not deployed."
+              continue
+            fi
+            code=$(curl -sS -X POST -o /dev/null -w '%{http_code}' --retry 3 --retry-all-errors "$hook")
+            echo "$name: Render answered $code"
+            case "$code" in 2*) ;; *) echo "::error::the $name deploy hook answered $code"; exit 1 ;; esac
+          done
