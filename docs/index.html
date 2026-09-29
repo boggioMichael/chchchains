@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-koV+zrqZ0Ho758Fol5V4Q+g1HvzmEwKFjkBnG2yFKvQ='; style-src 'sha256-UUAlOPzoe8BVB4zORxA48TaNf656ShZ1PIsOS74MoUw='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-GYaTDexAm4aj3g6t/J96twjf1ewq750vuegRo5OpM7c='; style-src 'sha256-o7ct99op00wgBL3PHKxsnGigzFbby0TBs4iGpNXwRqA='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -197,6 +197,14 @@ a { color: inherit; }
 .file { display: flex; gap: 6px; align-items: center; justify-content: center; border: 1px dashed rgba(35, 32, 27, 0.3); border-radius: 16px;
   min-height: 50px; font-weight: 800; font-size: 15px; background: #fff; cursor: pointer; }
 .file input { display: none; }
+.tracks { display: grid; gap: 6px; }
+.own { display: grid; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; text-align: right; }
+.own > b { font-size: 15px; }
+.app { display: flex; gap: 8px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 14px; min-height: 48px;
+  font-weight: 800; font-size: 15px; color: var(--ink); text-decoration: none; background: var(--paper); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.spotify { background: #1db954; }
+.dot.youtube { background: #ff0033; }
 
 /* the story: a scrolling middle between a fixed title and fixed buttons */
 .sheet .card.camp { grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; width: min(460px, 100%); background: #fbf9f4; }
@@ -341,15 +349,26 @@ a { color: inherit; }
 </section>
 
 <section id="music" class="screen sheet" hidden aria-labelledby="music-title">
-  <div class="card">
+  <div class="card lists">
     <h2 id="music-title">מוסיקה</h2>
-    <p class="note">רצועות מקוריות שנכתבו למשחק, או שיר משלכם מהטלפון: הוא מתנגן רק אצלכם ולא עולה לשום מקום. לא שומעים? הגבירו את הווליום של הטלפון.</p>
-    <div id="track-list" class="list"></div>
-    <div class="row2">
-      <label class="file">🎧 שיר מהטלפון<input id="music-file" type="file" accept="audio/*"></label>
-      <button class="secondary sound" type="button">🔊 מוסיקה</button>
+    <p class="note">רצועות מקוריות שנכתבו למשחק, או המוסיקה שלכם. לא שומעים? הגבירו את הווליום של הטלפון.</p>
+    <div class="list">
+      <div id="track-list" class="tracks"></div>
+      <div class="own" aria-labelledby="own-title">
+        <b id="own-title">🎧 המוסיקה שלכם</b>
+        <input id="own-q" class="search" type="search" placeholder="שיר או אמן (לא חובה)" autocomplete="off" aria-label="שיר או אמן לחפש">
+        <div class="row2">
+          <a id="own-spotify" class="app" href="https://open.spotify.com/" target="_blank" rel="noopener"><i class="dot spotify"></i>בספוטיפיי</a>
+          <a id="own-youtube" class="app" href="https://music.youtube.com/" target="_blank" rel="noopener"><i class="dot youtube"></i>ביוטיוב מיוזיק</a>
+        </div>
+        <label class="file">📁 קובץ שיר מהטלפון<input id="music-file" type="file" accept="audio/*"></label>
+        <p class="note">השיר מתנגן באפליקציה, והמשחק משתתק כדי לא להפריע: בוחרים שיר, חוזרים לכאן וממשיכים לשחק. ביוטיוב מיוזיק ההשמעה ברקע דורשת פרימיום. קובץ מהטלפון מתנגן רק אצלכם ולא עולה לשום מקום.</p>
+      </div>
     </div>
-    <button class="secondary close" type="button">סגירה</button>
+    <div class="row2">
+      <button class="secondary sound" type="button">🔊 מוסיקה</button>
+      <button class="secondary close" type="button">סגירה</button>
+    </div>
   </div>
 </section>
 
@@ -7987,6 +8006,35 @@ function renderTracks() {
 $('music-btn').addEventListener('click', () => {
   renderTracks();
   show('music');
+});
+
+// Your own music from Spotify or YouTube Music plays in its own app. (A page cannot play them itself: Spotify lets
+// outside apps in for five test users only, and YouTube does not allow playing just the sound of its videos.) So
+// the buttons open the app at a search, and the game goes quiet, letting go of the sound so the song plays under it.
+function ownMusicLinks() {
+  const q = $('own-q').value.trim();
+  $('own-spotify').href = q ? `https://open.spotify.com/search/${encodeURIComponent(q)}` : 'https://open.spotify.com/';
+  $('own-youtube').href = q ? `https://music.youtube.com/search?q=${encodeURIComponent(q)}` : 'https://music.youtube.com/';
+}
+$('own-q').addEventListener('input', ownMusicLinks);
+$('own-q').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') e.target.blur();
+});
+for (const id of ['own-spotify', 'own-youtube']) {
+  $(id).addEventListener('click', () => {
+    ownMusicLinks();
+    if (!audio.muted) {
+      audio.setMuted(true);
+      setPref('muted', '1');
+      renderSound();
+    }
+    game.ownMusic = true;
+  });
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !game.ownMusic) return;
+  game.ownMusic = false;
+  toast('🎧 השיר שלכם מתנגן והמשחק בשקט. להחזיר את המוסיקה של המשחק: לוחצים על 🔇', 4200);
 });
 $('music-file').addEventListener('change', async (e) => {
   const file = e.target.files?.[0];

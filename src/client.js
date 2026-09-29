@@ -2143,6 +2143,35 @@ $('music-btn').addEventListener('click', () => {
   renderTracks();
   show('music');
 });
+
+// Your own music from Spotify or YouTube Music plays in its own app. (A page cannot play them itself: Spotify lets
+// outside apps in for five test users only, and YouTube does not allow playing just the sound of its videos.) So
+// the buttons open the app at a search, and the game goes quiet, letting go of the sound so the song plays under it.
+function ownMusicLinks() {
+  const q = $('own-q').value.trim();
+  $('own-spotify').href = q ? `https://open.spotify.com/search/${encodeURIComponent(q)}` : 'https://open.spotify.com/';
+  $('own-youtube').href = q ? `https://music.youtube.com/search?q=${encodeURIComponent(q)}` : 'https://music.youtube.com/';
+}
+$('own-q').addEventListener('input', ownMusicLinks);
+$('own-q').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') e.target.blur();
+});
+for (const id of ['own-spotify', 'own-youtube']) {
+  $(id).addEventListener('click', () => {
+    ownMusicLinks();
+    if (!audio.muted) {
+      audio.setMuted(true);
+      setPref('muted', '1');
+      renderSound();
+    }
+    game.ownMusic = true;
+  });
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !game.ownMusic) return;
+  game.ownMusic = false;
+  toast('🎧 השיר שלכם מתנגן והמשחק בשקט. להחזיר את המוסיקה של המשחק: לוחצים על 🔇', 4200);
+});
 $('music-file').addEventListener('change', async (e) => {
   const file = e.target.files?.[0];
   e.target.value = '';
