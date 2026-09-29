@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-J6HEaeMZnFBAITYslw8xL4Bp0bq+/D1D0aMSbxyTue4=' 'sha256-zVR/KsEc9tPtscsyWorArF6Qce1IKlCz47frWOsDdnA='; style-src 'sha256-wyA5Vs7Jjb5DONtEPCkXfKgWg8QeKsRmn+ZDQImenz4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-J6HEaeMZnFBAITYslw8xL4Bp0bq+/D1D0aMSbxyTue4=' 'sha256-83Nr9xDNbft+Hqun056SlIEWL49Xc+Mk1nvoSOktnhw='; style-src 'sha256-wyA5Vs7Jjb5DONtEPCkXfKgWg8QeKsRmn+ZDQImenz4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -5869,6 +5869,17 @@ function createWalk(canvas, ui, hooks = {}) {
     }),
     /** For tests: the people around (where they are, and whether they joined). */
     people: () => people.map((p) => ({ x: p.x, y: p.y, joined: p.joined, act: p.act })),
+    /** For tests: can you walk straight from one point to the other (no building, no water on the way)? */
+    clearPath(x0, y0, x1, y1) {
+      if (!city) return false;
+      const L = Math.hypot(x1 - x0, y1 - y0) || 1;
+      for (let d = 0; d <= L; d += 0.5) {
+        const x = x0 + ((x1 - x0) * d) / L;
+        const y = y0 + ((y1 - y0) * d) / L;
+        if (city.buildingAt(x, y, 0.5) || !city.walkable(x, y)) return false;
+      }
+      return true;
+    },
     /** For tests: stand somewhere, looking somewhere. */
     teleport(x, y, yaw = me.yaw, pitch = me.pitch) {
       me.x = x;
@@ -10821,6 +10832,7 @@ async function startWalk() {
 }
 $('walk-btn').addEventListener('click', () => startWalk());
 globalThis.__walk = walk; // for the browser tests
+globalThis.__game = { game, input, cam, me }; // for the browser tests and the demo video
 
 function drawSkinInto(c, id) {
   const g = c.getContext('2d');

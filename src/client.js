@@ -2087,6 +2087,7 @@ async function startWalk() {
 }
 $('walk-btn').addEventListener('click', () => startWalk());
 globalThis.__walk = walk; // for the browser tests
+globalThis.__game = { game, input, cam, me }; // for the browser tests and the demo video
 
 function drawSkinInto(c, id) {
   const g = c.getContext('2d');

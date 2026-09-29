@@ -1838,6 +1838,17 @@ export function createWalk(canvas, ui, hooks = {}) {
     }),
     /** For tests: the people around (where they are, and whether they joined). */
     people: () => people.map((p) => ({ x: p.x, y: p.y, joined: p.joined, act: p.act })),
+    /** For tests: can you walk straight from one point to the other (no building, no water on the way)? */
+    clearPath(x0, y0, x1, y1) {
+      if (!city) return false;
+      const L = Math.hypot(x1 - x0, y1 - y0) || 1;
+      for (let d = 0; d <= L; d += 0.5) {
+        const x = x0 + ((x1 - x0) * d) / L;
+        const y = y0 + ((y1 - y0) * d) / L;
+        if (city.buildingAt(x, y, 0.5) || !city.walkable(x, y)) return false;
+      }
+      return true;
+    },
     /** For tests: stand somewhere, looking somewhere. */
     teleport(x, y, yaw = me.yaw, pitch = me.pitch) {
       me.x = x;
