@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qVxrc0sdKpEHzzajkubYbs4lRtFeZdqzQCxcaaAamxk=' 'sha256-zVR/KsEc9tPtscsyWorArF6Qce1IKlCz47frWOsDdnA='; style-src 'sha256-wyA5Vs7Jjb5DONtEPCkXfKgWg8QeKsRmn+ZDQImenz4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws://127.0.0.1:8080 http://127.0.0.1:8080; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-J6HEaeMZnFBAITYslw8xL4Bp0bq+/D1D0aMSbxyTue4=' 'sha256-zVR/KsEc9tPtscsyWorArF6Qce1IKlCz47frWOsDdnA='; style-src 'sha256-wyA5Vs7Jjb5DONtEPCkXfKgWg8QeKsRmn+ZDQImenz4='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -448,7 +448,7 @@ a { color: inherit; }
     <button id="share-close" class="secondary" type="button">סגירה</button>
   </div>
 </section>
-<script>window.CHAIN_CONFIG = {"server":"ws://127.0.0.1:8080/ws","brand":"המשחק של עמך ישראל","party":"עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[],"musicPicks":["Hamilton","Wicked","Bo Burnham Inside","David Bowie Changes","David Bowie Life on Mars","אביתר בנאי","יוסי בנאי"],"playlist":{"spotify":"","youtube":""}};</script>
+<script>window.CHAIN_CONFIG = {"server":"wss://chchchains-server.onrender.com/ws","brand":"המשחק של עמך ישראל","party":"עמך ישראל","publisher":"","joinUrl":"","shareUrl":"https://chchchains.onrender.com/","servers":[],"satellite":null,"music":[],"musicPicks":["Hamilton","Wicked","Bo Burnham Inside","David Bowie Changes","David Bowie Life on Mars","אביתר בנאי","יוסי בנאי"],"playlist":{"spotify":"","youtube":""}};</script>
 <script>
 (() => {
 'use strict';
