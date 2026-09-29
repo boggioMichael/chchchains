@@ -14,7 +14,7 @@ const RUN = 8;
 const FAR = 480; // the fog is complete here, and nothing is drawn beyond
 const FOG_START = 110;
 const MAX_PEOPLE = 420;
-const SIGNS_MAX = 128;
+const SIGNS_MAX = 64;
 const WAITING = 26; // people waiting around you at any time
 const CHAIN = '#1f5fd6'; // the shirts of people in your chain
 const GROUND_CELL = 40;
@@ -492,7 +492,7 @@ void main() {
   o = vec4(fogged(texture(u_atlas, v_uv).rgb, v_p), 1.0);
 }`;
 const SIGN_PX = [512, 64]; // one sign's picture
-const ATLAS = 2048; // 4 × 32 signs
+const ATLAS = [2048, 1024]; // 4 × 16 signs
 const SIGN_COLORS = [
   ['#0f4c81', '#ffffff'], ['#b91c1c', '#ffffff'], ['#166534', '#ffffff'], ['#111827', '#fde68a'], ['#f59e0b', '#1f2937'],
   ['#6d28d9', '#ffffff'], ['#f8fafc', '#b91c1c'], ['#0e7490', '#ffffff'], ['#9a3412', '#ffffff'], ['#fef3c7', '#1f2937'],
@@ -697,7 +697,7 @@ export function createWalk(canvas, ui, hooks = {}) {
     attrib(gl, P.sign.a('i_uv'), 4, gl.FLOAT, false, 48, 32, 1);
     const atlas = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, atlas);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, ATLAS, ATLAS, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, ATLAS[0], ATLAS[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -765,10 +765,11 @@ export function createWalk(canvas, ui, hooks = {}) {
       for (let i = 2; i < f.geom.length; i += 2) wg.lineTo(f.geom[i], f.geom[i + 1]);
       wg.stroke();
     }
-    const texture = (source) => {
+    const texture = (source, one = false) => {
       const t = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, t);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      if (one) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, source);
+      else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -782,7 +783,7 @@ export function createWalk(canvas, ui, hooks = {}) {
       gl.deleteTexture(tex.ground);
       gl.deleteTexture(tex.water);
     }
-    tex = { ground: texture(c), water: texture(w), E };
+    tex = { ground: texture(c), water: texture(w, true), E };
     if (!shared.groundVao) {
       // The ground's grid, around (0, 0); it moves with the walker in steps of one square.
       const N = GROUND_N;
@@ -1055,11 +1056,11 @@ export function createWalk(canvas, ui, hooks = {}) {
       signs.placed.set(p, at);
       if (!at) continue;
       const slot = signs.free.pop();
-      const cols = ATLAS / SIGN_PX[0];
-      at.u0 = ((slot % cols) * SIGN_PX[0]) / ATLAS;
-      at.v0 = (Math.floor(slot / cols) * SIGN_PX[1]) / ATLAS;
-      at.u1 = at.u0 + (w - 1) / ATLAS;
-      at.v1 = at.v0 + (SIGN_PX[1] - 1) / ATLAS;
+      const cols = ATLAS[0] / SIGN_PX[0];
+      at.u0 = ((slot % cols) * SIGN_PX[0]) / ATLAS[0];
+      at.v0 = (Math.floor(slot / cols) * SIGN_PX[1]) / ATLAS[1];
+      at.u1 = at.u0 + (w - 1) / ATLAS[0];
+      at.v1 = at.v0 + (SIGN_PX[1] - 1) / ATLAS[1];
       gl.bindTexture(gl.TEXTURE_2D, shared.atlas);
       gl.texSubImage2D(gl.TEXTURE_2D, 0, (slot % cols) * SIGN_PX[0], Math.floor(slot / cols) * SIGN_PX[1], gl.RGBA, gl.UNSIGNED_BYTE, signs.scratch);
       signs.slots.set(p, slot);
