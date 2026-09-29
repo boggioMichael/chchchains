@@ -1,7 +1,8 @@
 // Ch-ch-chain-ges — multiplayer game server. Zero dependencies: Node's http + a small RFC 6455 WebSocket implementation.
 // Serves the game page and runs authoritative rooms (the same simulation as the browser). Every room plays on one
 // map (a city, the whole country, or the promise) and holds as many people as that map does; a full room opens a
-// second one on the same map. There are no bots: someone alone in a room walks the streets until others come.
+// second one on the same map. While few people play, bots keep a room lively: the rival parties (named as the
+// parties, marked 🤖, now and then one goes after a person) and local lists; they leave as people come.
 // No accounts, cookies or stored personal data: IP addresses are used only in memory for connection limits and
 // are never logged.
 //
@@ -14,6 +15,7 @@ import { streetSpawner } from './src/streets.js';
 import { arenaOf } from './src/arena.js';
 import { cleanName as checkName } from './src/names.js';
 import { AVATAR_IDS } from './src/avatars.js';
+import { RIVALS, LOCAL_LISTS, ALLY_COLOR, huntDirector } from './src/campaign.js';
 import {
   encodeSnapshot,
   FLAG_BOOST,
@@ -30,6 +32,8 @@ const PORT = num(env.PORT, 3000);
 const HOST = env.HOST || '0.0.0.0';
 const TRUST_PROXY = env.TRUST_PROXY === '1' || env.TRUST_PROXY === 'true' || !!env.RENDER;
 const ROOM_CLIENTS = num(env.ROOM_CLIENTS, 50); // the most people any room holds (a map may hold fewer)
+// Chains a room keeps going with bots while few people play (0: no bots); a setting the tests can change.
+const config = { botFill: num(env.BOT_FILL, 10) };
 const MAX_CLIENTS = num(env.MAX_CLIENTS, 300); // whole server; beyond this new visitors play offline
 const MAX_ROOMS = num(env.MAX_ROOMS, 16); // rooms open at once (each one ticks 30 times a second)
 const MAX_PER_IP = num(env.MAX_PER_IP, 60); // generous: mobile carriers put many people behind one address
@@ -234,6 +238,8 @@ class Room {
     this.leader = null;
     this.world.sparkLog = { added: [], removed: [] }; // people who came and went since the last snapshots
     this.snapN = 0;
+    // Now and then a rival party goes after someone who has played a while (one at a time; two once it is busy).
+    this.hunts = huntDirector(this.world, { max: (people) => (people >= 4 ? 2 : 1), grace: 25 });
     this.next = performance.now();
     this.timer = setTimeout(() => this.loop(), 0);
     rooms.add(this);
@@ -276,6 +282,11 @@ class Room {
     w.step(TICK);
     this.tickN++;
     this.handleEvents();
+    if (this.tickN % 15 === 0) this.fillBots();
+    for (const h of this.hunts.update(TICK)) {
+      const bot = w.snakes.get(h.hunter);
+      this.bySnake.get(h.prey)?.send({ t: 'ev', k: 'hunt', at: Math.round(w.time * 1000), id: h.hunter, name: bot?.name ?? '' });
+    }
     if (this.tickN % SNAPSHOT_EVERY === 0) {
       this.prepareSnapshots();
       for (const c of this.clients) this.sendSnapshot(c);
@@ -285,6 +296,46 @@ class Room {
     if (this.tickN % BOARD_EVERY === 0) this.sendBoards(this.tickN % RADAR_EVERY === 0);
     if (this.clients.size) this.emptySince = Date.now();
     else if (Date.now() - this.emptySince > 60_000) this.close();
+  }
+  /**
+   * Bots while few people play: the rival parties first (each once: the two biggest are "giants" that close a ring,
+   * the middle ones hunters, the small ones raiders), then friendly local lists; the smallest leaves when people come.
+   */
+  fillBots() {
+    const w = this.world;
+    let people = 0;
+    const bots = [];
+    for (const s of w.snakes.values()) {
+      if (!s.alive) continue;
+      if (s.bot) bots.push(s);
+      else people++;
+    }
+    const want = config.botFill > 0 ? Math.max(0, Math.min(config.botFill, this.capacity) - people) : 0;
+    if (bots.length < want && this.tickN % 30 === 0) {
+      const here = new Set(bots.map((b) => b.ai?.party).filter(Boolean));
+      const parties = RIVALS.filter((p) => p.seats > 0).sort((a, b) => b.seats - a.seats);
+      const i = parties.findIndex((p) => !here.has(p.id));
+      if (i >= 0) {
+        const p = parties[i];
+        const role = i < 2 ? 'giant' : i < 5 ? 'hunter' : 'raider';
+        w.addSnake({
+          bot: true,
+          name: p.name,
+          color: p.color,
+          mass: role === 'giant' ? 120 + Math.random() * 120 : 30 + Math.random() * 60,
+          ai: { role, skill: 0.4 + Math.random() * 0.15, accept: 0, friendly: false, party: p.id },
+        });
+      } else {
+        const taken = new Set(bots.map((b) => b.name));
+        const name = LOCAL_LISTS.find((n) => !taken.has(n)) ?? LOCAL_LISTS[bots.length % LOCAL_LISTS.length];
+        w.addSnake({ bot: true, name, color: ALLY_COLOR, mass: 15 + Math.random() * 40, ai: { friendly: true, accept: 0.9 } });
+      }
+    } else if (bots.length > want && this.tickN % 90 === 0) {
+      // More bots than the people here need: the smallest one goes.
+      let smallest = null;
+      for (const b of bots) if (!smallest || b.mass < smallest.mass) smallest = b;
+      if (smallest) w.removeSnake(smallest.id);
+    }
   }
   handleEvents() {
     const w = this.world;
@@ -959,7 +1010,7 @@ export function reloadPage() {
   page = loadPage();
 }
 /** For tests only. */
-export const _internals = { rooms, clients, metrics, pickRoom, Room, Client, cleanName, VALID_NAMES, MAPS, SKINS, lobby, defaultMap };
+export const _internals = { rooms, clients, metrics, pickRoom, Room, Client, cleanName, VALID_NAMES, MAPS, SKINS, lobby, defaultMap, config };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   await start();

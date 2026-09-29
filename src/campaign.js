@@ -40,7 +40,7 @@ export const OTHERS = [
 export const UNDECIDED = 4;
 export const POLL_NOTE = 'המנדטים של שאר המפלגות בפתיחה: סקר וואלה, 9.9.2026. מכאן והלאה – הכול תלוי בכם.';
 
-const LOCAL_LISTS = ['צעירי העיר', 'רשימת השכונות', 'הרשימה המקומית', 'שכנים למען העיר', 'גרעין העיר', 'רשימת הרחוב'];
+export const LOCAL_LISTS = ['צעירי העיר', 'רשימת השכונות', 'הרשימה המקומית', 'שכנים למען העיר', 'גרעין העיר', 'רשימת הרחוב'];
 
 /** Strategies, chosen one per round between the books (like social policies): lasting abilities. */
 export const PERKS = [
@@ -1043,6 +1043,63 @@ export function startChapter(ch, map, world, { playerId, perks = [], rand = Math
     },
     get clock() {
       return clock;
+    },
+  };
+}
+
+/**
+ * Sends story bots (those with an ai.role) after people, a few at a time: online rooms use it. After a snake has
+ * been around for `grace` seconds it may be hunted (prey(s) says who may be), by at most `max` bots at once, each
+ * for 12–21 seconds and then a rest. update(dt) returns the hunts that started: [{ hunter, prey }] (ids).
+ */
+export function huntDirector(world, { max = () => 1, grace = 20, prey = (s) => !s.bot, rand = Math.random } = {}) {
+  let clock = 0;
+  let beat = 0;
+  const hunters = (s) => s.alive && s.ai?.role && s.ai.role !== 'ally';
+  return {
+    update(dt) {
+      clock += dt;
+      beat -= dt;
+      if (beat > 0) return [];
+      beat = 0.5;
+      const started = [];
+      let active = 0;
+      for (const s of world.snakes.values()) {
+        if (!hunters(s)) continue;
+        const ai = s.ai;
+        if (!ai.hunting) continue;
+        const p = world.snakes.get(ai.target);
+        if (clock > ai.until || !p?.alive) {
+          ai.hunting = false;
+          ai.rest = clock + 4 + rand() * 6;
+        } else active++;
+      }
+      const targets = [...world.snakes.values()].filter((s) => s.alive && prey(s) && world.time - s.born >= grace);
+      const most = typeof max === 'function' ? max(targets.length) : max;
+      while (targets.length && active < most) {
+        let pick = null;
+        let target = null;
+        let best = 1600; // only bots that are not too far away
+        for (const s of world.snakes.values()) {
+          if (!hunters(s) || s.ai.hunting || clock < (s.ai.rest ?? 0)) continue;
+          for (const t of targets) {
+            const d = Math.hypot(s.x - t.x, s.y - t.y);
+            if (d < best) {
+              best = d;
+              pick = s;
+              target = t;
+            }
+          }
+        }
+        if (!pick) break;
+        pick.ai.hunting = true;
+        pick.ai.target = target.id;
+        pick.ai.until = clock + 12 + rand() * 9;
+        pick.ai.flank = active === 0 ? 0 : active % 2 ? 1 : -1;
+        active++;
+        started.push({ hunter: pick.id, prey: target.id });
+      }
+      return started;
     },
   };
 }

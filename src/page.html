@@ -70,7 +70,7 @@ a { color: inherit; }
 #osm { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 3px);
   font-size: 10px; color: var(--ink-2); text-decoration: none; background: rgba(255, 255, 255, 0.7); padding: 1px 6px;
   border-radius: 6px; direction: ltr; white-space: nowrap; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
-#waiting { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 74px); pointer-events: auto;
+#waiting { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 150px); pointer-events: auto;
   background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 6px 5px 12px; box-shadow: var(--shadow);
   font-size: 12px; font-weight: 700; display: flex; gap: 8px; align-items: center; white-space: nowrap; max-width: 92vw; }
 #waiting button { border: 0; border-radius: 999px; background: var(--blue); color: #fff; font-weight: 800; font-size: 12px; padding: 5px 10px; }
@@ -98,7 +98,7 @@ a { color: inherit; }
 .sheet { z-index: 6; background: rgba(35, 32, 27, 0.28); }
 .card { width: min(400px, 100%); text-align: center; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px 16px;
   background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); box-sizing: border-box; }
-.sheet .card { max-height: calc(100dvh - 32px); }
+.sheet .card { max-height: calc(100dvh - 32px); background: #fbf9f4; }
 .sheet .card.lists { grid-template-rows: auto auto minmax(0, 1fr) auto; }
 .sheet h2 { margin: 0; font-size: 19px; font-weight: 900; text-align: center; }
 #mark { width: 230px; height: 70px; justify-self: center; margin-bottom: -8px; }
@@ -279,7 +279,7 @@ a { color: inherit; }
       <button id="music-btn" class="secondary" type="button">🎵 מוסיקה</button>
     </div>
     <p id="net-status" aria-live="polite"></p>
-    <p class="foot">בלי הרשמה · בלי עוגיות · רק אנשים אמיתיים<br>מפה: <a id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
+    <p class="foot">בלי הרשמה · בלי עוגיות · בוטים מסומנים ב־🤖<br>מפה: <a id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
   </div>
 </section>
 
@@ -323,7 +323,7 @@ a { color: inherit; }
 <section id="music" class="screen sheet" hidden aria-labelledby="music-title">
   <div class="card">
     <h2 id="music-title">מוסיקה</h2>
-    <p class="note">רצועות מקוריות שנכתבו למשחק, או שיר משלכם מהטלפון: הוא מתנגן רק אצלכם ולא עולה לשום מקום.</p>
+    <p class="note">רצועות מקוריות שנכתבו למשחק, או שיר משלכם מהטלפון: הוא מתנגן רק אצלכם ולא עולה לשום מקום. לא שומעים? הגבירו את הווליום של הטלפון.</p>
     <div id="track-list" class="list"></div>
     <div class="row2">
       <label class="file">🎧 שיר מהטלפון<input id="music-file" type="file" accept="audio/*"></label>

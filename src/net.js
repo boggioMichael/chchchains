@@ -427,6 +427,7 @@ export function connectOnline(url, hooks = {}) {
         else if (m.k === 'link') w.queue({ at: m.at, event: { t: 'link', a: net.meId, b: m.id, name: m.name } });
         else if (m.k === 'offer') w.queue({ at: m.at, event: { t: 'offer', from: m.id, to: net.meId, name: m.name } });
         else if (m.k === 'offered') w.queue({ at: m.at, event: { t: 'offered', to: m.id, name: m.name } });
+        else if (m.k === 'hunt') w.queue({ at: m.at, event: { t: 'hunt', id: m.id, name: m.name } });
         break;
       default:
     }

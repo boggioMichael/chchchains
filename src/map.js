@@ -156,7 +156,8 @@ export class CityMap {
         for (const f of d.f || []) add('motorway', undelta(f), false);
         this.pois = (d.p || [])
           .filter((p) => POI_STYLE[p[2]])
-          .map(([x, y, cat, name]) => ({ x, y, cat, name, rank: POI_RANK[cat] }))
+          // Names in a script most players cannot read (Cyrillic, say) keep their icon but show no name.
+          .map(([x, y, cat, name]) => ({ x, y, cat, name: /[\u0400-\u04ff]/.test(name) ? '' : name, rank: POI_RANK[cat] }))
           .sort((a, b) => a.rank - b.rank);
         for (const p of this.pois) {
           const k = this.cell(p.y) * this.n + this.cell(p.x);
@@ -573,7 +574,7 @@ export class CityMap {
         if (!free(iconBox)) continue;
         const icon = this.poiIcon(p.cat, dpr);
         ctx.drawImage(icon, x - icon.width / dpr / 2, y - icon.height / dpr / 2, icon.width / dpr, icon.height / dpr);
-        if (named) {
+        if (named && p.name) {
           const img = this.label(p.name, `poi:${p.cat}`, dpr);
           const w = img.width / dpr;
           const h = img.height / dpr;

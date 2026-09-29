@@ -3,6 +3,10 @@
 // melody once your chain grows; extra hi-hats while you run; bells when you hold hands. A player may also play a
 // song of their own from their phone (it stays on the phone), or one the site has a licence for (config.json).
 // Browsers only allow sound after a tap, so nothing plays until unlock() is called from one.
+//
+// iPhones play a page's Web Audio like a ringtone: with the phone on silent, nothing is heard. So while the music is
+// on, the page asks for the "playback" audio session (Safari 16.4 and later) and, on iPhones and iPads, keeps a
+// silent <audio> loop playing (older versions switch to playback that way): the game is heard like a music app.
 
 const LOOKAHEAD = 0.14;
 const B = (s, m, l) => [s, m, l];
@@ -168,6 +172,36 @@ export const TRACKS = [
 
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
+/** A looping <audio> of one second of silence, made here as a WAV (the page's policy allows blob: media). */
+function silentLoop() {
+  const rate = 8000;
+  const n = rate;
+  const buf = new ArrayBuffer(44 + n);
+  const v = new DataView(buf);
+  const str = (at, text) => {
+    for (let i = 0; i < text.length; i++) v.setUint8(at + i, text.charCodeAt(i));
+  };
+  str(0, 'RIFF');
+  v.setUint32(4, 36 + n, true);
+  str(8, 'WAVE');
+  str(12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); // PCM
+  v.setUint16(22, 1, true); // mono
+  v.setUint32(24, rate, true);
+  v.setUint32(28, rate, true);
+  v.setUint16(32, 1, true);
+  v.setUint16(34, 8, true); // 8-bit: silence is 128
+  str(36, 'data');
+  v.setUint32(40, n, true);
+  new Uint8Array(buf, 44).fill(128);
+  const el = new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })));
+  el.loop = true;
+  el.setAttribute('playsinline', '');
+  el.volume = 0.01;
+  return el;
+}
+
 /** context: an (Offline)AudioContext to use instead of making one — for rendering the music to a file. */
 export function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
   let T = TRACKS.find((t) => t.id === track) || TRACKS[0];
@@ -187,19 +221,38 @@ export function createAudio({ muted = false, context = null, track = 'chains' } 
   let comboAt = 0;
   let lastBlip = 0;
   const state = { muted, scene: 'menu' };
-  // Muted, the page lets go of the sound entirely (the context is suspended, and on iPhones the page's audio session
-  // mixes with other apps), so a player's own music from Spotify or the like keeps playing under the game.
+  // Muted, the page lets go of the sound entirely (the context is suspended, the audio session mixes with other
+  // apps and the silent loop stops), so a player's own music from Spotify or the like keeps playing under the game.
+  const nav = globalThis.navigator;
+  const apple = !!nav && (/iP(hone|ad|od)/.test(nav.userAgent) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1));
+  let silent = null;
   const session = (m) => {
     try {
-      const s = globalThis.navigator?.audioSession;
-      if (s) s.type = m ? 'ambient' : 'auto';
+      const s = nav?.audioSession;
+      if (s) s.type = m ? 'ambient' : 'playback';
     } catch {
       /* not supported */
     }
+    if (!apple || context || typeof Audio === 'undefined') return;
+    try {
+      if (m) silent?.pause();
+      else {
+        silent ??= silentLoop();
+        silent.play().catch(() => {});
+      }
+    } catch {
+      /* no audio element here */
+    }
   };
-  session(muted);
+
+  try {
+    if (nav?.audioSession && !context) nav.audioSession.type = muted ? 'ambient' : 'playback';
+  } catch {
+    /* not supported */
+  }
 
   function unlock() {
+    if (!state.muted && !context) session(false); // inside the tap: iPhones allow the silent loop to start here
     if (!ac) {
       const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
       if (!AC && !context) return;
@@ -472,7 +525,7 @@ export function createAudio({ muted = false, context = null, track = 'chains' } 
     unlock,
     setMuted(m) {
       state.muted = m;
-      session(m);
+      if (!context) session(m);
       if (!master) return;
       if (!m && ac.state === 'suspended' && !context) {
         ac.resume();
@@ -591,6 +644,8 @@ export function createAudio({ muted = false, context = null, track = 'chains' } 
     /** Pauses everything while the page is hidden. */
     pause(on) {
       if (!ac) return;
+      if (on) silent?.pause();
+      else if (!state.muted) silent?.play().catch(() => {});
       if (on && ac.state === 'running') ac.suspend();
       else if (!on && ac.state === 'suspended' && !state.muted) {
         ac.resume();

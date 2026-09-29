@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-i7UoWindDcmWYL6v7buyLIdNs/YOS75TlOKsKiw8Fgw='; style-src 'sha256-uOq/Spyu4U3kbWzjI2Yn33tmMBKcGiAqGS84uE2Yq4g='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-x5EW9wuU0r+eY1w3v27QuMCklZfDsFTS9IMX0oZpSko=' 'sha256-koV+zrqZ0Ho758Fol5V4Q+g1HvzmEwKFjkBnG2yFKvQ='; style-src 'sha256-UUAlOPzoe8BVB4zORxA48TaNf656ShZ1PIsOS74MoUw='; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://chchchains-server.onrender.com https://chchchains-server.onrender.com; manifest-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -89,7 +89,7 @@ a { color: inherit; }
 #osm { pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 3px);
   font-size: 10px; color: var(--ink-2); text-decoration: none; background: rgba(255, 255, 255, 0.7); padding: 1px 6px;
   border-radius: 6px; direction: ltr; white-space: nowrap; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
-#waiting { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 74px); pointer-events: auto;
+#waiting { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 150px); pointer-events: auto;
   background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 6px 5px 12px; box-shadow: var(--shadow);
   font-size: 12px; font-weight: 700; display: flex; gap: 8px; align-items: center; white-space: nowrap; max-width: 92vw; }
 #waiting button { border: 0; border-radius: 999px; background: var(--blue); color: #fff; font-weight: 800; font-size: 12px; padding: 5px 10px; }
@@ -117,7 +117,7 @@ a { color: inherit; }
 .sheet { z-index: 6; background: rgba(35, 32, 27, 0.28); }
 .card { width: min(400px, 100%); text-align: center; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px 16px;
   background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); box-sizing: border-box; }
-.sheet .card { max-height: calc(100dvh - 32px); }
+.sheet .card { max-height: calc(100dvh - 32px); background: #fbf9f4; }
 .sheet .card.lists { grid-template-rows: auto auto minmax(0, 1fr) auto; }
 .sheet h2 { margin: 0; font-size: 19px; font-weight: 900; text-align: center; }
 #mark { width: 230px; height: 70px; justify-self: center; margin-bottom: -8px; }
@@ -299,7 +299,7 @@ a { color: inherit; }
       <button id="music-btn" class="secondary" type="button">🎵 מוסיקה</button>
     </div>
     <p id="net-status" aria-live="polite"></p>
-    <p class="foot">בלי הרשמה · בלי עוגיות · רק אנשים אמיתיים<br>מפה: <a id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
+    <p class="foot">בלי הרשמה · בלי עוגיות · בוטים מסומנים ב־🤖<br>מפה: <a id="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener"><bdi>© OpenStreetMap contributors</bdi></a><br><span id="publisher" hidden></span></p>
   </div>
 </section>
 
@@ -343,7 +343,7 @@ a { color: inherit; }
 <section id="music" class="screen sheet" hidden aria-labelledby="music-title">
   <div class="card">
     <h2 id="music-title">מוסיקה</h2>
-    <p class="note">רצועות מקוריות שנכתבו למשחק, או שיר משלכם מהטלפון: הוא מתנגן רק אצלכם ולא עולה לשום מקום.</p>
+    <p class="note">רצועות מקוריות שנכתבו למשחק, או שיר משלכם מהטלפון: הוא מתנגן רק אצלכם ולא עולה לשום מקום. לא שומעים? הגבירו את הווליום של הטלפון.</p>
     <div id="track-list" class="list"></div>
     <div class="row2">
       <label class="file">🎧 שיר מהטלפון<input id="music-file" type="file" accept="audio/*"></label>
@@ -2199,6 +2199,7 @@ function connectOnline(url, hooks = {}) {
         else if (m.k === 'link') w.queue({ at: m.at, event: { t: 'link', a: net.meId, b: m.id, name: m.name } });
         else if (m.k === 'offer') w.queue({ at: m.at, event: { t: 'offer', from: m.id, to: net.meId, name: m.name } });
         else if (m.k === 'offered') w.queue({ at: m.at, event: { t: 'offered', to: m.id, name: m.name } });
+        else if (m.k === 'hunt') w.queue({ at: m.at, event: { t: 'hunt', id: m.id, name: m.name } });
         break;
       default:
     }
@@ -2495,7 +2496,8 @@ class CityMap {
         for (const f of d.f || []) add('motorway', undelta(f), false);
         this.pois = (d.p || [])
           .filter((p) => POI_STYLE[p[2]])
-          .map(([x, y, cat, name]) => ({ x, y, cat, name, rank: POI_RANK[cat] }))
+          // Names in a script most players cannot read (Cyrillic, say) keep their icon but show no name.
+          .map(([x, y, cat, name]) => ({ x, y, cat, name: /[\u0400-\u04ff]/.test(name) ? '' : name, rank: POI_RANK[cat] }))
           .sort((a, b) => a.rank - b.rank);
         for (const p of this.pois) {
           const k = this.cell(p.y) * this.n + this.cell(p.x);
@@ -2912,7 +2914,7 @@ class CityMap {
         if (!free(iconBox)) continue;
         const icon = this.poiIcon(p.cat, dpr);
         ctx.drawImage(icon, x - icon.width / dpr / 2, y - icon.height / dpr / 2, icon.width / dpr, icon.height / dpr);
-        if (named) {
+        if (named && p.name) {
           const img = this.label(p.name, `poi:${p.cat}`, dpr);
           const w = img.width / dpr;
           const h = img.height / dpr;
@@ -4004,6 +4006,10 @@ __m.audio = (() => {
 // melody once your chain grows; extra hi-hats while you run; bells when you hold hands. A player may also play a
 // song of their own from their phone (it stays on the phone), or one the site has a licence for (config.json).
 // Browsers only allow sound after a tap, so nothing plays until unlock() is called from one.
+//
+// iPhones play a page's Web Audio like a ringtone: with the phone on silent, nothing is heard. So while the music is
+// on, the page asks for the "playback" audio session (Safari 16.4 and later) and, on iPhones and iPads, keeps a
+// silent <audio> loop playing (older versions switch to playback that way): the game is heard like a music app.
 
 const LOOKAHEAD = 0.14;
 const B = (s, m, l) => [s, m, l];
@@ -4169,6 +4175,36 @@ const TRACKS = [
 
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
+/** A looping <audio> of one second of silence, made here as a WAV (the page's policy allows blob: media). */
+function silentLoop() {
+  const rate = 8000;
+  const n = rate;
+  const buf = new ArrayBuffer(44 + n);
+  const v = new DataView(buf);
+  const str = (at, text) => {
+    for (let i = 0; i < text.length; i++) v.setUint8(at + i, text.charCodeAt(i));
+  };
+  str(0, 'RIFF');
+  v.setUint32(4, 36 + n, true);
+  str(8, 'WAVE');
+  str(12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); // PCM
+  v.setUint16(22, 1, true); // mono
+  v.setUint32(24, rate, true);
+  v.setUint32(28, rate, true);
+  v.setUint16(32, 1, true);
+  v.setUint16(34, 8, true); // 8-bit: silence is 128
+  str(36, 'data');
+  v.setUint32(40, n, true);
+  new Uint8Array(buf, 44).fill(128);
+  const el = new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })));
+  el.loop = true;
+  el.setAttribute('playsinline', '');
+  el.volume = 0.01;
+  return el;
+}
+
 /** context: an (Offline)AudioContext to use instead of making one — for rendering the music to a file. */
 function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
   let T = TRACKS.find((t) => t.id === track) || TRACKS[0];
@@ -4188,19 +4224,38 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
   let comboAt = 0;
   let lastBlip = 0;
   const state = { muted, scene: 'menu' };
-  // Muted, the page lets go of the sound entirely (the context is suspended, and on iPhones the page's audio session
-  // mixes with other apps), so a player's own music from Spotify or the like keeps playing under the game.
+  // Muted, the page lets go of the sound entirely (the context is suspended, the audio session mixes with other
+  // apps and the silent loop stops), so a player's own music from Spotify or the like keeps playing under the game.
+  const nav = globalThis.navigator;
+  const apple = !!nav && (/iP(hone|ad|od)/.test(nav.userAgent) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1));
+  let silent = null;
   const session = (m) => {
     try {
-      const s = globalThis.navigator?.audioSession;
-      if (s) s.type = m ? 'ambient' : 'auto';
+      const s = nav?.audioSession;
+      if (s) s.type = m ? 'ambient' : 'playback';
     } catch {
       /* not supported */
     }
+    if (!apple || context || typeof Audio === 'undefined') return;
+    try {
+      if (m) silent?.pause();
+      else {
+        silent ??= silentLoop();
+        silent.play().catch(() => {});
+      }
+    } catch {
+      /* no audio element here */
+    }
   };
-  session(muted);
+
+  try {
+    if (nav?.audioSession && !context) nav.audioSession.type = muted ? 'ambient' : 'playback';
+  } catch {
+    /* not supported */
+  }
 
   function unlock() {
+    if (!state.muted && !context) session(false); // inside the tap: iPhones allow the silent loop to start here
     if (!ac) {
       const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
       if (!AC && !context) return;
@@ -4473,7 +4528,7 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
     unlock,
     setMuted(m) {
       state.muted = m;
-      session(m);
+      if (!context) session(m);
       if (!master) return;
       if (!m && ac.state === 'suspended' && !context) {
         ac.resume();
@@ -4592,6 +4647,8 @@ function createAudio({ muted = false, context = null, track = 'chains' } = {}) {
     /** Pauses everything while the page is hidden. */
     pause(on) {
       if (!ac) return;
+      if (on) silent?.pause();
+      else if (!state.muted) silent?.play().catch(() => {});
       if (on && ac.state === 'running') ac.suspend();
       else if (!on && ac.state === 'suspended' && !state.muted) {
         ac.resume();
@@ -5707,6 +5764,63 @@ function startChapter(ch, map, world, { playerId, perks = [], rand = Math.random
 }
 
 /**
+ * Sends story bots (those with an ai.role) after people, a few at a time: online rooms use it. After a snake has
+ * been around for `grace` seconds it may be hunted (prey(s) says who may be), by at most `max` bots at once, each
+ * for 12–21 seconds and then a rest. update(dt) returns the hunts that started: [{ hunter, prey }] (ids).
+ */
+function huntDirector(world, { max = () => 1, grace = 20, prey = (s) => !s.bot, rand = Math.random } = {}) {
+  let clock = 0;
+  let beat = 0;
+  const hunters = (s) => s.alive && s.ai?.role && s.ai.role !== 'ally';
+  return {
+    update(dt) {
+      clock += dt;
+      beat -= dt;
+      if (beat > 0) return [];
+      beat = 0.5;
+      const started = [];
+      let active = 0;
+      for (const s of world.snakes.values()) {
+        if (!hunters(s)) continue;
+        const ai = s.ai;
+        if (!ai.hunting) continue;
+        const p = world.snakes.get(ai.target);
+        if (clock > ai.until || !p?.alive) {
+          ai.hunting = false;
+          ai.rest = clock + 4 + rand() * 6;
+        } else active++;
+      }
+      const targets = [...world.snakes.values()].filter((s) => s.alive && prey(s) && world.time - s.born >= grace);
+      const most = typeof max === 'function' ? max(targets.length) : max;
+      while (targets.length && active < most) {
+        let pick = null;
+        let target = null;
+        let best = 1600; // only bots that are not too far away
+        for (const s of world.snakes.values()) {
+          if (!hunters(s) || s.ai.hunting || clock < (s.ai.rest ?? 0)) continue;
+          for (const t of targets) {
+            const d = Math.hypot(s.x - t.x, s.y - t.y);
+            if (d < best) {
+              best = d;
+              pick = s;
+              target = t;
+            }
+          }
+        }
+        if (!pick) break;
+        pick.ai.hunting = true;
+        pick.ai.target = target.id;
+        pick.ai.until = clock + 12 + rand() * 9;
+        pick.ai.flank = active === 0 ? 0 : active % 2 ? 1 : -1;
+        active++;
+        started.push({ hunter: pick.id, prey: target.id });
+      }
+      return started;
+    },
+  };
+}
+
+/**
  * Free play alone (no server): the rival parties roam the map, and now and then one or two come after you.
  * Returns the same shape as startChapter (no goal: never done).
  */
@@ -5731,12 +5845,13 @@ function startSkirmish(map, world, { playerId, rand = Math.random } = {}) {
   return run;
 }
 
-return { THRESHOLD, OURS, ALLY_COLOR, RIVALS, OTHERS, UNDECIDED, POLL_NOTE, PERKS, PERK_ROUNDS, BOOKS, BOOK_NAMES, CHAPTERS, EPILOGUE, newCampaign, loadCampaign, saveCampaign, partyOf, fill, knesset, oursShown, biggestRival, openBook, winChapter, choosePerk, perkMods, starTexts, goalText, mmss, makeObstacles, joinLines, startPoint, startChapter, startSkirmish };
+return { THRESHOLD, OURS, ALLY_COLOR, RIVALS, OTHERS, UNDECIDED, POLL_NOTE, LOCAL_LISTS, PERKS, PERK_ROUNDS, BOOKS, BOOK_NAMES, CHAPTERS, EPILOGUE, newCampaign, loadCampaign, saveCampaign, partyOf, fill, knesset, oursShown, biggestRival, openBook, winChapter, choosePerk, perkMods, starTexts, goalText, mmss, makeObstacles, joinLines, startPoint, startChapter, huntDirector, startSkirmish };
 })();
 __m.client = (() => {
 // Ch-ch-chain-ges — the browser client: the maps, the human chains, touch/mouse/keyboard input, the lobby, skins,
-// music, the story, screens and sharing. Online play (net.js) draws the server's room: real people only, no bots.
-// Offline play and the story ("נגד כל הסיכויים", campaign.js) simulate the world here, against rival bots.
+// music, the story, screens and sharing. Online play (net.js) draws the server's room: people, and while few play,
+// bots named for the rival parties (marked 🤖). Offline play and the story ("נגד כל הסיכויים", campaign.js)
+// simulate the world here, against rival bots.
 const { World, C, COLORS, radiusFor, scoreOf, randomName } = __m.sim;
 const { connectOnline } = __m.net;
 const { loadCity, loadMapIndex, MAP_STYLE } = __m.map;
@@ -5829,6 +5944,7 @@ const game = {
   here: 0,
   hereSeen: 0,
   story: null, // a chapter being played: { index, chapter, run, map }
+  huntedBy: new Map(), // online: bot id → until when (ms) it is after you
   skirmish: null, // alone, offline: the rival parties' director
   sat: pref('sat') === '1',
   green: pref('green') === '1',
@@ -5847,7 +5963,8 @@ function me() {
 const audio = createAudio({ muted: pref('muted') === '1', track: pref('track', 'chains') });
 function renderSound() {
   for (const b of document.querySelectorAll('.sound')) {
-    b.textContent = b.id === 'sound-hud' ? (audio.muted ? '🔇' : '🔊') : audio.muted ? '🔇 בלי מוסיקה' : '🔊 מוסיקה';
+    // The round button shows how it is; the others say what a tap does.
+    b.textContent = b.id === 'sound-hud' ? (audio.muted ? '🔇' : '🔊') : audio.muted ? '🔊 להפעיל מוסיקה' : '🔇 להשתיק';
     b.setAttribute('aria-pressed', String(!audio.muted));
   }
 }
@@ -5860,6 +5977,12 @@ for (const b of document.querySelectorAll('.sound')) {
   });
 }
 document.addEventListener('visibilitychange', () => audio.pause(document.hidden));
+// The music starts with the first touch anywhere: browsers allow sound only after one.
+const firstTouch = () => {
+  audio.unlock();
+  for (const t of ['touchend', 'click', 'keydown']) document.removeEventListener(t, firstTouch, true);
+};
+for (const t of ['touchend', 'click', 'keydown']) document.addEventListener(t, firstTouch, true);
 
 // ------------------------------------------------------------------------------------------------ maps
 const maps = { list: [], byId: new Map(), loaded: new Map(), current: '', lobby: {}, online: 0 };
@@ -5945,6 +6068,7 @@ function beginRound(s) {
   game.deathInfo = null;
   game.handIds = new Set();
   game.refusedAt.clear();
+  game.huntedBy.clear();
   game.lastColor = s.color;
   game.lastScore = scoreOf(s.mass);
   game.hereSeen = 0;
@@ -6277,7 +6401,10 @@ function handleEvents(w) {
   const run = game.mode === 'story' ? game.story?.run : game.mode === 'solo' ? game.skirmish : null;
   for (const e of w.events) {
     run?.event(e);
-    if (e.t === 'shield' && e.id === my && game.alive) {
+    if (e.t === 'hunt' && game.alive) {
+      game.huntedBy.set(e.id, performance.now() + 16000);
+      toast(`⚠️ ${e.name || nameOf(w, e.id)} יוצאת לחסום אותך`, 2600);
+    } else if (e.t === 'shield' && e.id === my && game.alive) {
       toast('🛡️ החוסן הציל אתכם: חלק מהשרשרת נשאר מאחור', 2800);
       navigator.vibrate?.([80, 40, 80]);
       audio.sfx('broke');
@@ -6495,8 +6622,12 @@ function render(t) {
     const y = sy(s.y) - hp * 1.62; // above the leader's flag
     if (s.id !== game.meId) {
       // A rival out to get you: its name in red, and a ring that beats like a pulse.
-      const hunting = s.ai?.hunting && (s.ai.target === game.meId || game.story?.run?.allies?.some((a) => a.id === s.ai.target));
-      const label = hunting ? `🎯 ${s.name}` : s.name;
+      const hunting =
+        (s.ai?.hunting && (s.ai.target === game.meId || game.story?.run?.allies?.some((a) => a.id === s.ai.target))) ||
+        game.huntedBy.get(s.id) > performance.now();
+      // Online, bots say they are bots.
+      const shown = game.mode === 'online' && s.bot ? `🤖 ${s.name}` : s.name;
+      const label = hunting ? `🎯 ${shown}` : shown;
       ctx.font = `${hunting ? 800 : 600} 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
       ctx.strokeStyle = 'rgba(255,255,255,0.92)';
       ctx.lineWidth = 3;
@@ -6689,10 +6820,11 @@ function roundRect(g, x, y, w, h, r) {
 /** Red arrows at the screen's edge toward rivals hunting you (from further off with the situation room). */
 function drawOffscreenHunters(w, sx, sy) {
   const s = me();
-  if (!s?.alive || !game.alive || game.mode === 'online') return;
+  if (!s?.alive || !game.alive) return;
   const range = game.mode === 'story' && game.story?.perks?.includes('intel') ? 1700 : 750;
+  const now = performance.now();
   for (const o of w.snakes.values()) {
-    if (!o.alive || !o.ai?.hunting || o.ai.target !== game.meId) continue;
+    if (!o.alive || !((o.ai?.hunting && o.ai.target === game.meId) || game.huntedBy.get(o.id) > now)) continue;
     const d = Math.hypot(o.x - s.x, o.y - s.y);
     if (d > range) continue;
     const x = sx(o.x);
@@ -7146,7 +7278,7 @@ function updateHud() {
   }
   const lb = $('leaderboard');
   const rows = board
-    ? board.top.map(([id, name, score, color]) => ({ id, label: name, score, color }))
+    ? board.top.map(([id, name, score, color, bot]) => ({ id, label: bot ? `🤖 ${name}` : name, score, color }))
     : alive.slice(0, 5).map((o) => ({ id: o.id, label: o.name, score: scoreOf(o.mass), color: o.color }));
   lb.replaceChildren(
     ...rows.map((o, i) => {
@@ -8132,7 +8264,7 @@ function serverFor(map) {
 }
 function netStatusText(status, online) {
   if (status === 'online') {
-    return online > 1 ? `🟢 ${online.toLocaleString('he-IL')} מחוברים עכשיו – משחקים עם אנשים אמיתיים` : '🟢 מחובר – משחקים עם אנשים אמיתיים';
+    return online > 1 ? `🟢 ${online.toLocaleString('he-IL')} מחוברים עכשיו` : '🟢 מחובר';
   }
   if (status === 'connecting') return 'מעיר את השרת… אפשר כבר לשחק לבד';
   if (status === 'full') return 'השרת מלא כרגע – משחקים לבד בינתיים';
