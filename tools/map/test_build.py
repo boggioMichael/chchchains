@@ -147,8 +147,11 @@ def main():
 
     def box(x, y, w, h):
         return [ll(x, y), ll(x + w, y), ll(x + w, y + h), ll(x, y + h), ll(x, y)]
-    for i in range(30):  # a row of houses
-        add({'building': 'yes'}, {'type': 'Polygon', 'coordinates': [box(-1000 + i * 40, 300, 22, 14)]})
+    tall = [{'building': 'yes', 'building:levels': '4'}, {'building': 'office', 'height': '25 m'}]
+    for i in range(30):  # a row of houses (the first two with a height)
+        add(tall[i] if i < 2 else {'building': 'yes'}, {'type': 'Polygon', 'coordinates': [box(-1000 + i * 40, 300, 22, 14)]})
+    add({'natural': 'tree'}, {'type': 'Point', 'coordinates': ll(-400, 380)})
+    add({'natural': 'tree_row'}, {'type': 'LineString', 'coordinates': [ll(-400, 400), ll(-330, 400)]})
     add({'building': 'yes'}, {'type': 'Polygon', 'coordinates': [box(0, 0, 2, 2)]})  # a shed: too small
     add({'building': 'yes'}, {'type': 'Polygon', 'coordinates': [box(3200, 3200, 30, 30)]})  # outside the city
     add({'landuse': 'residential'}, {'type': 'Polygon', 'coordinates': [box(-1100, 200, 1400, 300)]})
@@ -168,6 +171,13 @@ def main():
     assert abs(first[0][0] + 1000) <= 1 and abs(first[0][1] - 300) <= 1, first[:2]
     assert set(d['a']) == {'residential', 'school'}, 'land use by class; the school wins over the homes; no military'
     assert [m[0] for m in d['m']] == [1, 0] and len(d['f']) == 1
+    # The street view's file: a height (and kind) for every building, in the same order, and the trees.
+    d3 = json.load(open(os.path.join(tmp, 'test-city-3d.json'), encoding='utf-8'))
+    assert d3['n'] == len(d['b']) == len(d3['h']) and d3['h'][:3] == [130, 255, 0], d3['h'][:3]
+    assert detail.building_height({'building': 'house', 'height': '40 ft'}) == 121
+    assert detail.building_height({'building': 'roof'}) == 3 and detail.building_height({'building:levels': 'x'}) == 0
+    trees = detail.undelta(d3['t'])
+    assert 10 <= len(trees) <= 11 and all(abs(y - 380) <= 1 or abs(y - 400) <= 1 for _x, y in trees), trees
     cats = sorted((p[2], p[3]) for p in d['p'])
     assert cats == [('edu', 'בית ספר אלון'), ('food', 'קפה פינה'), ('shop', 'Super')], cats
     print('ok', json.dumps(stats, ensure_ascii=False), json.dumps(dstats, ensure_ascii=False))

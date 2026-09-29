@@ -7,16 +7,22 @@ Written to docs/maps/<id>-detail.json next to the city's main file, which the ga
 a moment later. Every line and ring is stored as whole metres, the first point absolute and the rest as steps from
 the point before (much smaller numbers in the file):
 
-    { "v": 1, "id": …, "b": [ring, …], "a": { class: [[ring, hole, …], …] }, "m": [[kind, …line], …],
+    { "v": 2, "id": …, "b": [ring, …], "a": { class: [[ring, hole, …], …] }, "m": [[kind, …line], …],
       "f": [line, …], "p": [[x, y, category, name], …] }
+
+and, for walking the streets in 3D (loaded only then), docs/maps/<id>-3d.json:
+
+    { "v": 1, "id": …, "n": how many buildings, "h": [height × 10 + kind, …] (one per building in "b", in the same
+      order; height in whole metres, 0 when OSM does not know it), "t": [x0, y0, dx1, dy1, …] (the trees) }
 
 Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).
 """
 import json
 import math
 import os
+import re
 
-DETAIL = 1
+DETAIL = 2  # 2: the street view's file (heights and trees) is built too
 
 # What the land is used for: the first class whose test matches wins (so a school's grounds are a school, not the
 # homes around it).
@@ -56,8 +62,50 @@ POI_CATEGORIES = [
     ('bank', 80, lambda t: t.get('amenity') == 'bank'),
 ]
 
+# What a building is, for how the street view draws it (the kind in "h"): 0 anything else (flats, "yes"), 1 houses,
+# 2 industry and storage, 3 a roof on pillars, 4 places of worship, 5 shops and offices, 6 public buildings.
+BUILDING_KIND = {
+    **dict.fromkeys(('house', 'detached', 'semidetached_house', 'terrace', 'bungalow', 'farm', 'hut', 'cabin', 'static_caravan'), 1),
+    **dict.fromkeys(('industrial', 'warehouse', 'hangar', 'manufacture', 'factory', 'storage_tank', 'garages', 'garage', 'shed',
+                     'service', 'barn', 'greenhouse', 'farm_auxiliary', 'silo', 'transformer_tower', 'water_tower'), 2),
+    **dict.fromkeys(('roof', 'carport', 'canopy'), 3),
+    **dict.fromkeys(('synagogue', 'mosque', 'church', 'cathedral', 'chapel', 'religious', 'temple', 'shrine', 'monastery'), 4),
+    **dict.fromkeys(('commercial', 'retail', 'office', 'supermarket', 'mall', 'hotel', 'kiosk', 'bank'), 5),
+    **dict.fromkeys(('school', 'university', 'college', 'kindergarten', 'hospital', 'public', 'civic', 'government',
+                     'train_station', 'transportation', 'sports_hall', 'stadium', 'fire_station', 'museum', 'library'), 6),
+}
+MAX_TREES = 60000
+
+
+def metres(v):
+    """An OSM height ('12', '12 m', '12.5', '40 ft') in metres, or None."""
+    m = re.match(r"^\s*(\d+(?:[.,]\d+)?)\s*(m|meters?|metres?|ft|feet|')?\s*$", str(v or '').lower())
+    if not m:
+        return None
+    x = float(m.group(1).replace(',', '.')) * (0.3048 if m.group(2) in ('ft', 'feet', "'") else 1)
+    return x if 0 < x < 1000 else None
+
+
+def levels(v):
+    """An OSM number of floors ('4', '4.5', '3;4'), or None."""
+    m = re.match(r'^\s*(\d+(?:[.,]\d+)?)', str(v or ''))
+    return float(m.group(1).replace(',', '.')) if m and float(m.group(1).replace(',', '.')) < 200 else None
+
+
+def building_height(tags):
+    """Height × 10 + kind (see BUILDING_KIND): the height in whole metres from the tags (its height, or else its
+    floors at 3.1 m each and a parapet), 0 when OSM does not say."""
+    kind = BUILDING_KIND.get(tags.get('building'), 0)
+    h = metres(tags.get('height')) or metres(tags.get('building:height'))
+    if h is None:
+        lv = levels(tags.get('building:levels'))
+        if lv:
+            h = lv * 3.1 + (levels(tags.get('roof:levels')) or 0) * 2.4 + 1.0
+    return int(round(min(h or 0, 400))) * 10 + kind
+
+
 FILTER = [
-    'w/building', 'r/building', 'nwr/landuse', 'nwr/natural=wood,scrub,heath,sand,bare_rock,scree,shingle',
+    'w/building', 'r/building', 'nw/natural=tree,tree_row', 'nwr/landuse', 'nwr/natural=wood,scrub,heath,sand,bare_rock,scree,shingle',
     'nwr/leisure', 'nwr/amenity', 'nwr/shop', 'nwr/tourism', 'nwr/office=government', 'nwr/healthcare',
     'nwr/railway=station,halt', 'nwr/public_transport=station',
     'w/highway=service,track,busway,footway,path,pedestrian,steps,cycleway,bridleway,motorway,trunk,motorway_link,trunk_link',
@@ -141,7 +189,7 @@ def build_detail(city, features, B, out_dir):
         elif geom['type'] == 'MultiLineString':
             yield from geom['coordinates']
 
-    buildings, areas, minor, fast, cands = [], {}, [], [], []
+    buildings, heights, trees, areas, minor, fast, cands = [], [], [], {}, [], [], []
     for f in features:
         tags = f.get('properties') or {}
         geom = f.get('geometry') or {}
@@ -160,6 +208,22 @@ def build_detail(city, features, B, out_dir):
                     (xy, _a) = max((B.ring_centroid(project(rings[0])) for rings in polys_of(geom)), key=lambda c: c[1])
                 if xy and inside(*xy):
                     cands.append((cat, name, xy[0], xy[1], B.hebrew(name)))
+        # Trees, for the street view: each one mapped, and rows of them every 7 m.
+        if tags.get('natural') == 'tree' and gtype == 'Point':
+            xy = proj.xy(*geom['coordinates'])
+            if inside(*xy):
+                trees.append(xy)
+            continue
+        if tags.get('natural') == 'tree_row' and gtype in ('LineString', 'MultiLineString'):
+            for line in lines_of(geom):
+                pts = project(line)
+                for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+                    n = max(1, int(math.hypot(bx - ax, by - ay) // 7))
+                    for k in range(n):
+                        x, y = ax + (bx - ax) * k / n, ay + (by - ay) * k / n
+                        if inside(x, y):
+                            trees.append((x, y))
+            continue
         if gtype == 'Point':
             continue
         hw = tags.get('highway')
@@ -179,10 +243,12 @@ def build_detail(city, features, B, out_dir):
         if gtype not in ('Polygon', 'MultiPolygon'):
             continue
         if tags.get('building') and tags.get('building') != 'no':
+            hk = building_height(tags)
             for rings in polys_of(geom):
                 pts = B.clip_ring(B.simplify(project(rings[0]), 0.7), E)
                 if len(pts) >= 3 and B.ring_area(pts) >= 12 and inside(*pts[0]):
                     buildings.append(delta(pts))
+                    heights.append(hk)
             continue
         cls = next((c for c, test in AREA_CLASSES if test(tags)), None)
         if not cls:
@@ -204,9 +270,20 @@ def build_detail(city, features, B, out_dir):
     path = os.path.join(out_dir, city['id'] + '-detail.json')
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
+    # The street view's file: heights (one per building above) and the trees, in bands 64 m tall so the steps stay small.
+    trees = sorted({(int(round(x)), int(round(y))) for x, y in trees}, key=lambda p: (p[1] // 64, p[0]))
+    if len(trees) > MAX_TREES:  # thinned evenly, not cut off at one end
+        trees = trees[::math.ceil(len(trees) / MAX_TREES)]
+    street = {'v': 1, 'id': city['id'], 'n': len(buildings), 'h': heights, 't': delta(trees)}
+    path3d = os.path.join(out_dir, city['id'] + '-3d.json')
+    with open(path3d, 'w', encoding='utf-8') as f:
+        json.dump(street, f, separators=(',', ':'))
     return {
         'id': city['id'],
         'kb': round(os.path.getsize(path) / 1024),
+        'kb3d': round(os.path.getsize(path3d) / 1024),
+        'heights': sum(1 for h in heights if h >= 10),
+        'trees': len(trees),
         'buildings': len(buildings),
         'areas': {k: len(v) for k, v in areas.items()},
         'minor': len(minor),
